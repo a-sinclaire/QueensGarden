@@ -17,6 +17,8 @@ class DOMRenderer extends RendererInterface {
     this.lastPlayerPixelY = null;
     this.lastScrollX = null;
     this.lastScrollY = null;
+    // Dead zone configuration: 0.7 = 70% of viewport (15% margin on each side)
+    this.deadZoneSize = 0.7;
   }
   
   initialize(gameEngine) {
@@ -264,18 +266,19 @@ class DOMRenderer extends RendererInterface {
       const currentScrollY = boardEl.scrollTop;
       
       // Calculate desired scroll position
-      // Logic: Don't auto-scroll if player is within middle 50% of viewport
+      // Logic: Don't auto-scroll if player is within dead zone (configurable % of viewport)
       // If player goes outside that area, scroll by exactly how much the queen moves (tile + gap)
       
       // Calculate where player would be on screen with current scroll
       const playerScreenX = playerPixelX - currentScrollX;
       const playerScreenY = playerPixelY - currentScrollY;
       
-      // Middle 50% of viewport = 25% margin on each side (25% to 75%)
-      const deadZoneLeft = viewportWidth * 0.25;
-      const deadZoneRight = viewportWidth * 0.75;
-      const deadZoneTop = viewportHeight * 0.25;
-      const deadZoneBottom = viewportHeight * 0.75;
+      // Dead zone: configurable size (default 70% = 15% margin on each side)
+      const deadZoneMargin = (1 - this.deadZoneSize) / 2; // e.g., 0.15 for 70% dead zone
+      const deadZoneLeft = viewportWidth * deadZoneMargin;
+      const deadZoneRight = viewportWidth * (1 - deadZoneMargin);
+      const deadZoneTop = viewportHeight * deadZoneMargin;
+      const deadZoneBottom = viewportHeight * (1 - deadZoneMargin);
       
       // Update debug overlay to show dead zone
       this._updateDeadZoneDebug(deadZoneLeft, deadZoneTop, deadZoneRight - deadZoneLeft, deadZoneBottom - deadZoneTop);
@@ -293,25 +296,25 @@ class DOMRenderer extends RendererInterface {
         scrollX = playerPixelX - (viewportWidth / 2);
         scrollY = playerPixelY - (viewportHeight / 2);
       } else {
-        // Not first frame - check if player is outside middle 50%
+        // Not first frame - check if player is outside dead zone
         // If outside, scroll by exactly how much the queen moves (tile + gap)
         // This matches the distance between tile centers, preventing drift
         
         if (playerScreenX < deadZoneLeft) {
-          // Player too far left - scroll right by one tile spacing (tile width + gap)
-          scrollX = currentScrollX + totalTileWidth;
-        } else if (playerScreenX > deadZoneRight) {
-          // Player too far right - scroll left by one tile spacing (tile width + gap)
+          // Player too far left - scroll LEFT (decrease scrollX) to move board right, bringing player right
           scrollX = currentScrollX - totalTileWidth;
+        } else if (playerScreenX > deadZoneRight) {
+          // Player too far right - scroll RIGHT (increase scrollX) to move board left, bringing player left
+          scrollX = currentScrollX + totalTileWidth;
         }
         // If player is within dead zone horizontally, don't scroll horizontally
         
         if (playerScreenY < deadZoneTop) {
-          // Player too far up - scroll down by one tile spacing (tile height + gap)
-          scrollY = currentScrollY + totalTileHeight;
-        } else if (playerScreenY > deadZoneBottom) {
-          // Player too far down - scroll up by one tile spacing (tile height + gap)
+          // Player too far up - scroll UP (decrease scrollY) to move board down, bringing player down
           scrollY = currentScrollY - totalTileHeight;
+        } else if (playerScreenY > deadZoneBottom) {
+          // Player too far down - scroll DOWN (increase scrollY) to move board up, bringing player up
+          scrollY = currentScrollY + totalTileHeight;
         }
         // If player is within dead zone vertically, don't scroll vertically
       }
