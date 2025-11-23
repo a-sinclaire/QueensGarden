@@ -26,6 +26,10 @@ Simply open `index.html` in a modern web browser. No installation or build proce
 
 See `game rules` file for complete rules.
 
+## Version History
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes and version updates.
+
 ## Project Structure
 
 ```
@@ -51,6 +55,12 @@ The game is built with a clean separation of concerns:
 - **Configurable Rules**: All game rules are in `js/config/game-rules.js`
 
 ## Development
+
+### Version Management
+
+- **Version numbers** (`js/config/version.js`): Only bump for releases. Follow semantic versioning (major.minor.patch).
+- **Cache-busting** (`?cb=` in `index.html`): Increment this number whenever you deploy changes to force browsers to reload. This is separate from version numbers - you can increment it multiple times between version bumps.
+- **Changelog**: Update `CHANGELOG.md` whenever you bump the version number.
 
 ### Adding New Features
 
