@@ -21,10 +21,11 @@
     /* Ensure board is centered and scrollable */
     justify-content: flex-start;
     align-items: flex-start;
-    width: fit-content;
-    min-width: 100%;
-    overflow-x: auto;
-    overflow-y: auto;
+    /* Width will be set by JavaScript to viewport size */
+    /* Remove min-width to allow JavaScript to constrain it */
+    min-width: unset !important;
+    overflow-x: scroll !important;
+    overflow-y: scroll !important;
     /* Center player position */
     scroll-behavior: smooth;
     /* Ensure board can scroll in all directions */
