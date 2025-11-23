@@ -218,14 +218,47 @@ class DOMRenderer extends RendererInterface {
         const scrollX = playerPixelX - (viewportWidth / 2);
         const scrollY = playerPixelY - (viewportHeight / 2);
         
-        // Scroll to center the player
-        // Use instant scrolling on mobile (smooth looks bad), smooth on desktop
-        const isMobile = window.innerWidth <= 768;
-        boardEl.scrollTo({
-          left: Math.max(0, scrollX),
-          top: Math.max(0, scrollY),
-          behavior: isMobile ? 'auto' : 'smooth'
-        });
+        // Get current scroll position to check if we need to scroll
+        const currentScrollX = boardEl.scrollLeft;
+        const currentScrollY = boardEl.scrollTop;
+        
+        // Calculate max scroll positions
+        const maxScrollX = Math.max(0, boardEl.scrollWidth - viewportWidth);
+        const maxScrollY = Math.max(0, boardEl.scrollHeight - viewportHeight);
+        
+        // Clamp scroll values to valid range
+        const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
+        const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
+        
+        // Only scroll if position changed significantly (more than 1px)
+        const scrollThreshold = 1;
+        const needsScrollX = Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
+        const needsScrollY = Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
+        
+        if (needsScrollX || needsScrollY) {
+          // Use instant scrolling on mobile (smooth looks bad), smooth on desktop
+          const isMobile = window.innerWidth <= 768;
+          boardEl.scrollTo({
+            left: finalScrollX,
+            top: finalScrollY,
+            behavior: isMobile ? 'auto' : 'smooth'
+          });
+          
+          // Debug log for down scrolling issue
+          if (window.innerWidth <= 768 && needsScrollY) {
+            console.log('Scrolling Y:', {
+              playerPixelY,
+              viewportHeight,
+              scrollY,
+              currentScrollY,
+              finalScrollY,
+              maxScrollY,
+              scrollHeight: boardEl.scrollHeight,
+              clientHeight: boardEl.clientHeight,
+              canScroll: boardEl.scrollHeight > boardEl.clientHeight
+            });
+          }
+        }
       });
     });
   }

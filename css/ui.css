@@ -59,6 +59,8 @@
     align-items: flex-start;
     /* Ensure container can scroll */
     position: relative;
+    /* Allow touch scrolling */
+    touch-action: pan-x pan-y;
   }
 }
 
