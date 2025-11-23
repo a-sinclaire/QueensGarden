@@ -296,10 +296,13 @@ class DOMRenderer extends RendererInterface {
           
           // If scroll didn't apply (still at 0,0), try scrollTo as fallback
           if ((actualScrollX === 0 && finalScrollX > 0) || (actualScrollY === 0 && finalScrollY > 0)) {
+            const warnMsg = `Scroll failed! Expected: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}, Got: X=${Math.round(actualScrollX)} Y=${Math.round(actualScrollY)}`;
             console.warn('Direct scroll failed, trying scrollTo:', {
               expected: { x: finalScrollX, y: finalScrollY },
               actual: { x: actualScrollX, y: actualScrollY }
             });
+            // Show on-screen console
+            addMobileConsoleLog(warnMsg, 'warn');
             // Try scrollTo with auto behavior first
             boardEl.scrollTo({
               left: finalScrollX,

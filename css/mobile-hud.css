@@ -172,6 +172,25 @@
   word-break: break-all;
 }
 
+.debug-console {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 215, 0, 0.3);
+  font-family: monospace;
+  font-size: 0.6rem;
+  color: #ffd700;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.debug-console .console-warn {
+  color: #ffaa00;
+}
+
+.debug-console .console-error {
+  color: #ff4444;
+}
+
 @media (max-width: 768px) {
   .mobile-hud {
     display: block;
