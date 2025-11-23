@@ -1,0 +1,54 @@
+/**
+ * Cards CSS
+ * Card-specific styling
+ */
+
+.card-suit {
+  font-size: 1.2rem;
+}
+
+.card-rank {
+  font-size: 1rem;
+}
+
+.suit-hearts {
+  color: #e94560;
+}
+
+.suit-diamonds {
+  color: #e94560;
+}
+
+.suit-clubs {
+  color: var(--text-color);
+}
+
+.suit-spades {
+  color: var(--text-color);
+}
+
+/* Card types */
+.card-type-ace {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card-type-jack {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.card-type-queen {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.card-type-king {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.card-type-wall {
+  background: linear-gradient(135deg, #434343 0%, #000000 100%);
+}
+
+.card-type-number {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+

@@ -1,0 +1,162 @@
+/**
+ * Main CSS
+ * Core styles and layout
+ */
+
+:root {
+  /* Colors - can be themed later */
+  --bg-color: #1a1a2e;
+  --surface-color: #16213e;
+  --text-color: #eaeaea;
+  --accent-color: #0f3460;
+  --border-color: #533483;
+  --health-color: #e94560;
+  --party-color: #00d9ff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+}
+
+#game-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  background-color: var(--surface-color);
+  padding: 1rem 2rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+header h1 {
+  font-size: 2rem;
+  color: var(--party-color);
+}
+
+/* Setup Screen */
+.setup-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.setup-screen h2 {
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+}
+
+.queen-selection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  max-width: 500px;
+}
+
+.queen-btn {
+  padding: 1.5rem 2rem;
+  font-size: 1.2rem;
+  background-color: var(--surface-color);
+  color: var(--text-color);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.queen-btn:hover {
+  background-color: var(--accent-color);
+  border-color: var(--party-color);
+  transform: translateY(-2px);
+}
+
+.queen-btn:active {
+  transform: translateY(0);
+}
+
+/* Game Screen */
+.game-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.game-layout {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Notifications */
+.notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 1rem 2rem;
+  background-color: var(--health-color);
+  color: white;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  z-index: 1000;
+  display: none;
+  animation: fadeInOut 2s ease;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Game Over Screen */
+.game-over-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.game-over-screen h2 {
+  font-size: 3rem;
+  margin-bottom: 2rem;
+}
+
+#restart-btn {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  background-color: var(--party-color);
+  color: var(--bg-color);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#restart-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+

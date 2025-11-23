@@ -1,0 +1,73 @@
+/**
+ * UI Elements CSS
+ * Health, party, kings displays
+ */
+
+.sidebar {
+  width: 250px;
+  background-color: var(--surface-color);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+}
+
+.info-panel {
+  background-color: var(--accent-color);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.info-panel > div {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+#health-display {
+  color: var(--health-color);
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.party-panel, .kings-panel {
+  background-color: var(--accent-color);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.party-panel h3, .kings-panel h3 {
+  margin-bottom: 0.5rem;
+  color: var(--party-color);
+}
+
+#party-display, #kings-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#party-display > div, #kings-display > div {
+  padding: 0.5rem;
+  background-color: var(--surface-color);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+#immunities-display {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--party-color);
+  font-style: italic;
+}
+
+.game-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+

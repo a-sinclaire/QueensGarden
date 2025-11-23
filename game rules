@@ -1,0 +1,103 @@
+# Queen's Garden
+
+## Overview
+Queen's Garden is a tabletop metroidvania game played with a standard set of playing cards (with 2-4s removed).
+
+---
+
+## Setup
+
+### Deck Preparation
+- Remove all 2s, 3s, and 4s from a standard deck of playing cards
+- Remove only your chosen starting Queen from the deck (see Choosing Your Queen below)
+- Shuffle the remaining deck
+
+### Choosing Your Queen
+- Choose one of the four Queens to play as: Clubs, Spades, Diamonds, or Hearts
+- Your chosen Queen determines your starting suit
+- **Important**: Only your starting Queen is removed from the deck - it is separate and will be placed in your Party area
+- The other three Queens remain in the deck and must be discovered in the Queen's Garden
+
+### Components
+- **d20 (Twenty-Sided Die)**: Typically used for two purposes:
+  - **Health Counter**: Set the d20 to 20 to track your current health
+  - **Location Token**: Place the d20 on the card representing your current location on the board
+  - Adjust the d20's face value as your health changes, and move it to track your position
+
+### Party Area
+- Set up a separate area on the table designated as your "Party"
+- Your starting Queen is placed face-up in your Party area
+- All Queens you collect during the game are placed in your Party area
+- **Immunity**: You gain immunity to damage from tiles matching the suit of any Queen currently in your Party
+  - This includes your starting Queen
+  - Example: If you have the Queen of Hearts in your Party, you take no damage from Heart suit tiles
+
+### Starting Conditions
+- **Health**: Start with 20 health (set your d20 to 20)
+- **Starting Position**: Your Queen begins in the central chamber (place your d20 on the central chamber card)
+- **Initial Reveal**: The four cardinal directions (North, South, East, West) from the central chamber are revealed by drawing cards from the top of the deck
+
+---
+
+## Basic Gameplay
+
+### Movement
+- The Queen can move to adjacent tiles (orthogonally adjacent)
+- Movement is one tile per turn
+- Move your d20 token to the new tile when you move
+
+### Tile Interactions
+- **Party Immunity**: You are immune to damage from tiles matching the suit of any Queen currently in your Party
+  - This means tiles of those suits are safe and deal no damage
+- **Other Suit Tiles**: Tiles of suits not represented in your Party deal damage equal to the number on the card when you move onto them
+  - Number cards (5-9): Deal damage equal to their face value
+  - Face cards have special rules (see Special Cards section)
+  - When you take damage, reduce your health and adjust your d20 accordingly
+
+---
+
+## Special Cards
+
+### Aces (Teleporters)
+- Aces function as teleporters
+- You can teleport from one Ace to any other Ace on the board, or back to the central chamber
+- **Same Suit**: Using an Ace of your suit is free
+- **Different Suit**: Using an Ace of a different suit deals 1 damage (Aces are worth 1)
+
+### Jacks (Traps)
+- Jacks cannot be stepped on or passed through
+- **Adjacent Damage**: If you move adjacent to a Jack of a suit not represented in your Party, you take 4 damage
+- This damage applies when the Jack is revealed, even if you don't step on it
+- **Party Immunity**: You are immune to Jacks of suits matching any Queen in your Party (see Queens section)
+
+### Queens (Collectibles)
+- **In the Deck**: Three Queens remain in the deck (the three you did not choose as your starting Queen)
+- These Queens must be discovered and collected as you explore the Queen's Garden
+- **Party Limit**: You can have up to 3 Queens total in your Party (including your starting Queen)
+- **Collecting Queens**: When you move onto a Queen tile, add it to your Party area
+- **Party Immunities**: Each Queen in your Party grants you immunity to damage from tiles of that Queen's suit
+  - This immunity is active as long as the Queen remains in your Party
+  - You gain immunities from all Queens currently in your Party simultaneously
+  - Example: If your Party contains the Queen of Hearts and Queen of Spades, you are immune to damage from both Heart and Spade suit tiles
+
+### Kings (Victory Condition & Abilities)
+- **In the Deck**: All four Kings are in the deck and must be discovered as you explore the Queen's Garden
+- **Victory Condition**: The goal is to collect all 4 Kings
+- **Collection Requirement**: To collect a King, you must have the Queen of the same color but different suit in your Party
+  - Example: To collect the King of Diamonds, you need the Queen of Hearts in your Party (both red suits)
+- **Collection Cost**: When you collect a King, remove the Queen used to collect it from your Party (you lose that Queen's immunity)
+- **Final King Rule**: You must collect the King corresponding to your starting Queen last
+  - Example: If you started as the Queen of Hearts, you must collect the King of Diamonds last
+- **King Ability**: Each owned King can be spent once to destroy/remove any adjacent tile
+  - This ability can only be used once per King
+  - After using this ability, the King is still owned but cannot destroy tiles again
+
+### 10s (Walls)
+- 10s act as walls and cannot be passed through
+- Walls can be destroyed using a King's ability (see Kings section)
+
+---
+
+## Win Condition
+
+Collect all 4 Kings, ensuring that the King corresponding to your starting Queen is collected last.

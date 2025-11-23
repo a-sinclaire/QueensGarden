@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queen's Garden</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/game-board.css">
+    <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="css/ui.css">
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>Queen's Garden</h1>
+        </header>
+        
+        <div id="game-setup" class="setup-screen">
+            <h2>Choose Your Queen</h2>
+            <div class="queen-selection">
+                <button class="queen-btn" data-suit="hearts">Queen of Hearts ♥</button>
+                <button class="queen-btn" data-suit="diamonds">Queen of Diamonds ♦</button>
+                <button class="queen-btn" data-suit="clubs">Queen of Clubs ♣</button>
+                <button class="queen-btn" data-suit="spades">Queen of Spades ♠</button>
+            </div>
+        </div>
+        
+        <div id="game-play" class="game-screen" style="display: none;">
+            <div class="game-layout">
+                <aside class="sidebar">
+                    <div class="info-panel">
+                        <div id="turn-display">Turn: 0</div>
+                        <div id="health-display">Health: 20/20</div>
+                        <div id="deck-size">Deck: 0</div>
+                        <div id="destroy-mode" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background-color: var(--health-color); border-radius: 4px;">
+                            <strong>Destroy Mode Active</strong><br>
+                            <small>Click adjacent tiles to destroy (Press X to cancel)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="party-panel">
+                        <h3>Party</h3>
+                        <div id="party-display"></div>
+                        <div id="immunities-display"></div>
+                    </div>
+                    
+                    <div class="kings-panel">
+                        <h3>Collected Kings</h3>
+                        <div id="kings-display"></div>
+                        <div id="king-abilities" style="margin-top: 0.5rem;">
+                            <button id="destroy-mode-btn" style="display: none; width: 100%; padding: 0.5rem; background-color: var(--health-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Use King to Destroy Tile (X)
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+                
+                <main class="game-area">
+                    <div id="game-board" class="board-container">
+                        <!-- Board will be rendered here -->
+                    </div>
+                    
+                    <div id="damage-notification" class="notification"></div>
+                    <div id="collection-notification" class="notification"></div>
+                </main>
+            </div>
+            
+            <div id="game-over" class="game-over-screen" style="display: none;">
+                <h2 id="game-over-title"></h2>
+                <button id="restart-btn">New Game</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load game configuration and rules -->
+    <script src="js/config/game-rules.js"></script>
+    <script src="js/config/assets-config.js"></script>
+    
+    <!-- Load models -->
+    <script src="js/models/card.js"></script>
+    <script src="js/models/tile.js"></script>
+    <script src="js/models/player.js"></script>
+    
+    <!-- Load core engine -->
+    <script src="js/core/deck-manager.js"></script>
+    <script src="js/core/rules-engine.js"></script>
+    <script src="js/core/game-engine.js"></script>
+    
+    <!-- Load renderers -->
+    <script src="js/rendering/renderer-interface.js"></script>
+    <script src="js/rendering/console-renderer.js"></script>
+    <script src="js/rendering/dom-renderer.js"></script>
+    
+    <!-- Load main game logic -->
+    <script src="js/main.js"></script>
+</body>
+</html>
+
