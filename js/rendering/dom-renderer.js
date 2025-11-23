@@ -200,7 +200,8 @@ class DOMRenderer extends RendererInterface {
         const viewportHeight = window.innerHeight;
         
         // Calculate actual board content size (tiles only)
-        const padding = 8;
+        // Padding matches CSS: 0.5rem on mobile (8px), 1rem on desktop (16px)
+        const padding = window.innerWidth <= 768 ? 8 : 16;
         const boardContentWidth = (maxX - minX + 1) * totalTileWidth + (padding * 2);
         const boardContentHeight = (maxY - minY + 1) * totalTileHeight + (padding * 2);
         
@@ -250,14 +251,31 @@ class DOMRenderer extends RendererInterface {
         
         // Calculate player tile center position in pixels (relative to board content)
         // Account for the padding we added
-        // Tiles are laid out with gaps between them
+        // Tiles are laid out with gaps between them (gap = 2px)
         // For X: first tile starts at padding + extraPaddingX
         //        each subsequent tile is offset by totalTileWidth (tileWidth + gap)
         //        tile center is at: tileStart + (tileWidth / 2)
+        // Note: The gap is between tiles, so tile positions are: 0, totalTileWidth, 2*totalTileWidth, etc.
         const tileStartX = padding + extraPaddingX + (playerXOffset * totalTileWidth);
         const tileStartY = padding + extraPaddingY + (playerYOffset * totalTileHeight);
+        // Center of tile is exactly at tileStart + (tileWidth / 2)
         const playerPixelX = tileStartX + (tileWidth / 2);
         const playerPixelY = tileStartY + (tileHeight / 2);
+        
+        // Debug: log the calculation to verify it's correct
+        if (window.innerWidth <= 768) {
+          console.log('Tile center calculation:', {
+            playerPos: { x: playerPos.x, y: playerPos.y },
+            bounds: { minX, maxX, minY, maxY },
+            offset: { x: playerXOffset, y: playerYOffset },
+            tileSize: { width: tileWidth, height: tileHeight },
+            totalTileSize: { width: totalTileWidth, height: totalTileHeight },
+            tileStart: { x: tileStartX, y: tileStartY },
+            center: { x: playerPixelX, y: playerPixelY },
+            padding,
+            extraPadding: { x: extraPaddingX, y: extraPaddingY }
+          });
+        }
         
         // Calculate scroll position to center player EXACTLY in viewport
         // This centers the player tile's center point in the viewport center
