@@ -19,6 +19,8 @@ class DOMRenderer extends RendererInterface {
     this.lastScrollY = null;
     // Dead zone configuration: 0.7 = 70% of viewport (15% margin on each side)
     this.deadZoneSize = 0.7;
+    // Track if this is the very first render (game initialization)
+    this.isFirstRender = true;
   }
   
   initialize(gameEngine) {
@@ -35,6 +37,8 @@ class DOMRenderer extends RendererInterface {
     this.lastPlayerPixelY = null;
     this.lastScrollX = null;
     this.lastScrollY = null;
+    // Mark as first render (will center player)
+    this.isFirstRender = true;
   }
   
   render(gameState) {
@@ -287,12 +291,20 @@ class DOMRenderer extends RendererInterface {
       let scrollX = currentScrollX;
       let scrollY = currentScrollY;
       
-      // Check if this is first frame (no stored position)
+      // Check if this is the very first render (game initialization)
+      const isFirstRender = this.isFirstRender;
+      // Check if this is first frame after initialization (no stored position)
       const isFirstFrame = (this.lastPlayerPixelX === null || this.lastPlayerPixelY === null ||
                             this.lastScrollX === null || this.lastScrollY === null);
       
-      if (isFirstFrame) {
-        // First frame - only center if player is outside dead zone or off-screen
+      if (isFirstRender) {
+        // Very first render - always center the player completely
+        scrollX = playerPixelX - (viewportWidth / 2);
+        scrollY = playerPixelY - (viewportHeight / 2);
+        // Mark that we've done the first render
+        this.isFirstRender = false;
+      } else if (isFirstFrame) {
+        // First frame after initialization - only center if player is outside dead zone or off-screen
         // Don't force centering if player is already within the dead zone
         if (playerScreenX < deadZoneLeft || playerScreenX > deadZoneRight || 
             playerScreenX < 0 || playerScreenX > viewportWidth) {
