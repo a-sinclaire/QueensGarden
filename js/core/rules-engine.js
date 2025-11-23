@@ -31,6 +31,14 @@ class RulesEngine {
       }
     }
     
+    // Check if tile is a King (Kings are walls unless you can collect them)
+    if (targetTile.card && targetTile.card.getType() === 'king') {
+      const canCollect = this.canCollectKing(targetTile.card, player);
+      if (!canCollect.valid) {
+        return { valid: false, reason: 'Tile is impassable (King - cannot collect)' };
+      }
+    }
+    
     if (!targetTile.isPassable()) {
       return { valid: false, reason: 'Tile is impassable (wall or Jack)' };
     }
