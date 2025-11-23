@@ -13,6 +13,8 @@ class DOMRenderer extends RendererInterface {
     this.selectedKing = null;
     // Track previous player position and scroll for relative scrolling
     this.lastPlayerPos = null;
+    this.lastPlayerPixelX = null;
+    this.lastPlayerPixelY = null;
     this.lastScrollX = null;
     this.lastScrollY = null;
   }
@@ -27,6 +29,8 @@ class DOMRenderer extends RendererInterface {
     this._createDOMStructure();
     // Reset scroll tracking
     this.lastPlayerPos = null;
+    this.lastPlayerPixelX = null;
+    this.lastPlayerPixelY = null;
     this.lastScrollX = null;
     this.lastScrollY = null;
   }
@@ -232,17 +236,11 @@ class DOMRenderer extends RendererInterface {
       // If we have previous position, maintain relative position by scrolling by movement delta
       // Otherwise, center the player
       let scrollX, scrollY;
-      if (this.lastPlayerPos && this.lastScrollX !== null && this.lastScrollY !== null) {
-        // Calculate how much player moved in pixels
-        const lastPlayerXOffset = this.lastPlayerPos.x - minX;
-        const lastPlayerYOffset = maxY - this.lastPlayerPos.y;
-        const lastTileStartX = padding + (lastPlayerXOffset * totalTileWidth);
-        const lastTileStartY = padding + (lastPlayerYOffset * totalTileHeight);
-        const lastPlayerPixelX = lastTileStartX + (tileWidth / 2);
-        const lastPlayerPixelY = lastTileStartY + (tileHeight / 2);
-        
-        const deltaX = playerPixelX - lastPlayerPixelX;
-        const deltaY = playerPixelY - lastPlayerPixelY;
+      if (this.lastPlayerPixelX !== null && this.lastPlayerPixelY !== null && 
+          this.lastScrollX !== null && this.lastScrollY !== null) {
+        // Calculate how much player moved in pixels (using stored pixel positions)
+        const deltaX = playerPixelX - this.lastPlayerPixelX;
+        const deltaY = playerPixelY - this.lastPlayerPixelY;
         
         // Scroll by the same amount the player moved to maintain relative position
         scrollX = this.lastScrollX + deltaX;
@@ -363,12 +361,16 @@ class DOMRenderer extends RendererInterface {
         
         // Store current position and scroll for next frame
         this.lastPlayerPos = { x: playerPos.x, y: playerPos.y };
+        this.lastPlayerPixelX = playerPixelX;
+        this.lastPlayerPixelY = playerPixelY;
         this.lastScrollX = finalScrollX;
         this.lastScrollY = finalScrollY;
       } else {
         // Player didn't move significantly, but update stored position and scroll
         // (in case user manually scrolled)
         this.lastPlayerPos = { x: playerPos.x, y: playerPos.y };
+        this.lastPlayerPixelX = playerPixelX;
+        this.lastPlayerPixelY = playerPixelY;
         this.lastScrollX = currentScrollX;
         this.lastScrollY = currentScrollY;
       }
