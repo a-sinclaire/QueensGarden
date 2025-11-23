@@ -9,6 +9,42 @@ let destroyMode = false;
 let selectedKing = null;
 let keyboardHandler = null; // Store reference to keyboard event handler
 
+/**
+ * Mobile console logger - shows console messages on screen
+ */
+function addMobileConsoleLog(message, type = 'log') {
+  if (window.innerWidth <= 768) {
+    const consoleEl = document.getElementById('mobile-console');
+    if (consoleEl) {
+      consoleEl.style.display = 'block';
+      const logEntry = document.createElement('div');
+      logEntry.className = `console-${type}`;
+      logEntry.textContent = `[${type.toUpperCase()}] ${message}`;
+      consoleEl.appendChild(logEntry);
+      // Keep only last 5 messages
+      while (consoleEl.children.length > 5) {
+        consoleEl.removeChild(consoleEl.firstChild);
+      }
+      // Auto-scroll to bottom
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+  }
+}
+
+// Override console methods to show on mobile
+if (typeof window !== 'undefined') {
+  const originalWarn = console.warn;
+  const originalError = console.error;
+  console.warn = function(...args) {
+    originalWarn.apply(console, args);
+    addMobileConsoleLog(args.join(' '), 'warn');
+  };
+  console.error = function(...args) {
+    originalError.apply(console, args);
+    addMobileConsoleLog(args.join(' '), 'error');
+  };
+}
+
 // Initialize game when page loads
 document.addEventListener('DOMContentLoaded', () => {
   setupQueenSelection();
