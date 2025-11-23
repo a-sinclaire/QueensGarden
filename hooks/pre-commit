@@ -94,9 +94,9 @@ if echo "$CHANGED_FILES" | grep -qE "(js/main\.js|index\.html)" && \
   DOC_WARNINGS=$((DOC_WARNINGS + 1))
 fi
 
-# Check for UI/feature additions (exclude cache-busting)
+# Check for UI/feature additions (exclude cache-busting and script src lines)
 if echo "$CHANGED_FILES" | grep -qE "(js/rendering/dom-renderer\.js|index\.html|css/)" && \
-   git diff --cached -- "$CHANGED_FILES" | grep -vE "(cb=|cache-bust)" | grep -qE "(class=|id=|data-|button|modal|hud|display|feature)"; then
+   git diff --cached -- "$CHANGED_FILES" | grep -vE "(cb=|cache-bust|script src|\.js\?cb)" | grep -qE "(class=|id=|data-|button|modal|hud|display|feature|<[a-z])"; then
   echo "  ⚠️  UI elements or features modified!"
   echo "     → Check if README.md 'How to Play' or feature descriptions need updating"
   DOC_WARNINGS=$((DOC_WARNINGS + 1))
