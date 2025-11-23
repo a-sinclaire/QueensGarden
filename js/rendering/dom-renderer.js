@@ -200,6 +200,25 @@ class DOMRenderer extends RendererInterface {
     // Simple approach: Let CSS handle the container, we just scroll to center the player
     // Use setTimeout to ensure DOM is fully rendered and browser has recalculated layout
     setTimeout(() => {
+      // Always update stored scroll position from actual scroll (handles manual scrolling)
+      // This ensures relative scrolling works even if user manually scrolled
+      const actualScrollX = boardEl.scrollLeft;
+      const actualScrollY = boardEl.scrollTop;
+      
+      // If scroll position changed significantly from what we stored, user manually scrolled
+      // Update stored position to match actual scroll
+      if (this.lastScrollX !== null && this.lastScrollY !== null) {
+        const scrollThreshold = 5; // 5px threshold to detect manual scrolling
+        if (Math.abs(actualScrollX - this.lastScrollX) > scrollThreshold ||
+            Math.abs(actualScrollY - this.lastScrollY) > scrollThreshold) {
+          // User manually scrolled - update stored scroll but keep player pixel position
+          // This way relative position is maintained from the new scroll position
+          this.lastScrollX = actualScrollX;
+          this.lastScrollY = actualScrollY;
+          // Recalculate player pixel position to match new scroll
+          // (will be done below, but we need to update lastPlayerPixelX/Y too)
+        }
+      }
       // Calculate tile size (including gap) - match CSS values
       const tileWidth = window.innerWidth <= 480 ? 65 : 70;
       const tileHeight = window.innerWidth <= 480 ? 85 : 90;
@@ -228,7 +247,7 @@ class DOMRenderer extends RendererInterface {
       const playerPixelX = tileStartX + (tileWidth / 2);
       const playerPixelY = tileStartY + (tileHeight / 2);
       
-      // Get current scroll position
+      // Use the actual scroll position (may have been updated above if user manually scrolled)
       const currentScrollX = boardEl.scrollLeft;
       const currentScrollY = boardEl.scrollTop;
       
@@ -367,12 +386,12 @@ class DOMRenderer extends RendererInterface {
         this.lastScrollY = finalScrollY;
       } else {
         // Player didn't move significantly, but update stored position and scroll
-        // (in case user manually scrolled)
+        // Always use actual scroll position (handles manual scrolling)
         this.lastPlayerPos = { x: playerPos.x, y: playerPos.y };
         this.lastPlayerPixelX = playerPixelX;
         this.lastPlayerPixelY = playerPixelY;
-        this.lastScrollX = currentScrollX;
-        this.lastScrollY = currentScrollY;
+        this.lastScrollX = boardEl.scrollLeft; // Use actual scroll, not stored
+        this.lastScrollY = boardEl.scrollTop;  // Use actual scroll, not stored
       }
     }, 0); // Use setTimeout(0) to ensure DOM is fully rendered
   }
