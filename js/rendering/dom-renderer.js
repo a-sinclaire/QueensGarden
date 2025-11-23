@@ -229,26 +229,20 @@ class DOMRenderer extends RendererInterface {
         boardEl.style.paddingBottom = `${extraPaddingY}px`;
         
         // Force display properties for scrolling
-        boardEl.style.display = 'block';
+        boardEl.style.display = 'flex'; // Keep flex for board layout
+        boardEl.style.flexDirection = 'column'; // Keep column direction
         boardEl.style.position = 'relative';
+        boardEl.style.setProperty('box-sizing', 'border-box', 'important');
         
         // Ensure overflow is set to allow scrolling
         boardEl.style.overflowX = 'scroll';
         boardEl.style.overflowY = 'scroll';
         
-        // Now we need to ensure the CONTENT (the board grid) is sized correctly
-        // The board grid is created in _updateBoard, but we need to ensure it's wide/tall enough
-        // The grid itself should be at least totalBoardWidth x totalBoardHeight
-        // We'll set this on the board grid element (the flex container with tiles)
-        const boardGrid = boardEl; // boardEl IS the grid container
-        // Set the grid's content size via a wrapper or by ensuring tiles span the full width
-        // Actually, the grid is flex-direction: column, so each row is a flex item
-        // The width comes from the widest row, height from sum of rows
-        // We need to ensure the grid content is at least totalBoardWidth x totalBoardHeight
-        // We can do this by setting a min-width/min-height on the grid's content box
-        // But since it's flex, we need to ensure the rows are wide enough
-        // For now, let's try setting the grid's internal sizing
-        boardEl.style.setProperty('box-sizing', 'border-box', 'important');
+        // The board grid content (rows) will naturally be boardContentWidth x boardContentHeight
+        // With padding, the total scrollable area will be:
+        // scrollWidth = paddingLeft + boardContentWidth + paddingRight
+        // scrollHeight = paddingTop + boardContentHeight + paddingBottom
+        // This should make scrollWidth > clientWidth and scrollHeight > clientHeight
         
         // Calculate player's position relative to board bounds
         const playerXOffset = playerPos.x - minX;
