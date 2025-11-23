@@ -250,7 +250,7 @@ class DOMRenderer extends RendererInterface {
       
       // Calculate desired scroll position
       // Logic: Don't auto-scroll if player is within middle 50% of viewport
-      // If player goes outside that area, scroll by exactly one tile width/height
+      // If player goes outside that area, scroll by exactly how much the queen moves (tile + gap)
       
       // Calculate where player would be on screen with current scroll
       const playerScreenX = playerPixelX - currentScrollX;
@@ -276,22 +276,23 @@ class DOMRenderer extends RendererInterface {
         scrollY = playerPixelY - (viewportHeight / 2);
       } else {
         // Not first frame - check if player is outside middle 50%
-        // If outside, scroll by exactly one tile width/height in that direction
+        // If outside, scroll by exactly how much the queen moves (tile + gap)
+        // This matches the distance between tile centers, preventing drift
         
         if (playerScreenX < deadZoneLeft) {
-          // Player too far left - scroll right by one tile width
+          // Player too far left - scroll right by one tile spacing (tile width + gap)
           scrollX = currentScrollX + totalTileWidth;
         } else if (playerScreenX > deadZoneRight) {
-          // Player too far right - scroll left by one tile width
+          // Player too far right - scroll left by one tile spacing (tile width + gap)
           scrollX = currentScrollX - totalTileWidth;
         }
         // If player is within dead zone horizontally, don't scroll horizontally
         
         if (playerScreenY < deadZoneTop) {
-          // Player too far up - scroll down by one tile height
+          // Player too far up - scroll down by one tile spacing (tile height + gap)
           scrollY = currentScrollY + totalTileHeight;
         } else if (playerScreenY > deadZoneBottom) {
-          // Player too far down - scroll up by one tile height
+          // Player too far down - scroll up by one tile spacing (tile height + gap)
           scrollY = currentScrollY - totalTileHeight;
         }
         // If player is within dead zone vertically, don't scroll vertically
