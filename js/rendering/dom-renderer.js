@@ -479,6 +479,17 @@ class DOMRenderer extends RendererInterface {
       const needsScrollX = Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
       const needsScrollY = Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
       
+      // Debug: Log what we're about to do
+      if (window.innerWidth <= 768 && playerMoved) {
+        const debugEl = document.getElementById('debug-content');
+        if (debugEl) {
+          const currentDebug = debugEl.textContent;
+          debugEl.textContent = currentDebug + `\n\nWill scroll: X=${needsScrollX} Y=${needsScrollY}`;
+          debugEl.textContent += `\nfinalScrollX=${Math.round(finalScrollX)} finalScrollY=${Math.round(finalScrollY)}`;
+          debugEl.textContent += `\ncurrentScrollX=${Math.round(currentScrollX)} currentScrollY=${Math.round(currentScrollY)}`;
+        }
+      }
+      
       if (needsScrollX || needsScrollY) {
         const isMobile = window.innerWidth <= 768;
         
@@ -519,8 +530,20 @@ class DOMRenderer extends RendererInterface {
       this.lastPlayerPixelX = playerPixelX;
       this.lastPlayerPixelY = playerPixelY;
       // Use actual scroll position from DOM (handles manual scrolling and programmatic scrolling)
-      this.lastScrollX = boardEl.scrollLeft;
-      this.lastScrollY = boardEl.scrollTop;
+      // Read AFTER any scrolling has happened
+      const finalActualScrollX = boardEl.scrollLeft;
+      const finalActualScrollY = boardEl.scrollTop;
+      this.lastScrollX = finalActualScrollX;
+      this.lastScrollY = finalActualScrollY;
+      
+      // Debug: Log final scroll position
+      if (window.innerWidth <= 768 && playerMoved) {
+        const debugEl = document.getElementById('debug-content');
+        if (debugEl) {
+          const currentDebug = debugEl.textContent;
+          debugEl.textContent = currentDebug + `\n\nAfter scroll: X=${Math.round(finalActualScrollX)} Y=${Math.round(finalActualScrollY)}`;
+        }
+      }
       
       // If user manually scrolled, make sure stored positions reflect the manual scroll
       // This ensures next movement maintains relative position from manual scroll
