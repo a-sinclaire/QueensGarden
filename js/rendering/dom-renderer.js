@@ -188,6 +188,22 @@ class DOMRenderer extends RendererInterface {
     // Simple approach: Let CSS handle the container, we just scroll to center the player
     // Use setTimeout to ensure DOM is fully rendered and browser has recalculated layout
     setTimeout(() => {
+      // Calculate expected board height first to ensure container is tall enough
+      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
+      const gap = 2;
+      const totalTileHeight = tileHeight + gap;
+      const computedStyle = window.getComputedStyle(boardEl);
+      const padding = parseInt(computedStyle.paddingTop) || parseInt(computedStyle.paddingLeft) || (window.innerWidth <= 768 ? 8 : 16);
+      const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
+      
+      // Ensure container is tall enough to enable scrolling
+      const viewportHeight = boardEl.clientHeight || window.innerHeight;
+      if (expectedBoardHeight > viewportHeight && boardEl.scrollHeight <= viewportHeight) {
+        boardEl.style.minHeight = `${expectedBoardHeight}px`;
+        // Force reflow
+        void boardEl.offsetHeight;
+      }
+      
       // Calculate tile size (including gap) - match CSS values
       const tileWidth = window.innerWidth <= 480 ? 65 : 70;
       const tileHeight = window.innerWidth <= 480 ? 85 : 90;
@@ -264,7 +280,21 @@ class DOMRenderer extends RendererInterface {
             boardEl.scrollLeft = finalScrollX;
           }
           if (needsScrollY) {
-            boardEl.scrollTop = finalScrollY;
+            // If board isn't tall enough to scroll, force it to be taller first
+            if (boardEl.scrollHeight <= boardEl.clientHeight && expectedBoardHeight > boardEl.clientHeight) {
+              // Force the container to be tall enough to enable scrolling
+              boardEl.style.minHeight = `${expectedBoardHeight}px`;
+              // Force reflow
+              void boardEl.offsetHeight;
+              // Recalculate after forcing height
+              const newScrollHeight = boardEl.scrollHeight;
+              const newMaxScrollY = Math.max(0, newScrollHeight - viewportHeight);
+              const newFinalScrollY = Math.max(0, Math.min(scrollY, newMaxScrollY));
+              boardEl.scrollTop = newFinalScrollY;
+            } else {
+              boardEl.scrollTop = finalScrollY;
+            }
+            
             // Verify it worked
             if (Math.abs(boardEl.scrollTop - finalScrollY) > 1) {
               console.warn('Down scroll failed!', {
@@ -277,20 +307,9 @@ class DOMRenderer extends RendererInterface {
                 actualScrollHeight: boardEl.scrollHeight,
                 boardHeight,
                 viewportHeight,
-                canScroll: boardEl.scrollHeight > boardEl.clientHeight
+                canScroll: boardEl.scrollHeight > boardEl.clientHeight,
+                minHeight: boardEl.style.minHeight
               });
-              
-              // If board isn't tall enough, try to force it by setting min-height
-              if (boardEl.scrollHeight <= boardEl.clientHeight && expectedBoardHeight > boardEl.clientHeight) {
-                console.warn('Board not tall enough! Forcing min-height...');
-                boardEl.style.minHeight = `${expectedBoardHeight}px`;
-                // Try scrolling again after forcing height
-                setTimeout(() => {
-                  const newMaxScrollY = Math.max(0, boardEl.scrollHeight - viewportHeight);
-                  const newFinalScrollY = Math.max(0, Math.min(scrollY, newMaxScrollY));
-                  boardEl.scrollTop = newFinalScrollY;
-                }, 10);
-              }
             }
           }
         } else {
