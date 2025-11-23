@@ -71,6 +71,21 @@ class DOMRenderer extends RendererInterface {
   _createDOMStructure() {
     // This will be implemented with full HTML structure
     // For now, just ensure container exists
+    
+    // Create debug overlay for dead zone visualization
+    const gameArea = document.querySelector('.game-area');
+    if (gameArea && !document.getElementById('debug-deadzone')) {
+      const debugOverlay = document.createElement('div');
+      debugOverlay.id = 'debug-deadzone';
+      debugOverlay.style.cssText = `
+        position: fixed;
+        pointer-events: none;
+        border: 2px dashed rgba(255, 0, 0, 0.5);
+        z-index: 10000;
+        display: none;
+      `;
+      gameArea.appendChild(debugOverlay);
+    }
   }
   
   _updateHealth(health) {
@@ -261,6 +276,9 @@ class DOMRenderer extends RendererInterface {
       const deadZoneRight = viewportWidth * 0.75;
       const deadZoneTop = viewportHeight * 0.25;
       const deadZoneBottom = viewportHeight * 0.75;
+      
+      // Update debug overlay to show dead zone
+      this._updateDeadZoneDebug(deadZoneLeft, deadZoneTop, deadZoneRight - deadZoneLeft, deadZoneBottom - deadZoneTop);
       
       // Start with current scroll position
       let scrollX = currentScrollX;
@@ -907,6 +925,21 @@ class DOMRenderer extends RendererInterface {
   
   clearHighlights() {
     // Clear all highlights
+  }
+  
+  /**
+   * Update debug overlay to show the dead zone (middle 50% of viewport)
+   * @private
+   */
+  _updateDeadZoneDebug(left, top, width, height) {
+    const debugOverlay = document.getElementById('debug-deadzone');
+    if (debugOverlay) {
+      debugOverlay.style.display = 'block';
+      debugOverlay.style.left = `${left}px`;
+      debugOverlay.style.top = `${top}px`;
+      debugOverlay.style.width = `${width}px`;
+      debugOverlay.style.height = `${height}px`;
+    }
   }
 }
 
