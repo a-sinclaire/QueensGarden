@@ -302,22 +302,7 @@ class DOMRenderer extends RendererInterface {
               boardEl.scrollTop = finalScrollY;
             }
             
-            // Verify it worked
-            if (Math.abs(boardEl.scrollTop - finalScrollY) > 1) {
-              console.warn('Down scroll failed!', {
-                playerPos,
-                playerPixelY,
-                scrollY,
-                finalScrollY,
-                maxScrollY,
-                expectedBoardHeight,
-                actualScrollHeight: boardEl.scrollHeight,
-                boardHeight,
-                viewportHeight,
-                canScroll: boardEl.scrollHeight > boardEl.clientHeight,
-                minHeight: boardEl.style.minHeight
-              });
-            }
+            // Scroll verification removed - scrolling is working correctly
           }
         } else {
           // Desktop: smooth scrolling

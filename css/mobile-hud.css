@@ -196,9 +196,9 @@
     display: block;
   }
   
-  /* Show debug panel on mobile */
+  /* Debug panel hidden - scrolling is working */
   .hud-debug {
-    display: block !important;
+    display: none !important;
   }
   
   /* HUD is fixed position, doesn't need padding */
