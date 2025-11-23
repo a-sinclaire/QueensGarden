@@ -222,21 +222,29 @@ class DOMRenderer extends RendererInterface {
         // The CONTENT inside (the board grid + padding) should be larger to enable scrolling
         // Set container to viewport size (this is what clientWidth/clientHeight will be)
         // Use !important to override any CSS that might be setting width/height
+        // Force the container to exact pixel values using min/max to prevent expansion
         boardEl.style.setProperty('width', `${viewportWidth}px`, 'important');
         boardEl.style.setProperty('height', `${viewportHeight}px`, 'important');
+        boardEl.style.setProperty('min-width', `${viewportWidth}px`, 'important');
+        boardEl.style.setProperty('min-height', `${viewportHeight}px`, 'important');
         boardEl.style.setProperty('max-width', `${viewportWidth}px`, 'important');
         boardEl.style.setProperty('max-height', `${viewportHeight}px`, 'important');
-        // Remove min-width/min-height - they override width/height
-        boardEl.style.removeProperty('min-width');
-        boardEl.style.removeProperty('min-height');
         
         // Also set on the parent game-area to ensure it doesn't expand
         const gameArea = boardEl.parentElement;
         if (gameArea) {
           gameArea.style.setProperty('width', `${viewportWidth}px`, 'important');
+          gameArea.style.setProperty('height', `${viewportHeight}px`, 'important');
+          gameArea.style.setProperty('min-width', `${viewportWidth}px`, 'important');
+          gameArea.style.setProperty('min-height', `${viewportHeight}px`, 'important');
           gameArea.style.setProperty('max-width', `${viewportWidth}px`, 'important');
+          gameArea.style.setProperty('max-height', `${viewportHeight}px`, 'important');
           gameArea.style.setProperty('overflow', 'hidden', 'important');
         }
+        
+        // Force immediate reflow to apply styles
+        void boardEl.offsetWidth;
+        void boardEl.offsetHeight;
         
         // Add padding to board container to create scrollable space
         // The padding makes the content area larger than the viewport
