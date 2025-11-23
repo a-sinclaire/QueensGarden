@@ -330,9 +330,17 @@ class DOMRenderer extends RendererInterface {
       const playerPixelX = tileStartX + (tileWidth / 2);
       const playerPixelY = tileStartY + (tileHeight / 2);
       
-      // Use the actual scroll position
-      const currentScrollX = boardEl.scrollLeft;
-      const currentScrollY = boardEl.scrollTop;
+      // Use the actual scroll position, but if we just rebuilt the board, use the preserved scroll
+      // This prevents using a reset scroll position (0,0) after innerHTML = ''
+      const currentScrollX = (this._savedScrollBeforeRebuild && this._savedScrollBeforeRebuild.x !== undefined)
+        ? this._savedScrollBeforeRebuild.x
+        : boardEl.scrollLeft;
+      const currentScrollY = (this._savedScrollBeforeRebuild && this._savedScrollBeforeRebuild.y !== undefined)
+        ? this._savedScrollBeforeRebuild.y
+        : boardEl.scrollTop;
+      
+      // Clear the saved scroll after using it (so next frame uses actual scroll)
+      this._savedScrollBeforeRebuild = null;
       
       // Calculate desired scroll position
       // Logic: Don't auto-scroll if player is within dead zone (configurable % of viewport)
