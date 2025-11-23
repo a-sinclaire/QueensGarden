@@ -243,7 +243,7 @@ class DOMRenderer extends RendererInterface {
       const playerPixelX = tileStartX + (tileWidth / 2);
       const playerPixelY = tileStartY + (tileHeight / 2);
       
-      // Use the actual scroll position (may have been updated above if user manually scrolled)
+      // Use the actual scroll position
       const currentScrollX = boardEl.scrollLeft;
       const currentScrollY = boardEl.scrollTop;
       
@@ -261,29 +261,40 @@ class DOMRenderer extends RendererInterface {
       let scrollX = currentScrollX;
       let scrollY = currentScrollY;
       
-      // Only adjust scroll if player is too close to edges
-      if (playerScreenX < marginX) {
-        // Player too close to left edge - scroll to keep them at margin
-        scrollX = playerPixelX - marginX;
-      } else if (playerScreenX > viewportWidth - marginX) {
-        // Player too close to right edge - scroll to keep them at margin
-        scrollX = playerPixelX - (viewportWidth - marginX);
-      }
+      // Check if this is first frame (no stored position)
+      const isFirstFrame = (this.lastPlayerPixelX === null || this.lastPlayerPixelY === null ||
+                            this.lastScrollX === null || this.lastScrollY === null);
       
-      if (playerScreenY < marginY) {
-        // Player too close to top edge - scroll to keep them at margin
-        scrollY = playerPixelY - marginY;
-      } else if (playerScreenY > viewportHeight - marginY) {
-        // Player too close to bottom edge - scroll to keep them at margin
-        scrollY = playerPixelY - (viewportHeight - marginY);
-      }
-      
-      // If no previous position stored, initialize it (first frame)
-      if (this.lastPlayerPixelX === null || this.lastPlayerPixelY === null ||
-          this.lastScrollX === null || this.lastScrollY === null) {
-        // First time - center the player
-        scrollX = playerPixelX - (viewportWidth / 2);
-        scrollY = playerPixelY - (viewportHeight / 2);
+      if (isFirstFrame) {
+        // First frame - only center if player is off-screen or near edges
+        // Check if player is visible and not near edges
+        const centerMarginX = viewportWidth * 0.3; // Larger margin for initial centering
+        const centerMarginY = viewportHeight * 0.3;
+        
+        if (playerScreenX < centerMarginX || playerScreenX > viewportWidth - centerMarginX ||
+            playerScreenY < centerMarginY || playerScreenY > viewportHeight - centerMarginY) {
+          // Player is off-center or near edges - center them
+          scrollX = playerPixelX - (viewportWidth / 2);
+          scrollY = playerPixelY - (viewportHeight / 2);
+        }
+        // Otherwise keep current scroll (player is already well-positioned)
+      } else {
+        // Not first frame - only adjust scroll if player is too close to edges
+        if (playerScreenX < marginX) {
+          // Player too close to left edge - scroll to keep them at margin
+          scrollX = playerPixelX - marginX;
+        } else if (playerScreenX > viewportWidth - marginX) {
+          // Player too close to right edge - scroll to keep them at margin
+          scrollX = playerPixelX - (viewportWidth - marginX);
+        }
+        
+        if (playerScreenY < marginY) {
+          // Player too close to top edge - scroll to keep them at margin
+          scrollY = playerPixelY - marginY;
+        } else if (playerScreenY > viewportHeight - marginY) {
+          // Player too close to bottom edge - scroll to keep them at margin
+          scrollY = playerPixelY - (viewportHeight - marginY);
+        }
       }
       
       // Calculate minimum board height needed to allow scrolling to player position
@@ -389,6 +400,15 @@ class DOMRenderer extends RendererInterface {
         this.lastPlayerPixelY = playerPixelY;
         this.lastScrollX = boardEl.scrollLeft; // Use actual scroll, not stored
         this.lastScrollY = boardEl.scrollTop;  // Use actual scroll, not stored
+      }
+      
+      // If user manually scrolled, make sure stored positions reflect the manual scroll
+      // This ensures next movement maintains relative position from manual scroll
+      if (detectedManualScroll && !needsScrollX && !needsScrollY) {
+        // User manually scrolled but we didn't programmatically scroll
+        // Update stored scroll to match manual scroll (already done above, but ensure it's correct)
+        this.lastScrollX = boardEl.scrollLeft;
+        this.lastScrollY = boardEl.scrollTop;
       }
     }, 0); // Use setTimeout(0) to ensure DOM is fully rendered
   }
