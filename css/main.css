@@ -25,6 +25,14 @@ body {
   background-color: var(--bg-color);
   color: var(--text-color);
   min-height: 100vh;
+  /* Prevent text selection and touch callouts on mobile */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* Prevent pull-to-refresh on mobile */
+  overscroll-behavior-y: contain;
 }
 
 #game-container {

@@ -28,6 +28,28 @@
   position: relative;
   cursor: pointer;
   transition: all 0.2s ease;
+  /* Touch-friendly sizing on mobile */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Larger tiles on mobile */
+@media (max-width: 768px) {
+  .tile {
+    width: 70px;
+    height: 90px;
+    min-width: 70px;
+    min-height: 90px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tile {
+    width: 65px;
+    height: 85px;
+    min-width: 65px;
+    min-height: 85px;
+  }
 }
 
 .tile:hover {
