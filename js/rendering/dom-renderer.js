@@ -306,7 +306,7 @@ class DOMRenderer extends RendererInterface {
         // Wait for size to apply, then scroll
         // Use longer delay on actual mobile devices to ensure styles are applied
         const isMobile = window.innerWidth <= 768;
-        const delay = isMobile ? 200 : 50; // Longer delay for mobile
+        const delay = isMobile ? 300 : 100; // Longer delay for mobile to ensure constraint applies
         
         setTimeout(() => {
           // Force multiple reflows to ensure sizes are fully applied
@@ -314,6 +314,22 @@ class DOMRenderer extends RendererInterface {
           void boardEl.offsetHeight;
           void boardEl.scrollWidth;
           void boardEl.scrollHeight;
+          
+          // Check if container is properly constrained, if not, force it again
+          const currentWidth = boardEl.clientWidth;
+          const currentHeight = boardEl.clientHeight;
+          if (Math.abs(currentWidth - viewportWidth) > 1 || Math.abs(currentHeight - viewportHeight) > 1) {
+            console.warn(`Container still not constrained before scroll! Expected ${viewportWidth}x${viewportHeight}, got ${currentWidth}x${currentHeight}, forcing again...`);
+            boardEl.style.setProperty('width', `${viewportWidth}px`, 'important');
+            boardEl.style.setProperty('height', `${viewportHeight}px`, 'important');
+            boardEl.style.setProperty('min-width', `${viewportWidth}px`, 'important');
+            boardEl.style.setProperty('min-height', `${viewportHeight}px`, 'important');
+            boardEl.style.setProperty('max-width', `${viewportWidth}px`, 'important');
+            boardEl.style.setProperty('max-height', `${viewportHeight}px`, 'important');
+            // Force reflow
+            void boardEl.offsetWidth;
+            void boardEl.offsetHeight;
+          }
           
           // Wait a bit more for browser to process
           requestAnimationFrame(() => {
