@@ -299,11 +299,15 @@ Viewport: ${viewportWidth}x${viewportHeight}`;
             viewport: { width: viewportWidth, height: viewportHeight }
           });
           
-          // Scroll the board container smoothly
+          // Scroll the board container
+          // Use instant scroll on first render to avoid dead space, smooth for subsequent moves
+          const isFirstRender = !boardEl.dataset.hasScrolled;
+          boardEl.dataset.hasScrolled = 'true';
+          
           boardEl.scrollTo({
             left: finalScrollX,
             top: finalScrollY,
-            behavior: 'smooth'
+            behavior: isFirstRender ? 'auto' : 'smooth' // Instant on first render
           });
         }, 50);
       });
