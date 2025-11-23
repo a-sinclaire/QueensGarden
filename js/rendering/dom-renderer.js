@@ -182,13 +182,12 @@ class DOMRenderer extends RendererInterface {
   }
   
   /**
-   * Center board on player position (mobile)
+   * Center board on player position (mobile) - Camera Handler
    */
   _centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY) {
-    // Use requestAnimationFrame to ensure DOM is updated
+    // Use multiple requestAnimationFrame calls to ensure DOM is fully rendered
     requestAnimationFrame(() => {
-      // Wait for layout to settle
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         // Calculate tile size (including gap) - match CSS values
         const tileWidth = window.innerWidth <= 480 ? 65 : 70; // Mobile tile width
         const tileHeight = window.innerWidth <= 480 ? 85 : 90; // Mobile tile height
@@ -214,40 +213,38 @@ class DOMRenderer extends RendererInterface {
         const scrollX = playerPixelX - (viewportWidth / 2);
         const scrollY = playerPixelY - (viewportHeight / 2);
         
-        // Get actual scrollable dimensions
-        const scrollWidth = boardEl.scrollWidth;
-        const scrollHeight = boardEl.scrollHeight;
+        // Ensure board container is large enough to scroll
+        // Set minimum size to allow scrolling in all directions
+        const boardWidth = (maxX - minX + 1) * totalTileWidth + (padding * 2);
+        const boardHeight = (maxY - minY + 1) * totalTileHeight + (padding * 2);
+        const minBoardWidth = Math.max(boardWidth, viewportWidth * 2);
+        const minBoardHeight = Math.max(boardHeight, viewportHeight * 2);
         
-        // Calculate maximum scroll positions
-        const maxScrollX = Math.max(0, scrollWidth - viewportWidth);
-        const maxScrollY = Math.max(0, scrollHeight - viewportHeight);
+        boardEl.style.minWidth = `${minBoardWidth}px`;
+        boardEl.style.minHeight = `${minBoardHeight}px`;
         
-        // Clamp scroll values to valid range
-        const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
-        const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
-        
-        // Debug logging (can remove later)
-        console.log('Centering:', {
-          playerPos,
-          playerPixelX,
-          playerPixelY,
-          scrollX,
-          scrollY,
-          scrollWidth,
-          scrollHeight,
-          maxScrollX,
-          maxScrollY,
-          finalScrollX,
-          finalScrollY
-        });
-        
-        // Scroll the board container smoothly
-        boardEl.scrollTo({
-          left: finalScrollX,
-          top: finalScrollY,
-          behavior: 'smooth'
-        });
-      }, 50);
+        // Wait a moment for size to apply, then scroll
+        setTimeout(() => {
+          // Get actual scrollable dimensions after size is set
+          const scrollWidth = boardEl.scrollWidth;
+          const scrollHeight = boardEl.scrollHeight;
+          
+          // Calculate maximum scroll positions
+          const maxScrollX = Math.max(0, scrollWidth - viewportWidth);
+          const maxScrollY = Math.max(0, scrollHeight - viewportHeight);
+          
+          // Clamp scroll values to valid range
+          const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
+          const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
+          
+          // Scroll the board container smoothly
+          boardEl.scrollTo({
+            left: finalScrollX,
+            top: finalScrollY,
+            behavior: 'smooth'
+          });
+        }, 10);
+      });
     });
   }
   
@@ -270,31 +267,6 @@ class DOMRenderer extends RendererInterface {
     maxX += 2;
     minY -= 2;
     maxY += 2;
-    
-    // Ensure board container is large enough to scroll in all directions
-    // Add extra padding to board container to allow scrolling
-    if (window.innerWidth <= 768) {
-      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
-      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
-      const gap = 2;
-      const totalTileWidth = tileWidth + gap;
-      const totalTileHeight = tileHeight + gap;
-      
-      // Calculate board dimensions
-      const boardWidth = (maxX - minX + 1) * totalTileWidth;
-      const boardHeight = (maxY - minY + 1) * totalTileHeight;
-      
-      // Ensure board is at least viewport size + extra for scrolling
-      const minBoardWidth = Math.max(boardWidth, window.innerWidth * 2);
-      const minBoardHeight = Math.max(boardHeight, window.innerHeight * 2);
-      
-      // Set minimum size to allow scrolling in all directions
-      boardEl.style.minWidth = `${minBoardWidth}px`;
-      boardEl.style.minHeight = `${minBoardHeight}px`;
-      
-      // Center the board container on the player's position
-      this._centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY);
-    }
     
     // Clear board
     boardEl.innerHTML = '';
@@ -488,6 +460,11 @@ class DOMRenderer extends RendererInterface {
       }
       
       boardEl.appendChild(row);
+    }
+    
+    // Center camera on player AFTER board is rendered (mobile only)
+    if (window.innerWidth <= 768) {
+      this._centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY);
     }
   }
   
