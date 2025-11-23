@@ -206,17 +206,13 @@ class DOMRenderer extends RendererInterface {
       const actualScrollY = boardEl.scrollTop;
       
       // If scroll position changed significantly from what we stored, user manually scrolled
-      // Update stored position to match actual scroll
+      // We'll update stored positions after calculating current player pixel position
+      let detectedManualScroll = false;
       if (this.lastScrollX !== null && this.lastScrollY !== null) {
         const scrollThreshold = 5; // 5px threshold to detect manual scrolling
         if (Math.abs(actualScrollX - this.lastScrollX) > scrollThreshold ||
             Math.abs(actualScrollY - this.lastScrollY) > scrollThreshold) {
-          // User manually scrolled - update stored scroll but keep player pixel position
-          // This way relative position is maintained from the new scroll position
-          this.lastScrollX = actualScrollX;
-          this.lastScrollY = actualScrollY;
-          // Recalculate player pixel position to match new scroll
-          // (will be done below, but we need to update lastPlayerPixelX/Y too)
+          detectedManualScroll = true;
         }
       }
       // Calculate tile size (including gap) - match CSS values
