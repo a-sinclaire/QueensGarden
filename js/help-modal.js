@@ -84,32 +84,101 @@ class HelpModal {
   }
   
   async loadContent() {
+    // Try multiple path variations for GitHub Pages compatibility
+    const basePaths = ['./', '/QueensGarden/', ''];
+    
     // Load Controls
-    try {
-      const controlsResponse = await fetch('CONTROLS.md');
-      const controlsText = await controlsResponse.text();
-      this.tabPanes.controls.innerHTML = this.markdownToHTML(controlsText);
-    } catch (e) {
-      this.tabPanes.controls.innerHTML = '<p>Could not load controls information.</p>';
+    let controlsLoaded = false;
+    for (const basePath of basePaths) {
+      try {
+        const controlsResponse = await fetch(`${basePath}CONTROLS.md`);
+        if (controlsResponse.ok) {
+          const controlsText = await controlsResponse.text();
+          this.tabPanes.controls.innerHTML = this.markdownToHTML(controlsText);
+          controlsLoaded = true;
+          break;
+        }
+      } catch (e) {
+        // Try next path
+        continue;
+      }
+    }
+    if (!controlsLoaded) {
+      this.tabPanes.controls.innerHTML = this.getDefaultControls();
     }
     
     // Load Rules
-    try {
-      const rulesResponse = await fetch('game rules');
-      const rulesText = await rulesResponse.text();
-      this.tabPanes.rules.innerHTML = this.markdownToHTML(rulesText);
-    } catch (e) {
+    let rulesLoaded = false;
+    for (const basePath of basePaths) {
+      try {
+        const rulesResponse = await fetch(`${basePath}game rules`);
+        if (rulesResponse.ok) {
+          const rulesText = await rulesResponse.text();
+          this.tabPanes.rules.innerHTML = this.markdownToHTML(rulesText);
+          rulesLoaded = true;
+          break;
+        }
+      } catch (e) {
+        // Try next path
+        continue;
+      }
+    }
+    if (!rulesLoaded) {
       this.tabPanes.rules.innerHTML = '<p>Could not load rules information.</p>';
     }
     
     // Load Credits
-    try {
-      const creditsResponse = await fetch('CREDITS.md');
-      const creditsText = await creditsResponse.text();
-      this.tabPanes.credits.innerHTML = this.markdownToHTML(creditsText);
-    } catch (e) {
-      this.tabPanes.credits.innerHTML = '<p>Could not load credits information.</p>';
+    let creditsLoaded = false;
+    for (const basePath of basePaths) {
+      try {
+        const creditsResponse = await fetch(`${basePath}CREDITS.md`);
+        if (creditsResponse.ok) {
+          const creditsText = await creditsResponse.text();
+          this.tabPanes.credits.innerHTML = this.markdownToHTML(creditsText);
+          creditsLoaded = true;
+          break;
+        }
+      } catch (e) {
+        // Try next path
+        continue;
+      }
     }
+    if (!creditsLoaded) {
+      this.tabPanes.credits.innerHTML = this.getDefaultCredits();
+    }
+  }
+  
+  getDefaultControls() {
+    return `
+      <h3>Controls</h3>
+      <h4>Movement</h4>
+      <ul>
+        <li><strong>Arrow Keys</strong> or <strong>WASD</strong>: Move your Queen</li>
+        <li><strong>Arrow Up / W</strong>: Move North</li>
+        <li><strong>Arrow Down / S</strong>: Move South</li>
+        <li><strong>Arrow Left / A</strong>: Move West</li>
+        <li><strong>Arrow Right / D</strong>: Move East</li>
+      </ul>
+      <h4>Special Actions</h4>
+      <ul>
+        <li><strong>X</strong>: Toggle Destroy Mode (when you have Kings with unused abilities)</li>
+      </ul>
+      <h4>Teleportation</h4>
+      <ul>
+        <li>Stand on an <strong>Ace</strong> to see teleport destinations</li>
+        <li>Click on highlighted destinations to teleport</li>
+      </ul>
+    `;
+  }
+  
+  getDefaultCredits() {
+    return `
+      <h3>Credits</h3>
+      <h4>Game Design</h4>
+      <p><strong>Willow McKeon</strong> - Game design and rules</p>
+      <h4>Web Implementation</h4>
+      <p>Development team - Web-based implementation</p>
+    `;
   }
   
   /**
