@@ -20,6 +20,9 @@ class GameEngine {
    * Initialize a new game
    */
   initialize(startingQueen) {
+    // Store starting queen for reference
+    this.startingQueen = startingQueen;
+    
     // Create starting Queen card
     const queenCard = new Card(startingQueen.suit, 'queen');
     

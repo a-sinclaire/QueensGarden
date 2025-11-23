@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/game-board.css">
     <link rel="stylesheet" href="css/cards.css">
     <link rel="stylesheet" href="css/ui.css">
+    <link rel="stylesheet" href="css/mobile-hud.css">
 </head>
 <body>
     <div id="game-container">
@@ -84,6 +85,18 @@
                 </aside>
                 
                 <main class="game-area">
+                    <!-- Mobile HUD -->
+                    <div id="mobile-hud" class="mobile-hud">
+                        <div id="mobile-health" class="hud-health">
+                            <span class="hud-label">HP</span>
+                            <span id="mobile-health-value" class="hud-value">20/20</span>
+                        </div>
+                        <div id="mobile-party" class="hud-party">
+                            <span class="hud-label">Party</span>
+                            <div id="mobile-party-suits" class="party-suits"></div>
+                        </div>
+                    </div>
+                    
                     <div id="game-board" class="board-container">
                         <!-- Board will be rendered here -->
                     </div>

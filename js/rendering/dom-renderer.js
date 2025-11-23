@@ -41,6 +41,9 @@ class DOMRenderer extends RendererInterface {
     // Update collected Kings
     this._updateKings(gameState.player.collectedKings);
     
+    // Update mobile HUD
+    this._updateMobileHUD(gameState.player);
+    
     // Update board
     this._updateBoard(gameState.board, gameState.player.position);
     
@@ -101,6 +104,73 @@ class DOMRenderer extends RendererInterface {
     }
   }
   
+  /**
+   * Update mobile HUD (health and party display)
+   */
+  _updateMobileHUD(player) {
+    // Update mobile health display
+    const mobileHealthEl = document.getElementById('mobile-health-value');
+    if (mobileHealthEl) {
+      mobileHealthEl.textContent = `${player.health}/${GAME_RULES.startingHealth}`;
+    }
+    
+    // Update mobile party display (compact suit display)
+    const mobilePartyEl = document.getElementById('mobile-party-suits');
+    if (mobilePartyEl && this.gameEngine && this.gameEngine.startingQueen) {
+      // Get starting queen suit (own suit)
+      const ownSuit = this.gameEngine.startingQueen.suit;
+      
+      // Combine party and kings
+      const partySuits = player.party.map(q => ({ type: 'queen', suit: q.suit }));
+      const kingSuits = player.collectedKings.map(k => ({ type: 'king', suit: k.suit }));
+      const allSuits = [...partySuits, ...kingSuits];
+      
+      // Sort: own suit first, then others
+      allSuits.sort((a, b) => {
+        if (a.suit === ownSuit) return -1;
+        if (b.suit === ownSuit) return 1;
+        return 0;
+      });
+      
+      // Render suits
+      mobilePartyEl.innerHTML = allSuits.map(item => {
+        const suitSymbol = this._getSuitSymbol(item.suit);
+        const isOwn = item.suit === ownSuit;
+        const isKing = item.type === 'king';
+        return `<span class="party-suit ${isOwn ? 'own-suit' : ''} ${isKing ? 'king' : ''}" title="${item.type === 'king' ? 'King' : 'Queen'} of ${item.suit}">${suitSymbol}</span>`;
+      }).join('');
+      
+      // If no party/kings, show placeholder
+      if (allSuits.length === 0) {
+        mobilePartyEl.innerHTML = '<span style="opacity: 0.5; font-size: 0.8rem;">None</span>';
+      }
+    }
+  }
+  
+  /**
+   * Center board on player position (mobile)
+   */
+  _centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY) {
+    // Calculate tile size (including gap)
+    const tileWidth = 70; // Mobile tile width
+    const tileHeight = 90; // Mobile tile height
+    const gap = 2;
+    const totalTileWidth = tileWidth + gap;
+    const totalTileHeight = tileHeight + gap;
+    
+    // Calculate player's position relative to board bounds
+    const playerXOffset = playerPos.x - minX;
+    const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
+    
+    // Calculate scroll position to center player
+    const scrollX = (playerXOffset * totalTileWidth) - (window.innerWidth / 2) + (totalTileWidth / 2);
+    const scrollY = (playerYOffset * totalTileHeight) - (window.innerHeight / 2) + (totalTileHeight / 2);
+    
+    // Scroll the board container
+    boardEl.scrollLeft = Math.max(0, scrollX);
+    boardEl.scrollTop = Math.max(0, scrollY);
+  }
+  
   _updateBoard(board, playerPos) {
     const boardEl = document.getElementById('game-board');
     if (!boardEl) return;
@@ -120,6 +190,12 @@ class DOMRenderer extends RendererInterface {
     maxX += 2;
     minY -= 2;
     maxY += 2;
+    
+    // Center player position on mobile
+    if (window.innerWidth <= 768) {
+      // Center the board container on the player's position
+      this._centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY);
+    }
     
     // Clear board
     boardEl.innerHTML = '';
