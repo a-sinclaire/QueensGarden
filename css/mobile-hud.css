@@ -196,9 +196,9 @@
     display: block;
   }
   
-  /* Debug panel hidden - scrolling is working */
+  /* Debug panel visible for debugging */
   .hud-debug {
-    display: none !important;
+    display: block !important;
   }
   
   /* HUD is fixed position, doesn't need padding */
@@ -211,7 +211,7 @@
     }
     
     .hud-debug {
-      display: none !important; /* Keep hidden even on small screens */
+      display: block !important; /* Show for debugging */
       max-height: 100px;
       font-size: 0.6rem;
     }
