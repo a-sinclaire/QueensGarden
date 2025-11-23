@@ -206,13 +206,6 @@ class DOMRenderer extends RendererInterface {
       const viewportWidth = boardEl.clientWidth || window.innerWidth;
       const viewportHeight = boardEl.clientHeight || window.innerHeight;
       
-      // Ensure container is tall enough to enable scrolling
-      if (expectedBoardHeight > viewportHeight && boardEl.scrollHeight <= viewportHeight) {
-        boardEl.style.minHeight = `${expectedBoardHeight}px`;
-        // Force reflow
-        void boardEl.offsetHeight;
-      }
-      
       // Calculate player's position relative to board bounds
       const playerXOffset = playerPos.x - minX;
       const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
@@ -235,11 +228,17 @@ class DOMRenderer extends RendererInterface {
         playerPixelY + (viewportHeight / 2) // Tall enough to scroll down to center player
       );
       
-      // Ensure container is tall enough to enable scrolling
-      if (minBoardHeightForScroll > viewportHeight && boardEl.scrollHeight < minBoardHeightForScroll) {
+      // CRITICAL: Override height: 100% when content is taller than viewport
+      // Setting min-height alone doesn't work when height: 100% is set
+      // We need to override height itself to allow the container to grow
+      if (minBoardHeightForScroll > viewportHeight) {
+        // Override height: 100% with explicit height or min-height
+        // Use height: auto to let content determine size, or set explicit height
+        boardEl.style.height = 'auto';
         boardEl.style.minHeight = `${minBoardHeightForScroll}px`;
-        // Force reflow
+        // Force reflow to apply changes
         void boardEl.offsetHeight;
+        void boardEl.scrollHeight;
       }
       
       // Force browser to recalculate layout - read multiple times to ensure it's updated
