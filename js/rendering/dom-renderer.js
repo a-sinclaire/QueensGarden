@@ -248,39 +248,40 @@ class DOMRenderer extends RendererInterface {
       const currentScrollY = boardEl.scrollTop;
       
       // Calculate desired scroll position
-      // If we have previous position, maintain relative position by scrolling by movement delta
-      // Otherwise, center the player
-      let scrollX, scrollY;
-      if (this.lastPlayerPixelX !== null && this.lastPlayerPixelY !== null && 
-          this.lastScrollX !== null && this.lastScrollY !== null) {
-        // Calculate how much player moved in pixels (using stored pixel positions)
-        const deltaX = playerPixelX - this.lastPlayerPixelX;
-        const deltaY = playerPixelY - this.lastPlayerPixelY;
-        
-        // Scroll by the same amount the player moved to maintain relative position
-        scrollX = this.lastScrollX + deltaX;
-        scrollY = this.lastScrollY + deltaY;
-        
-        // But ensure player stays visible (within 20% margin of viewport edges)
-        const marginX = viewportWidth * 0.2;
-        const marginY = viewportHeight * 0.2;
-        const playerScreenX = playerPixelX - scrollX;
-        const playerScreenY = playerPixelY - scrollY;
-        
-        // Adjust scroll if player is too close to edges
-        if (playerScreenX < marginX) {
-          scrollX = playerPixelX - marginX;
-        } else if (playerScreenX > viewportWidth - marginX) {
-          scrollX = playerPixelX - (viewportWidth - marginX);
-        }
-        
-        if (playerScreenY < marginY) {
-          scrollY = playerPixelY - marginY;
-        } else if (playerScreenY > viewportHeight - marginY) {
-          scrollY = playerPixelY - (viewportHeight - marginY);
-        }
-      } else {
-        // First time or no previous position - center the player
+      // Only scroll if player is getting too close to viewport edges (within 20% margin)
+      // Otherwise, keep current scroll position (don't move camera)
+      const marginX = viewportWidth * 0.2;
+      const marginY = viewportHeight * 0.2;
+      
+      // Calculate where player would be on screen with current scroll
+      const playerScreenX = playerPixelX - currentScrollX;
+      const playerScreenY = playerPixelY - currentScrollY;
+      
+      // Start with current scroll position (don't move unless needed)
+      let scrollX = currentScrollX;
+      let scrollY = currentScrollY;
+      
+      // Only adjust scroll if player is too close to edges
+      if (playerScreenX < marginX) {
+        // Player too close to left edge - scroll to keep them at margin
+        scrollX = playerPixelX - marginX;
+      } else if (playerScreenX > viewportWidth - marginX) {
+        // Player too close to right edge - scroll to keep them at margin
+        scrollX = playerPixelX - (viewportWidth - marginX);
+      }
+      
+      if (playerScreenY < marginY) {
+        // Player too close to top edge - scroll to keep them at margin
+        scrollY = playerPixelY - marginY;
+      } else if (playerScreenY > viewportHeight - marginY) {
+        // Player too close to bottom edge - scroll to keep them at margin
+        scrollY = playerPixelY - (viewportHeight - marginY);
+      }
+      
+      // If no previous position stored, initialize it (first frame)
+      if (this.lastPlayerPixelX === null || this.lastPlayerPixelY === null ||
+          this.lastScrollX === null || this.lastScrollY === null) {
+        // First time - center the player
         scrollX = playerPixelX - (viewportWidth / 2);
         scrollY = playerPixelY - (viewportHeight / 2);
       }
