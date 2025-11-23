@@ -211,13 +211,14 @@ class DOMRenderer extends RendererInterface {
         const totalBoardHeight = boardContentHeight + (extraPaddingY * 2);
         
         // Set board container size to allow scrolling
-        // Use explicit pixel values to ensure scrolling works
-        boardEl.style.width = `${totalBoardWidth}px`;
-        boardEl.style.height = `${totalBoardHeight}px`;
-        boardEl.style.minWidth = `${totalBoardWidth}px`;
-        boardEl.style.minHeight = `${totalBoardHeight}px`;
-        boardEl.style.maxWidth = 'none';
-        boardEl.style.maxHeight = 'none';
+        // IMPORTANT: The container needs to be larger than its viewport to be scrollable
+        // We set explicit pixel values and use !important to override CSS
+        boardEl.style.setProperty('width', `${totalBoardWidth}px`, 'important');
+        boardEl.style.setProperty('height', `${totalBoardHeight}px`, 'important');
+        boardEl.style.setProperty('min-width', `${totalBoardWidth}px`, 'important');
+        boardEl.style.setProperty('min-height', `${totalBoardHeight}px`, 'important');
+        boardEl.style.setProperty('max-width', 'none', 'important');
+        boardEl.style.setProperty('max-height', 'none', 'important');
         
         // Add padding to board container to create scrollable space
         boardEl.style.paddingLeft = `${extraPaddingX}px`;
@@ -228,6 +229,10 @@ class DOMRenderer extends RendererInterface {
         // Force display properties for scrolling
         boardEl.style.display = 'block';
         boardEl.style.position = 'relative';
+        
+        // Ensure overflow is set to allow scrolling
+        boardEl.style.overflowX = 'scroll';
+        boardEl.style.overflowY = 'scroll';
         
         // Calculate player's position relative to board bounds
         const playerXOffset = playerPos.x - minX;
@@ -255,28 +260,53 @@ class DOMRenderer extends RendererInterface {
           // Wait a bit more for browser to process
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
+              // Force a reflow to ensure styles are applied
+              void boardEl.offsetWidth;
+              void boardEl.offsetHeight;
+              
               // Get actual scrollable dimensions after size is set
               const scrollWidth = boardEl.scrollWidth;
               const scrollHeight = boardEl.scrollHeight;
               const clientWidth = boardEl.clientWidth;
               const clientHeight = boardEl.clientHeight;
+              const offsetWidth = boardEl.offsetWidth;
+              const offsetHeight = boardEl.offsetHeight;
           
               // Debug: check if board is actually scrollable
               const canScrollX = scrollWidth > clientWidth;
               const canScrollY = scrollHeight > clientHeight;
               
               console.log('Board dimensions:', {
-                width: boardEl.offsetWidth,
-                height: boardEl.offsetHeight,
+                offsetWidth,
+                offsetHeight,
                 scrollWidth,
                 scrollHeight,
                 clientWidth,
                 clientHeight,
                 viewportWidth,
                 viewportHeight,
+                totalBoardWidth,
+                totalBoardHeight,
                 canScrollX,
-                canScrollY
+                canScrollY,
+                computedWidth: window.getComputedStyle(boardEl).width,
+                computedHeight: window.getComputedStyle(boardEl).height
               });
+              
+              // If board isn't scrollable, log detailed diagnostics
+              if (!canScrollX || !canScrollY) {
+                const computedStyle = window.getComputedStyle(boardEl);
+                console.warn('Board not scrollable! Diagnostics:', {
+                  inlineWidth: boardEl.style.width,
+                  inlineHeight: boardEl.style.height,
+                  computedWidth: computedStyle.width,
+                  computedHeight: computedStyle.height,
+                  computedMaxWidth: computedStyle.maxWidth,
+                  computedMaxHeight: computedStyle.maxHeight,
+                  parentWidth: boardEl.parentElement?.clientWidth,
+                  parentHeight: boardEl.parentElement?.clientHeight
+                });
+              }
               
               // Calculate maximum scroll positions using clientWidth/Height (actual viewport)
               const maxScrollX = Math.max(0, scrollWidth - clientWidth);
