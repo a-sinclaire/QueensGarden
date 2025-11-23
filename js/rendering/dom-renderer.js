@@ -218,13 +218,29 @@ class DOMRenderer extends RendererInterface {
         const scrollX = playerPixelX - (viewportWidth / 2);
         const scrollY = playerPixelY - (viewportHeight / 2);
         
+        // Force browser to recalculate layout before reading scroll dimensions
+        // This is critical when moving down - new rows increase scrollHeight
+        void boardEl.offsetHeight; // Force reflow
+        
         // Get current scroll position to check if we need to scroll
         const currentScrollX = boardEl.scrollLeft;
         const currentScrollY = boardEl.scrollTop;
         
+        // Calculate expected board dimensions from bounds (more reliable than reading scrollHeight)
+        const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
+        const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
+        
+        // Use actual scroll dimensions, but fall back to expected if they seem wrong
+        const actualScrollWidth = boardEl.scrollWidth;
+        const actualScrollHeight = boardEl.scrollHeight;
+        
+        // If actual is significantly smaller than expected, use expected (browser hasn't updated yet)
+        const boardWidth = actualScrollWidth >= expectedBoardWidth ? actualScrollWidth : expectedBoardWidth;
+        const boardHeight = actualScrollHeight >= expectedBoardHeight ? actualScrollHeight : expectedBoardHeight;
+        
         // Calculate max scroll positions
-        const maxScrollX = Math.max(0, boardEl.scrollWidth - viewportWidth);
-        const maxScrollY = Math.max(0, boardEl.scrollHeight - viewportHeight);
+        const maxScrollX = Math.max(0, boardWidth - viewportWidth);
+        const maxScrollY = Math.max(0, boardHeight - viewportHeight);
         
         // Clamp scroll values to valid range
         const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
