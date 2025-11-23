@@ -286,11 +286,19 @@ class DOMRenderer extends RendererInterface {
           const isFirstRender = !boardEl.dataset.hasScrolled;
           boardEl.dataset.hasScrolled = 'true';
           
-          boardEl.scrollTo({
-            left: finalScrollX,
-            top: finalScrollY,
-            behavior: isFirstRender ? 'auto' : 'smooth' // Instant on first render
-          });
+          // Force scroll - use scrollLeft/scrollTop for immediate effect
+          // This ensures the scroll actually happens
+          boardEl.scrollLeft = finalScrollX;
+          boardEl.scrollTop = finalScrollY;
+          
+          // Then use scrollTo for smooth behavior on subsequent moves
+          if (!isFirstRender) {
+            boardEl.scrollTo({
+              left: finalScrollX,
+              top: finalScrollY,
+              behavior: 'smooth'
+            });
+          }
           
           // Update debug display after scroll (use delay to read actual scroll position)
           const updateDebug = () => {
