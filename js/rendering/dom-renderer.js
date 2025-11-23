@@ -227,6 +227,21 @@ class DOMRenderer extends RendererInterface {
       const scrollX = playerPixelX - (viewportWidth / 2);
       const scrollY = playerPixelY - (viewportHeight / 2);
       
+      // Calculate minimum board height needed to allow scrolling to player position
+      // Need: playerPixelY + (viewportHeight / 2) to allow scrolling down
+      // And: playerPixelY - (viewportHeight / 2) >= 0 to allow scrolling up
+      const minBoardHeightForScroll = Math.max(
+        expectedBoardHeight, // At least as tall as content
+        playerPixelY + (viewportHeight / 2) // Tall enough to scroll down to center player
+      );
+      
+      // Ensure container is tall enough to enable scrolling
+      if (minBoardHeightForScroll > viewportHeight && boardEl.scrollHeight < minBoardHeightForScroll) {
+        boardEl.style.minHeight = `${minBoardHeightForScroll}px`;
+        // Force reflow
+        void boardEl.offsetHeight;
+      }
+      
       // Force browser to recalculate layout - read multiple times to ensure it's updated
       void boardEl.offsetHeight;
       void boardEl.scrollHeight;
@@ -239,13 +254,9 @@ class DOMRenderer extends RendererInterface {
       // Calculate expected board width from bounds (height already calculated above)
       const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
       
-      // Use actual scroll dimensions - they reflect the real rendered size
-      // If actual is smaller than expected and we need to scroll, use expected (browser hasn't updated)
-      const needsScrollDown = scrollY > 0 && actualScrollHeight <= viewportHeight;
+      // Use the larger of actual scroll height or minimum needed height
       const boardWidth = actualScrollWidth > 0 ? actualScrollWidth : expectedBoardWidth;
-      const boardHeight = needsScrollDown && expectedBoardHeight > actualScrollHeight 
-        ? expectedBoardHeight 
-        : Math.max(actualScrollHeight, expectedBoardHeight);
+      const boardHeight = Math.max(actualScrollHeight, minBoardHeightForScroll);
       
       // Calculate max scroll positions
       const maxScrollX = Math.max(0, boardWidth - viewportWidth);
