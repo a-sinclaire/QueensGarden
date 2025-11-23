@@ -228,17 +228,26 @@ class DOMRenderer extends RendererInterface {
         playerPixelY + (viewportHeight / 2) // Tall enough to scroll down to center player
       );
       
-      // CRITICAL: Override height: 100% when content is taller than viewport
-      // Setting min-height alone doesn't work when height: 100% is set
-      // We need to override height itself to allow the container to grow
+      // CRITICAL: For scrolling to work, the container must have:
+      // - clientHeight = viewport height (710px) - the visible area
+      // - scrollHeight > clientHeight - the total scrollable content
+      // 
+      // The problem: If we set height: auto, container grows to fit content,
+      // making clientHeight = scrollHeight = no scrolling.
+      //
+      // Solution: Keep container at viewport height, ensure content overflows.
+      // Since container uses flexbox with rows as direct children, rows determine scrollHeight.
+      // We just need to ensure container stays at viewport height.
       if (minBoardHeightForScroll > viewportHeight) {
-        // Override height: 100% with explicit height or min-height
-        // Use height: auto to let content determine size, or set explicit height
-        boardEl.style.height = 'auto';
-        boardEl.style.minHeight = `${minBoardHeightForScroll}px`;
-        // Force reflow to apply changes
+        // Don't set height: auto - that makes container = content (no scrolling)
+        // Keep height at viewport, but remove height: 100% constraint if needed
+        // Actually, height: 100% should be fine if parent allows it
+        // The key is that rows inside make scrollHeight > clientHeight
+        // Just ensure we don't override with height: auto
+        // Force reflow to ensure browser has calculated scrollHeight correctly
         void boardEl.offsetHeight;
         void boardEl.scrollHeight;
+        void boardEl.offsetHeight;
       }
       
       // Force browser to recalculate layout - read multiple times to ensure it's updated
