@@ -214,6 +214,7 @@ class DOMRenderer extends RendererInterface {
         // CRITICAL: The board container must be constrained to viewport size
         // The CONTENT inside (the board grid + padding) should be larger to enable scrolling
         // Set container to viewport size (this is what clientWidth/clientHeight will be)
+        // Use !important to override any CSS that might be setting width/height
         boardEl.style.setProperty('width', `${viewportWidth}px`, 'important');
         boardEl.style.setProperty('height', `${viewportHeight}px`, 'important');
         boardEl.style.setProperty('max-width', `${viewportWidth}px`, 'important');
@@ -221,6 +222,14 @@ class DOMRenderer extends RendererInterface {
         // Remove min-width/min-height - they override width/height
         boardEl.style.removeProperty('min-width');
         boardEl.style.removeProperty('min-height');
+        
+        // Also set on the parent game-area to ensure it doesn't expand
+        const gameArea = boardEl.parentElement;
+        if (gameArea) {
+          gameArea.style.setProperty('width', `${viewportWidth}px`, 'important');
+          gameArea.style.setProperty('max-width', `${viewportWidth}px`, 'important');
+          gameArea.style.setProperty('overflow', 'hidden', 'important');
+        }
         
         // Add padding to board container to create scrollable space
         // The padding makes the content area larger than the viewport
@@ -321,6 +330,18 @@ class DOMRenderer extends RendererInterface {
     // Force a reflow to ensure styles are applied
     void boardEl.offsetWidth;
     void boardEl.offsetHeight;
+    
+    // If container is still not constrained, force it again
+    const currentWidth = boardEl.clientWidth;
+    const currentHeight = boardEl.clientHeight;
+    if (currentWidth !== viewportWidth || currentHeight !== viewportHeight) {
+      console.warn(`Container not constrained! Expected ${viewportWidth}x${viewportHeight}, got ${currentWidth}x${currentHeight}`);
+      boardEl.style.setProperty('width', `${viewportWidth}px`, 'important');
+      boardEl.style.setProperty('height', `${viewportHeight}px`, 'important');
+      // Force another reflow
+      void boardEl.offsetWidth;
+      void boardEl.offsetHeight;
+    }
     
     // Get actual scrollable dimensions after size is set
     const scrollWidth = boardEl.scrollWidth;
