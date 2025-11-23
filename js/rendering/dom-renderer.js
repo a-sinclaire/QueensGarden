@@ -424,51 +424,7 @@ Viewport: ${viewportWidth}x${viewportHeight}`;
                   }, 10);
                 }
               }, 50);
-          
-          // Update debug display after scroll (use delay to read actual scroll position)
-          const updateDebug = () => {
-            const debugEl = document.getElementById('mobile-debug');
-            if (debugEl && window.innerWidth <= 768) {
-              const debugContent = debugEl.querySelector('.debug-content');
-              if (debugContent) {
-                const canScrollX = scrollWidth > viewportWidth;
-                const canScrollY = scrollHeight > viewportHeight;
-                const currentScrollX = Math.round(boardEl.scrollLeft);
-                const currentScrollY = Math.round(boardEl.scrollTop);
-                debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
-Bounds: X[${minX}, ${maxX}] Y[${minY}, ${maxY}]
-Offset: X=${playerXOffset} Y=${playerYOffset}
-Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}
-Scroll: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}
-Board: ${boardEl.offsetWidth}x${boardEl.offsetHeight}
-Scroll: ${scrollWidth}x${scrollHeight}
-CanScroll: X=${canScrollX} Y=${canScrollY}
-MaxScroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}
-Final: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}
-Current: X=${currentScrollX} Y=${currentScrollY}
-Viewport: ${viewportWidth}x${viewportHeight}`;
-              }
-            }
-          };
-          
-          // Update debug display immediately and after scroll
-          updateDebug(); // Show immediately with direct scroll values
-          setTimeout(() => {
-            updateDebug(); // Update again after any scrollTo completes
-          }, isFirstRender ? 50 : 200);
-          
-          // Also log to console for desktop debugging
-          console.log('Camera centering:', {
-            playerPos: { x: playerPos.x, y: playerPos.y },
-            bounds: { minX, maxX, minY, maxY },
-            playerOffset: { x: playerXOffset, y: playerYOffset },
-            playerPixel: { x: playerPixelX, y: playerPixelY },
-            scroll: { x: scrollX, y: scrollY },
-            scrollDims: { width: scrollWidth, height: scrollHeight },
-            maxScroll: { x: maxScrollX, y: maxScrollY },
-            finalScroll: { x: finalScrollX, y: finalScrollY },
-            currentScroll: { x: boardEl.scrollLeft, y: boardEl.scrollTop },
-            viewport: { width: viewportWidth, height: viewportHeight }
+            });
           });
         }, 50);
       });
