@@ -216,6 +216,7 @@ class DOMRenderer extends RendererInterface {
         }
       }
       // Calculate tile size (including gap) - match CSS values
+      // Store these for use in scroll calculation
       const tileWidth = window.innerWidth <= 480 ? 65 : 70;
       const tileHeight = window.innerWidth <= 480 ? 85 : 90;
       const gap = 2;
@@ -248,16 +249,20 @@ class DOMRenderer extends RendererInterface {
       const currentScrollY = boardEl.scrollTop;
       
       // Calculate desired scroll position
-      // Only scroll if player is getting too close to viewport edges (within 20% margin)
-      // Otherwise, keep current scroll position (don't move camera)
-      const marginX = viewportWidth * 0.2;
-      const marginY = viewportHeight * 0.2;
+      // Logic: Don't auto-scroll if player is within middle 50% of viewport
+      // If player goes outside that area, scroll by exactly one tile width/height
       
       // Calculate where player would be on screen with current scroll
       const playerScreenX = playerPixelX - currentScrollX;
       const playerScreenY = playerPixelY - currentScrollY;
       
-      // Start with current scroll position (don't move unless needed)
+      // Middle 50% of viewport = 25% margin on each side (25% to 75%)
+      const deadZoneLeft = viewportWidth * 0.25;
+      const deadZoneRight = viewportWidth * 0.75;
+      const deadZoneTop = viewportHeight * 0.25;
+      const deadZoneBottom = viewportHeight * 0.75;
+      
+      // Start with current scroll position
       let scrollX = currentScrollX;
       let scrollY = currentScrollY;
       
@@ -266,35 +271,30 @@ class DOMRenderer extends RendererInterface {
                             this.lastScrollX === null || this.lastScrollY === null);
       
       if (isFirstFrame) {
-        // First frame - only center if player is off-screen or near edges
-        // Check if player is visible and not near edges
-        const centerMarginX = viewportWidth * 0.3; // Larger margin for initial centering
-        const centerMarginY = viewportHeight * 0.3;
-        
-        if (playerScreenX < centerMarginX || playerScreenX > viewportWidth - centerMarginX ||
-            playerScreenY < centerMarginY || playerScreenY > viewportHeight - centerMarginY) {
-          // Player is off-center or near edges - center them
-          scrollX = playerPixelX - (viewportWidth / 2);
-          scrollY = playerPixelY - (viewportHeight / 2);
-        }
-        // Otherwise keep current scroll (player is already well-positioned)
+        // First frame - center the player
+        scrollX = playerPixelX - (viewportWidth / 2);
+        scrollY = playerPixelY - (viewportHeight / 2);
       } else {
-        // Not first frame - only adjust scroll if player is too close to edges
-        if (playerScreenX < marginX) {
-          // Player too close to left edge - scroll to keep them at margin
-          scrollX = playerPixelX - marginX;
-        } else if (playerScreenX > viewportWidth - marginX) {
-          // Player too close to right edge - scroll to keep them at margin
-          scrollX = playerPixelX - (viewportWidth - marginX);
-        }
+        // Not first frame - check if player is outside middle 50%
+        // If outside, scroll by exactly one tile width/height in that direction
         
-        if (playerScreenY < marginY) {
-          // Player too close to top edge - scroll to keep them at margin
-          scrollY = playerPixelY - marginY;
-        } else if (playerScreenY > viewportHeight - marginY) {
-          // Player too close to bottom edge - scroll to keep them at margin
-          scrollY = playerPixelY - (viewportHeight - marginY);
+        if (playerScreenX < deadZoneLeft) {
+          // Player too far left - scroll right by one tile width
+          scrollX = currentScrollX + totalTileWidth;
+        } else if (playerScreenX > deadZoneRight) {
+          // Player too far right - scroll left by one tile width
+          scrollX = currentScrollX - totalTileWidth;
         }
+        // If player is within dead zone horizontally, don't scroll horizontally
+        
+        if (playerScreenY < deadZoneTop) {
+          // Player too far up - scroll down by one tile height
+          scrollY = currentScrollY + totalTileHeight;
+        } else if (playerScreenY > deadZoneBottom) {
+          // Player too far down - scroll up by one tile height
+          scrollY = currentScrollY - totalTileHeight;
+        }
+        // If player is within dead zone vertically, don't scroll vertically
       }
       
       // Calculate minimum board height needed to allow scrolling to player position
@@ -374,8 +374,6 @@ class DOMRenderer extends RendererInterface {
             } else {
               boardEl.scrollTop = finalScrollY;
             }
-            
-            // Scroll verification removed - scrolling is working correctly
           }
         } else {
           // Desktop: smooth scrolling
@@ -385,22 +383,16 @@ class DOMRenderer extends RendererInterface {
             behavior: 'smooth'
           });
         }
-        
-        // Store current position and scroll for next frame
-        this.lastPlayerPos = { x: playerPos.x, y: playerPos.y };
-        this.lastPlayerPixelX = playerPixelX;
-        this.lastPlayerPixelY = playerPixelY;
-        this.lastScrollX = finalScrollX;
-        this.lastScrollY = finalScrollY;
-      } else {
-        // Player didn't move significantly, but update stored position and scroll
-        // Always use actual scroll position (handles manual scrolling)
-        this.lastPlayerPos = { x: playerPos.x, y: playerPos.y };
-        this.lastPlayerPixelX = playerPixelX;
-        this.lastPlayerPixelY = playerPixelY;
-        this.lastScrollX = boardEl.scrollLeft; // Use actual scroll, not stored
-        this.lastScrollY = boardEl.scrollTop;  // Use actual scroll, not stored
       }
+      
+      // Always update stored position and scroll to actual DOM values
+      // This ensures manual scrolling is tracked correctly
+      this.lastPlayerPos = { x: playerPos.x, y: playerPos.y };
+      this.lastPlayerPixelX = playerPixelX;
+      this.lastPlayerPixelY = playerPixelY;
+      // Use actual scroll position from DOM (handles manual scrolling and programmatic scrolling)
+      this.lastScrollX = boardEl.scrollLeft;
+      this.lastScrollY = boardEl.scrollTop;
       
       // If user manually scrolled, make sure stored positions reflect the manual scroll
       // This ensures next movement maintains relative position from manual scroll
