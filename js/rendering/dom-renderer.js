@@ -245,7 +245,25 @@ class DOMRenderer extends RendererInterface {
           const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
           const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
           
-          // Debug logging
+          // Debug display (on-screen for mobile)
+          const debugEl = document.getElementById('mobile-debug');
+          if (debugEl && window.innerWidth <= 768) {
+            const debugContent = debugEl.querySelector('.debug-content');
+            if (debugContent) {
+              debugEl.style.display = 'block';
+              debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
+Bounds: X[${minX}, ${maxX}] Y[${minY}, ${maxY}]
+Offset: X=${playerXOffset} Y=${playerYOffset}
+Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}
+Scroll: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}
+Board: ${scrollWidth}x${scrollHeight}
+MaxScroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}
+Final: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}
+Viewport: ${viewportWidth}x${viewportHeight}`;
+            }
+          }
+          
+          // Also log to console for desktop debugging
           console.log('Camera centering:', {
             playerPos: { x: playerPos.x, y: playerPos.y },
             bounds: { minX, maxX, minY, maxY },

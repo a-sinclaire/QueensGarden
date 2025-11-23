@@ -148,6 +148,29 @@
   animation: pulse-destroy 0.5s ease-in-out infinite;
 }
 
+.hud-debug {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.9);
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  padding: 0.5rem;
+  font-size: 0.7rem;
+  color: #fff;
+  max-height: 200px;
+  overflow-y: auto;
+  pointer-events: auto;
+  z-index: 300;
+}
+
+.debug-content {
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 @media (max-width: 768px) {
   .mobile-hud {
     display: block;
