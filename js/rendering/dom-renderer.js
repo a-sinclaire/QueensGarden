@@ -371,38 +371,8 @@ class DOMRenderer extends RendererInterface {
         const playerMoved = this.lastPlayerPos && 
           (this.lastPlayerPos.x !== playerPos.x || this.lastPlayerPos.y !== playerPos.y);
         
-        if (window.innerWidth <= 768) {
-          const debugEl = document.getElementById('debug-content');
-          if (debugEl) {
-            let debugText = `Viewport: ${viewportWidth}×${viewportHeight}\n`;
-            debugText += `Player Screen: X=${Math.round(playerScreenX)} Y=${Math.round(playerScreenY)}\n`;
-            debugText += `Deadzone X: ${Math.round(deadZoneLeft)}-${Math.round(deadZoneRight)}\n`;
-            debugText += `Deadzone Y: ${Math.round(deadZoneTop)}-${Math.round(deadZoneBottom)}\n`;
-            debugText += `Scroll: X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}\n`;
-            debugText += `Player Pos: (${playerPos.x}, ${playerPos.y})\n`;
-            
-            // Determine scroll action
-            let scrollAction = '';
-            if (playerScreenX < deadZoneLeft) {
-              scrollAction = '→ Scroll LEFT';
-            } else if (playerScreenX > deadZoneRight) {
-              scrollAction = '→ Scroll RIGHT';
-            } else {
-              scrollAction = '✓ No X scroll';
-            }
-            
-            if (playerScreenY < deadZoneTop) {
-              scrollAction += ' / Scroll UP';
-            } else if (playerScreenY > deadZoneBottom) {
-              scrollAction += ' / Scroll DOWN';
-            } else {
-              scrollAction += ' / ✓ No Y scroll';
-            }
-            
-            debugText += scrollAction;
-            debugEl.textContent = debugText;
-          }
-        }
+        // Store playerMoved for use later in the function
+        window._debugPlayerMoved = playerMoved;
         
         // Only adjust horizontal scroll if player is outside horizontal dead zone
         if (playerScreenX < deadZoneLeft) {
@@ -479,14 +449,41 @@ class DOMRenderer extends RendererInterface {
       const needsScrollX = Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
       const needsScrollY = Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
       
-      // Debug: Log what we're about to do
+      // Debug: Update debug panel with scroll decision
+      const playerMoved = window._debugPlayerMoved || false;
       if (window.innerWidth <= 768 && playerMoved) {
         const debugEl = document.getElementById('debug-content');
         if (debugEl) {
-          const currentDebug = debugEl.textContent;
-          debugEl.textContent = currentDebug + `\n\nWill scroll: X=${needsScrollX} Y=${needsScrollY}`;
-          debugEl.textContent += `\nfinalScrollX=${Math.round(finalScrollX)} finalScrollY=${Math.round(finalScrollY)}`;
-          debugEl.textContent += `\ncurrentScrollX=${Math.round(currentScrollX)} currentScrollY=${Math.round(currentScrollY)}`;
+          let debugText = `Viewport: ${viewportWidth}×${viewportHeight}\n`;
+          debugText += `Player Screen: X=${Math.round(playerScreenX)} Y=${Math.round(playerScreenY)}\n`;
+          debugText += `Deadzone X: ${Math.round(deadZoneLeft)}-${Math.round(deadZoneRight)}\n`;
+          debugText += `Deadzone Y: ${Math.round(deadZoneTop)}-${Math.round(deadZoneBottom)}\n`;
+          debugText += `Scroll: X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}\n`;
+          debugText += `Player Pos: (${playerPos.x}, ${playerPos.y})\n`;
+          
+          // Determine scroll action
+          let scrollAction = '';
+          if (playerScreenX < deadZoneLeft) {
+            scrollAction = '→ Scroll LEFT';
+          } else if (playerScreenX > deadZoneRight) {
+            scrollAction = '→ Scroll RIGHT';
+          } else {
+            scrollAction = '✓ No X scroll';
+          }
+          
+          if (playerScreenY < deadZoneTop) {
+            scrollAction += ' / Scroll UP';
+          } else if (playerScreenY > deadZoneBottom) {
+            scrollAction += ' / Scroll DOWN';
+          } else {
+            scrollAction += ' / ✓ No Y scroll';
+          }
+          
+          debugText += scrollAction;
+          debugText += `\n\nWill scroll: X=${needsScrollX} Y=${needsScrollY}`;
+          debugText += `\nfinalScrollX=${Math.round(finalScrollX)} finalScrollY=${Math.round(finalScrollY)}`;
+          debugText += `\ncurrentScrollX=${Math.round(currentScrollX)} currentScrollY=${Math.round(currentScrollY)}`;
+          debugEl.textContent = debugText;
         }
       }
       
@@ -537,11 +534,10 @@ class DOMRenderer extends RendererInterface {
       this.lastScrollY = finalActualScrollY;
       
       // Debug: Log final scroll position
-      if (window.innerWidth <= 768 && playerMoved) {
+      if (window.innerWidth <= 768 && window._debugPlayerMoved) {
         const debugEl = document.getElementById('debug-content');
         if (debugEl) {
-          const currentDebug = debugEl.textContent;
-          debugEl.textContent = currentDebug + `\n\nAfter scroll: X=${Math.round(finalActualScrollX)} Y=${Math.round(finalActualScrollY)}`;
+          debugEl.textContent += `\n\nAfter scroll: X=${Math.round(finalActualScrollX)} Y=${Math.round(finalActualScrollY)}`;
         }
       }
       
