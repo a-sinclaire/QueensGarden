@@ -285,106 +285,113 @@ class DOMRenderer extends RendererInterface {
             });
           });
         }, delay);
-              // Force a reflow to ensure styles are applied
-              void boardEl.offsetWidth;
-              void boardEl.offsetHeight;
-              
-              // Get actual scrollable dimensions after size is set
-              const scrollWidth = boardEl.scrollWidth;
-              const scrollHeight = boardEl.scrollHeight;
-              const clientWidth = boardEl.clientWidth;
-              const clientHeight = boardEl.clientHeight;
-              const offsetWidth = boardEl.offsetWidth;
-              const offsetHeight = boardEl.offsetHeight;
-          
-              // Debug: check if board is actually scrollable
-              const canScrollX = scrollWidth > clientWidth;
-              const canScrollY = scrollHeight > clientHeight;
-              
-              console.log('Board dimensions:', {
-                offsetWidth,
-                offsetHeight,
-                scrollWidth,
-                scrollHeight,
-                clientWidth,
-                clientHeight,
-                viewportWidth,
-                viewportHeight,
-                totalBoardWidth,
-                totalBoardHeight,
-                canScrollX,
-                canScrollY,
-                computedWidth: window.getComputedStyle(boardEl).width,
-                computedHeight: window.getComputedStyle(boardEl).height
-              });
-              
-              // If board isn't scrollable, log detailed diagnostics
-              if (!canScrollX || !canScrollY) {
-                const computedStyle = window.getComputedStyle(boardEl);
-                console.warn('Board not scrollable! Diagnostics:', {
-                  inlineWidth: boardEl.style.width,
-                  inlineHeight: boardEl.style.height,
-                  computedWidth: computedStyle.width,
-                  computedHeight: computedStyle.height,
-                  computedMaxWidth: computedStyle.maxWidth,
-                  computedMaxHeight: computedStyle.maxHeight,
-                  parentWidth: boardEl.parentElement?.clientWidth,
-                  parentHeight: boardEl.parentElement?.clientHeight
-                });
-              }
-              
-              // Calculate maximum scroll positions using clientWidth/Height (actual viewport)
-              const maxScrollX = Math.max(0, scrollWidth - clientWidth);
-              const maxScrollY = Math.max(0, scrollHeight - clientHeight);
-              
-              // Always center on player - don't clamp if it would prevent centering
-              // But ensure we don't scroll beyond bounds
-              let finalScrollX = scrollX;
-              let finalScrollY = scrollY;
-              
-              // Only clamp if we're at the edges and can't center perfectly
-              if (scrollX < 0) {
-                finalScrollX = 0;
-              } else if (scrollX > maxScrollX) {
-                finalScrollX = maxScrollX;
-              }
-              
-              if (scrollY < 0) {
-                finalScrollY = 0;
-              } else if (scrollY > maxScrollY) {
-                finalScrollY = maxScrollY;
-              }
-              
-              // Check if board is actually scrollable
-              // Only warn if we actually need to scroll but can't
-              if ((finalScrollX > 0 || finalScrollY > 0) && !canScrollX && !canScrollY) {
-                const errorMsg = `Board not scrollable! scrollWidth=${scrollWidth}, clientWidth=${clientWidth}, scrollHeight=${scrollHeight}, clientHeight=${clientHeight}`;
-                console.warn(errorMsg);
-                addMobileConsoleLog(errorMsg, 'warn');
-                // Still try to scroll - might work even if dimensions suggest it won't
-              }
-              
-              // Always use smooth scrolling for consistent behavior
-              // The board should be manually scrollable, and we just adjust it when player moves
-              boardEl.scrollTo({
-                left: finalScrollX,
-                top: finalScrollY,
-                behavior: 'smooth'
-              });
-              
-              // Update debug display after a brief delay
-              setTimeout(() => {
-                const actualScrollX = boardEl.scrollLeft;
-                const actualScrollY = boardEl.scrollTop;
-                
-                // Update debug display with current scroll
-                const debugEl = document.getElementById('mobile-debug');
-                if (debugEl && window.innerWidth <= 768) {
-                  const debugContent = debugEl.querySelector('.debug-content');
-                  if (debugContent) {
-                    const currentScrollX = Math.round(actualScrollX);
-                    const currentScrollY = Math.round(actualScrollY);
-                    debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
+  }
+  
+  /**
+   * Perform the actual scroll operation (extracted for clarity)
+   */
+  _performScroll(boardEl, playerPos, minX, maxX, minY, maxY, viewportWidth, viewportHeight, totalBoardWidth, totalBoardHeight, scrollX, scrollY, playerXOffset, playerYOffset, playerPixelX, playerPixelY, extraPaddingX, extraPaddingY) {
+    // Force a reflow to ensure styles are applied
+    void boardEl.offsetWidth;
+    void boardEl.offsetHeight;
+    
+    // Get actual scrollable dimensions after size is set
+    const scrollWidth = boardEl.scrollWidth;
+    const scrollHeight = boardEl.scrollHeight;
+    const clientWidth = boardEl.clientWidth;
+    const clientHeight = boardEl.clientHeight;
+    const offsetWidth = boardEl.offsetWidth;
+    const offsetHeight = boardEl.offsetHeight;
+  
+    // Debug: check if board is actually scrollable
+    const canScrollX = scrollWidth > clientWidth;
+    const canScrollY = scrollHeight > clientHeight;
+    
+    // Only log dimensions if there's an issue (to reduce console spam)
+    if (!canScrollX || !canScrollY) {
+      console.log('Board dimensions:', {
+        offsetWidth,
+        offsetHeight,
+        scrollWidth,
+        scrollHeight,
+        clientWidth,
+        clientHeight,
+        viewportWidth,
+        viewportHeight,
+        totalBoardWidth,
+        totalBoardHeight,
+        canScrollX,
+        canScrollY,
+        computedWidth: window.getComputedStyle(boardEl).width,
+        computedHeight: window.getComputedStyle(boardEl).height
+      });
+      
+      // If board isn't scrollable, log detailed diagnostics
+      const computedStyle = window.getComputedStyle(boardEl);
+      console.warn('Board not scrollable! Diagnostics:', {
+        inlineWidth: boardEl.style.width,
+        inlineHeight: boardEl.style.height,
+        computedWidth: computedStyle.width,
+        computedHeight: computedStyle.height,
+        computedMaxWidth: computedStyle.maxWidth,
+        computedMaxHeight: computedStyle.maxHeight,
+        parentWidth: boardEl.parentElement?.clientWidth,
+        parentHeight: boardEl.parentElement?.clientHeight
+      });
+    }
+    
+    // Calculate maximum scroll positions using clientWidth/Height (actual viewport)
+    const maxScrollX = Math.max(0, scrollWidth - clientWidth);
+    const maxScrollY = Math.max(0, scrollHeight - clientHeight);
+    
+    // Always center on player - don't clamp if it would prevent centering
+    // But ensure we don't scroll beyond bounds
+    let finalScrollX = scrollX;
+    let finalScrollY = scrollY;
+    
+    // Only clamp if we're at the edges and can't center perfectly
+    if (scrollX < 0) {
+      finalScrollX = 0;
+    } else if (scrollX > maxScrollX) {
+      finalScrollX = maxScrollX;
+    }
+    
+    if (scrollY < 0) {
+      finalScrollY = 0;
+    } else if (scrollY > maxScrollY) {
+      finalScrollY = maxScrollY;
+    }
+    
+    // Check if board is actually scrollable
+    // Only warn if we actually need to scroll but can't
+    if ((finalScrollX > 0 || finalScrollY > 0) && !canScrollX && !canScrollY) {
+      const errorMsg = `Board not scrollable! scrollWidth=${scrollWidth}, clientWidth=${clientWidth}, scrollHeight=${scrollHeight}, clientHeight=${clientHeight}`;
+      console.warn(errorMsg);
+      addMobileConsoleLog(errorMsg, 'warn');
+      // Still try to scroll - might work even if dimensions suggest it won't
+    }
+    
+    // Always use smooth scrolling for consistent behavior
+    // The board should be manually scrollable, and we just adjust it when player moves
+    boardEl.scrollTo({
+      left: finalScrollX,
+      top: finalScrollY,
+      behavior: 'smooth'
+    });
+    
+    // Update debug display after a brief delay
+    setTimeout(() => {
+      const actualScrollX = boardEl.scrollLeft;
+      const actualScrollY = boardEl.scrollTop;
+      
+      // Update debug display with current scroll
+      const debugEl = document.getElementById('mobile-debug');
+      if (debugEl && window.innerWidth <= 768) {
+        const debugContent = debugEl.querySelector('.debug-content');
+        if (debugContent) {
+          const currentScrollX = Math.round(actualScrollX);
+          const currentScrollY = Math.round(actualScrollY);
+          debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
 Bounds: X[${minX}, ${maxX}] Y[${minY}, ${maxY}]
 Offset: X=${playerXOffset} Y=${playerYOffset}
 Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}
@@ -397,12 +404,10 @@ MaxScroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}
 Final: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}
 Current: X=${currentScrollX} Y=${currentScrollY}
 Viewport: ${viewportWidth}x${viewportHeight}`;
-                  }
-                }
-              }, 100);
-            });
-          });
-        }, 50);
+        }
+      }
+    }, 100);
+  }
       });
     });
   }
