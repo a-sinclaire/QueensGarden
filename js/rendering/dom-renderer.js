@@ -143,12 +143,17 @@ class DOMRenderer extends RendererInterface {
         const tileEl = document.createElement('div');
         tileEl.className = 'tile';
         
-        // Add click handler
-        tileEl.addEventListener('click', () => {
+        // Add click and touch handlers for mobile support
+        const handleTileAction = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
           if (window.handleTileClick) {
             window.handleTileClick(x, y);
           }
-        });
+        };
+        
+        tileEl.addEventListener('click', handleTileAction);
+        tileEl.addEventListener('touchend', handleTileAction);
         
         // Check if destroyable (in destroy mode)
         const isDestroyable = destroyableTiles.some(dt => dt.x === x && dt.y === y);

@@ -62,6 +62,9 @@ function startGame(queenSuit) {
   // Setup keyboard controls
   setupKeyboardControls();
   
+  // Setup mobile touch controls
+  setupMobileControls();
+  
   // Setup restart button
   document.getElementById('restart-btn').addEventListener('click', () => {
     resetGame();
@@ -74,6 +77,40 @@ function startGame(queenSuit) {
       toggleDestroyMode();
     });
   }
+}
+
+/**
+ * Setup mobile touch controls
+ */
+function setupMobileControls() {
+  const mobileButtons = document.querySelectorAll('.mobile-btn');
+  
+  mobileButtons.forEach(btn => {
+    // Use both click and touchstart for better mobile support
+    const handleMove = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (!gameEngine || gameEngine.gameOver || destroyMode) {
+        return;
+      }
+      
+      const direction = btn.dataset.direction;
+      if (direction) {
+        const result = gameEngine.movePlayer(direction);
+        if (!result.success) {
+          // Visual feedback for invalid move
+          btn.style.backgroundColor = 'var(--health-color)';
+          setTimeout(() => {
+            btn.style.backgroundColor = '';
+          }, 200);
+        }
+      }
+    };
+    
+    btn.addEventListener('click', handleMove);
+    btn.addEventListener('touchend', handleMove);
+  });
 }
 
 /**
