@@ -6,12 +6,13 @@
 .board-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 2px;
   padding: 1rem;
-  /* Center the board */
-  margin: 0 auto;
+  /* Allow scrolling */
+  margin: 0;
   width: fit-content;
+  min-width: 100%;
 }
 
 @media (max-width: 768px) {

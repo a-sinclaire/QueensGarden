@@ -204,29 +204,38 @@ class DOMRenderer extends RendererInterface {
         const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
         
         // Calculate player tile center position in pixels (relative to board content)
-        // Add padding offset (0.5rem = 8px typically)
+        // Account for the extra padding we added
         const padding = 8;
-        const playerPixelX = (playerXOffset * totalTileWidth) + (totalTileWidth / 2) + padding;
-        const playerPixelY = (playerYOffset * totalTileHeight) + (totalTileHeight / 2) + padding;
+        const extraPaddingX = viewportWidth; // Extra padding on left
+        const extraPaddingY = viewportHeight; // Extra padding on top
+        const playerPixelX = (playerXOffset * totalTileWidth) + (totalTileWidth / 2) + padding + extraPaddingX;
+        const playerPixelY = (playerYOffset * totalTileHeight) + (totalTileHeight / 2) + padding + extraPaddingY;
         
         // Calculate scroll position to center player in viewport
         const scrollX = playerPixelX - (viewportWidth / 2);
         const scrollY = playerPixelY - (viewportHeight / 2);
         
         // Ensure board container is large enough to scroll in ALL directions
-        // We need extra space on all sides to allow centering
+        // Calculate actual board content size
         const boardContentWidth = (maxX - minX + 1) * totalTileWidth + (padding * 2);
         const boardContentHeight = (maxY - minY + 1) * totalTileHeight + (padding * 2);
         
-        // Make board at least 3x viewport size to allow scrolling in all directions
-        const minBoardWidth = Math.max(boardContentWidth, viewportWidth * 3);
-        const minBoardHeight = Math.max(boardContentHeight, viewportHeight * 3);
+        // Make board large enough to allow scrolling in all directions
+        // Add extra padding on all sides equal to viewport size
+        const minBoardWidth = boardContentWidth + (viewportWidth * 2);
+        const minBoardHeight = boardContentHeight + (viewportHeight * 2);
         
         // Set size to ensure scrolling is possible
         boardEl.style.minWidth = `${minBoardWidth}px`;
         boardEl.style.minHeight = `${minBoardHeight}px`;
         boardEl.style.width = `${minBoardWidth}px`;
         boardEl.style.height = `${minBoardHeight}px`;
+        
+        // Also ensure the board content starts with padding to allow negative scroll
+        boardEl.style.paddingLeft = `${viewportWidth}px`;
+        boardEl.style.paddingTop = `${viewportHeight}px`;
+        boardEl.style.paddingRight = `${viewportWidth}px`;
+        boardEl.style.paddingBottom = `${viewportHeight}px`;
         
         // Wait for size to apply, then scroll
         setTimeout(() => {
