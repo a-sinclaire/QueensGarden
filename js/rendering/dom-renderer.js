@@ -410,8 +410,6 @@ Viewport: ${viewportWidth}x${viewportHeight}`;
       }
     }, 100);
   }
-      });
-    });
   }
   
   _updateBoard(board, playerPos) {
