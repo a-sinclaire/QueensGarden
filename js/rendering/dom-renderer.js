@@ -611,8 +611,16 @@ class DOMRenderer extends RendererInterface {
     
     // Restore scroll position immediately after clearing (before browser recalculates layout)
     // This prevents the scroll from jumping when the board is rebuilt
-    boardEl.scrollLeft = savedScrollX;
-    boardEl.scrollTop = savedScrollY;
+    // Use requestAnimationFrame to ensure DOM is ready before setting scroll
+    requestAnimationFrame(() => {
+      boardEl.scrollLeft = savedScrollX;
+      boardEl.scrollTop = savedScrollY;
+      // Force a second frame to ensure scroll sticks
+      requestAnimationFrame(() => {
+        boardEl.scrollLeft = savedScrollX;
+        boardEl.scrollTop = savedScrollY;
+      });
+    });
     
     // Get destroyable tiles if in destroy mode
     const destroyableTiles = this.destroyMode && this.selectedKing && this.gameEngine
@@ -872,6 +880,18 @@ class DOMRenderer extends RendererInterface {
           spacer.remove();
         }
       }
+    }
+    
+    // Ensure scroll position is maintained after board rebuild
+    // The board rebuild might have reset scroll, so restore it again after rendering
+    if (this._savedScrollBeforeRebuild) {
+      // Wait for board to be fully rendered, then restore scroll
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          boardEl.scrollLeft = this._savedScrollBeforeRebuild.x;
+          boardEl.scrollTop = this._savedScrollBeforeRebuild.y;
+        });
+      });
     }
     
     // Center camera on player AFTER board is rendered (mobile only)
