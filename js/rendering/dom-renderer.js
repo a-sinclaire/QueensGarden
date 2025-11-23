@@ -238,33 +238,46 @@ class DOMRenderer extends RendererInterface {
         if (needsScrollX || needsScrollY) {
           // Use instant scrolling on mobile (smooth looks bad), smooth on desktop
           const isMobile = window.innerWidth <= 768;
-          boardEl.scrollTo({
-            left: finalScrollX,
-            top: finalScrollY,
-            behavior: isMobile ? 'auto' : 'smooth'
-          });
+          
+          // For mobile, set scrollTop/scrollLeft directly for instant scroll
+          // This is more reliable than scrollTo() on some mobile browsers
+          if (isMobile) {
+            if (needsScrollX) {
+              boardEl.scrollLeft = finalScrollX;
+            }
+            if (needsScrollY) {
+              boardEl.scrollTop = finalScrollY;
+            }
+          } else {
+            // Desktop: use smooth scrolling
+            boardEl.scrollTo({
+              left: finalScrollX,
+              top: finalScrollY,
+              behavior: 'smooth'
+            });
+          }
           
           // Debug log for down scrolling issue
           if (window.innerWidth <= 768 && needsScrollY) {
-            console.log('Scrolling Y:', {
-              playerPixelY,
-              viewportHeight,
-              scrollY,
-              currentScrollY,
-              finalScrollY,
-              maxScrollY,
-              scrollHeight: boardEl.scrollHeight,
-              clientHeight: boardEl.clientHeight,
-              canScroll: boardEl.scrollHeight > boardEl.clientHeight,
-              scrollTop: boardEl.scrollTop,
-              willScrollTo: finalScrollY
-            });
-            
-            // Force scroll if needed (sometimes scrollTo doesn't work)
-            if (Math.abs(boardEl.scrollTop - finalScrollY) > 1) {
-              boardEl.scrollTop = finalScrollY;
-              console.log('Forced scrollTop to:', finalScrollY, 'got:', boardEl.scrollTop);
-            }
+            // Verify scroll actually happened after a brief delay
+            setTimeout(() => {
+              const actualScrollTop = boardEl.scrollTop;
+              if (Math.abs(actualScrollTop - finalScrollY) > 2) {
+                console.warn('Scroll failed! Expected:', finalScrollY, 'Got:', actualScrollTop, {
+                  playerPixelY,
+                  viewportHeight,
+                  scrollY,
+                  currentScrollY,
+                  finalScrollY,
+                  maxScrollY,
+                  scrollHeight: boardEl.scrollHeight,
+                  clientHeight: boardEl.clientHeight,
+                  canScroll: boardEl.scrollHeight > boardEl.clientHeight
+                });
+                // Try forcing again
+                boardEl.scrollTop = finalScrollY;
+              }
+            }, 50);
           }
         }
       });
