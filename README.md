@@ -79,5 +79,7 @@ Requires a modern browser with ES6+ support:
 
 ## Credits
 
-Game design and rules by [Your Name]
+Game design and rules by **Willow McKeon**
+
+Web implementation by the development team.
 
