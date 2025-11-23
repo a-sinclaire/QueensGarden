@@ -130,6 +130,33 @@ class DOMRenderer extends RendererInterface {
       `;
       gameArea.appendChild(debugOverlay);
     }
+    
+    // Force debug panel to be visible on mobile (in case CSS is cached)
+    if (window.innerWidth <= 768) {
+      const debugPanel = document.getElementById('mobile-debug');
+      if (debugPanel) {
+        debugPanel.style.display = 'block';
+        debugPanel.style.visibility = 'visible';
+        debugPanel.style.opacity = '1';
+        debugPanel.style.zIndex = '9999';
+        debugPanel.style.position = 'fixed';
+        debugPanel.style.bottom = '10px';
+        debugPanel.style.left = '10px';
+        debugPanel.style.right = '10px';
+        debugPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+        debugPanel.style.border = '2px solid #ffd700';
+        debugPanel.style.borderRadius = '8px';
+        debugPanel.style.padding = '0.5rem';
+        debugPanel.style.fontSize = '0.65rem';
+        debugPanel.style.color = '#fff';
+        debugPanel.style.maxHeight = '200px';
+        debugPanel.style.overflowY = 'auto';
+        debugPanel.style.pointerEvents = 'auto';
+        console.log('Debug panel forced visible');
+      } else {
+        console.warn('Debug panel element not found!');
+      }
+    }
   }
   
   _updateHealth(health) {
