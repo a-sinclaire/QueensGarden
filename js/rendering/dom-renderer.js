@@ -210,15 +210,19 @@ class DOMRenderer extends RendererInterface {
         const totalBoardWidth = boardContentWidth + (extraPaddingX * 2);
         const totalBoardHeight = boardContentHeight + (extraPaddingY * 2);
         
-        // Set board container size to allow scrolling
-        // IMPORTANT: The container needs to be larger than its viewport to be scrollable
-        // We set explicit pixel values and use !important to override CSS
-        boardEl.style.setProperty('width', `${totalBoardWidth}px`, 'important');
-        boardEl.style.setProperty('height', `${totalBoardHeight}px`, 'important');
+        // CRITICAL: The board container must be constrained to viewport size
+        // The CONTENT inside (the board grid) should be larger to enable scrolling
+        // Set container to viewport size (this is what clientWidth/clientHeight will be)
+        boardEl.style.setProperty('width', `${viewportWidth}px`, 'important');
+        boardEl.style.setProperty('height', `${viewportHeight}px`, 'important');
+        boardEl.style.setProperty('max-width', `${viewportWidth}px`, 'important');
+        boardEl.style.setProperty('max-height', `${viewportHeight}px`, 'important');
+        
+        // Now set the CONTENT size (the actual board grid) to be larger
+        // This is done by setting min-width/min-height on the container
+        // The container will expand its scrollWidth/scrollHeight to accommodate
         boardEl.style.setProperty('min-width', `${totalBoardWidth}px`, 'important');
         boardEl.style.setProperty('min-height', `${totalBoardHeight}px`, 'important');
-        boardEl.style.setProperty('max-width', 'none', 'important');
-        boardEl.style.setProperty('max-height', 'none', 'important');
         
         // Add padding to board container to create scrollable space
         boardEl.style.paddingLeft = `${extraPaddingX}px`;
