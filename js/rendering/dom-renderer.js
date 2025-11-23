@@ -250,7 +250,6 @@ class DOMRenderer extends RendererInterface {
           if (debugEl && window.innerWidth <= 768) {
             const debugContent = debugEl.querySelector('.debug-content');
             if (debugContent) {
-              debugEl.style.display = 'block';
               debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
 Bounds: X[${minX}, ${maxX}] Y[${minY}, ${maxY}]
 Offset: X=${playerXOffset} Y=${playerYOffset}

@@ -149,20 +149,21 @@
 }
 
 .hud-debug {
-  position: absolute;
+  position: fixed;
   bottom: 10px;
   left: 10px;
   right: 10px;
-  background-color: rgba(0, 0, 0, 0.9);
+  background-color: rgba(0, 0, 0, 0.95);
   border: 2px solid #ffd700;
   border-radius: 8px;
   padding: 0.5rem;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: #fff;
-  max-height: 200px;
+  max-height: 150px;
   overflow-y: auto;
   pointer-events: auto;
   z-index: 300;
+  display: none; /* Hidden by default, shown on mobile */
 }
 
 .debug-content {
@@ -176,6 +177,11 @@
     display: block;
   }
   
+  /* Show debug panel on mobile */
+  .hud-debug {
+    display: block !important;
+  }
+  
   /* HUD is fixed position, doesn't need padding */
   
   /* Adjust kings position for smaller screens */
@@ -183,6 +189,11 @@
     .hud-kings {
       margin-top: 50px;
       padding: 0.4rem 0.6rem;
+    }
+    
+    .hud-debug {
+      max-height: 100px;
+      font-size: 0.6rem;
     }
   }
 }
