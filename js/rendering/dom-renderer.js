@@ -260,6 +260,10 @@ class DOMRenderer extends RendererInterface {
         const scrollY = playerPixelY - (viewportHeight / 2);
         
         // Wait for size to apply, then scroll
+        // Use longer delay on actual mobile devices to ensure styles are applied
+        const isMobile = window.innerWidth <= 768;
+        const delay = isMobile ? 200 : 50; // Longer delay for mobile
+        
         setTimeout(() => {
           // Force multiple reflows to ensure sizes are fully applied
           void boardEl.offsetWidth;
@@ -270,6 +274,17 @@ class DOMRenderer extends RendererInterface {
           // Wait a bit more for browser to process
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
+              // On mobile, wait one more frame to ensure everything is ready
+              if (isMobile) {
+                requestAnimationFrame(() => {
+                  this._performScroll(boardEl, playerPos, minX, maxX, minY, maxY, viewportWidth, viewportHeight, totalBoardWidth, totalBoardHeight, scrollX, scrollY, playerXOffset, playerYOffset, playerPixelX, playerPixelY, extraPaddingX, extraPaddingY);
+                });
+              } else {
+                this._performScroll(boardEl, playerPos, minX, maxX, minY, maxY, viewportWidth, viewportHeight, totalBoardWidth, totalBoardHeight, scrollX, scrollY, playerXOffset, playerYOffset, playerPixelX, playerPixelY, extraPaddingX, extraPaddingY);
+              }
+            });
+          });
+        }, delay);
               // Force a reflow to ensure styles are applied
               void boardEl.offsetWidth;
               void boardEl.offsetHeight;
@@ -340,54 +355,24 @@ class DOMRenderer extends RendererInterface {
                 finalScrollY = maxScrollY;
               }
               
-              // Scroll the board container first
-              // Use instant scroll on first render to avoid dead space, smooth for subsequent moves
-              const isFirstRender = !boardEl.dataset.hasScrolled;
-              boardEl.dataset.hasScrolled = 'true';
-              
-              // Log what we're about to try
-              const debugInfo = {
-                finalScroll: { x: finalScrollX, y: finalScrollY },
-                scrollWidth,
-                scrollHeight,
-                clientWidth,
-                clientHeight,
-                canScrollX,
-                canScrollY,
-                maxScroll: { x: maxScrollX, y: maxScrollY }
-              };
-              console.log('Attempting scroll:', debugInfo);
-              addMobileConsoleLog(`Scroll attempt: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}, scrollWidth=${scrollWidth}, clientWidth=${clientWidth}`, 'log');
-              
-              // Check if board is actually scrollable before trying to scroll
-              if (!canScrollX && finalScrollX > 0) {
-                const warnMsg = `Board not scrollable X! scrollWidth=${scrollWidth}, clientWidth=${clientWidth}, totalWidth=${totalBoardWidth}`;
-                console.warn(warnMsg);
-                addMobileConsoleLog(warnMsg, 'warn');
-              }
-              if (!canScrollY && finalScrollY > 0) {
-                const warnMsg = `Board not scrollable Y! scrollHeight=${scrollHeight}, clientHeight=${clientHeight}, totalHeight=${totalBoardHeight}`;
-                console.warn(warnMsg);
-                addMobileConsoleLog(warnMsg, 'warn');
+              // Check if board is actually scrollable
+              // Only warn if we actually need to scroll but can't
+              if ((finalScrollX > 0 || finalScrollY > 0) && !canScrollX && !canScrollY) {
+                const errorMsg = `Board not scrollable! scrollWidth=${scrollWidth}, clientWidth=${clientWidth}, scrollHeight=${scrollHeight}, clientHeight=${clientHeight}`;
+                console.warn(errorMsg);
+                addMobileConsoleLog(errorMsg, 'warn');
+                // Still try to scroll - might work even if dimensions suggest it won't
               }
               
-              // If board isn't scrollable, we can't scroll
-              if (!canScrollX && !canScrollY) {
-                const errorMsg = `Board not scrollable at all! scrollWidth=${scrollWidth}, clientWidth=${clientWidth}, scrollHeight=${scrollHeight}, clientHeight=${clientHeight}`;
-                console.error(errorMsg);
-                addMobileConsoleLog(errorMsg, 'error');
-                return; // Can't scroll if board isn't scrollable
-              }
-              
-              // Try scrolling - use scrollTo first (more reliable on mobile)
-              // Some browsers/mobile devices don't respect direct assignment
+              // Always use smooth scrolling for consistent behavior
+              // The board should be manually scrollable, and we just adjust it when player moves
               boardEl.scrollTo({
                 left: finalScrollX,
                 top: finalScrollY,
-                behavior: isFirstRender ? 'auto' : 'auto' // Use auto for instant, then smooth later
+                behavior: 'smooth'
               });
               
-              // Verify scroll was applied after a brief delay
+              // Update debug display after a brief delay
               setTimeout(() => {
                 const actualScrollX = boardEl.scrollLeft;
                 const actualScrollY = boardEl.scrollTop;
@@ -414,56 +399,7 @@ Current: X=${currentScrollX} Y=${currentScrollY}
 Viewport: ${viewportWidth}x${viewportHeight}`;
                   }
                 }
-                
-                // If scroll didn't apply, try direct assignment as fallback
-                if (Math.abs(actualScrollX - finalScrollX) > 1 || Math.abs(actualScrollY - finalScrollY) > 1) {
-                  const warnMsg = `Scroll failed! Expected: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}, Got: X=${Math.round(actualScrollX)} Y=${Math.round(actualScrollY)}, scrollWidth=${scrollWidth}, clientWidth=${clientWidth}`;
-                  console.warn('scrollTo failed, trying direct assignment:', {
-                    expected: { x: finalScrollX, y: finalScrollY },
-                    actual: { x: actualScrollX, y: actualScrollY },
-                    scrollWidth,
-                    scrollHeight,
-                    clientWidth,
-                    clientHeight
-                  });
-                  addMobileConsoleLog(warnMsg, 'warn');
-                  
-                  // Try direct assignment as fallback
-                  boardEl.scrollLeft = finalScrollX;
-                  boardEl.scrollTop = finalScrollY;
-                  
-                  // Check again after direct assignment
-                  setTimeout(() => {
-                    const afterScrollX = boardEl.scrollLeft;
-                    const afterScrollY = boardEl.scrollTop;
-                    if (Math.abs(afterScrollX - finalScrollX) > 1 || Math.abs(afterScrollY - finalScrollY) > 1) {
-                      const errorMsg = `All scroll methods failed! Still at X=${Math.round(afterScrollX)} Y=${Math.round(afterScrollY)}`;
-                      console.error(errorMsg);
-                      addMobileConsoleLog(errorMsg, 'error');
-                    } else {
-                      // Direct assignment worked, now apply smooth if needed
-                      if (!isFirstRender) {
-                        setTimeout(() => {
-                          boardEl.scrollTo({
-                            left: finalScrollX,
-                            top: finalScrollY,
-                            behavior: 'smooth'
-                          });
-                        }, 10);
-                      }
-                    }
-                  }, 50);
-                } else if (!isFirstRender) {
-                  // Scroll worked, apply smooth behavior for subsequent moves
-                  setTimeout(() => {
-                    boardEl.scrollTo({
-                      left: finalScrollX,
-                      top: finalScrollY,
-                      behavior: 'smooth'
-                    });
-                  }, 10);
-                }
-              }, 50);
+              }, 100);
             });
           });
         }, 50);
