@@ -255,8 +255,16 @@ class DOMRenderer extends RendererInterface {
               maxScrollY,
               scrollHeight: boardEl.scrollHeight,
               clientHeight: boardEl.clientHeight,
-              canScroll: boardEl.scrollHeight > boardEl.clientHeight
+              canScroll: boardEl.scrollHeight > boardEl.clientHeight,
+              scrollTop: boardEl.scrollTop,
+              willScrollTo: finalScrollY
             });
+            
+            // Force scroll if needed (sometimes scrollTo doesn't work)
+            if (Math.abs(boardEl.scrollTop - finalScrollY) > 1) {
+              boardEl.scrollTop = finalScrollY;
+              console.log('Forced scrollTop to:', finalScrollY, 'got:', boardEl.scrollTop);
+            }
           }
         }
       });
@@ -336,7 +344,10 @@ class DOMRenderer extends RendererInterface {
         };
         
         // Touch start - begin long press timer
+        let touchStartPos = null;
         tileEl.addEventListener('touchstart', (e) => {
+          const touch = e.touches[0];
+          touchStartPos = { x: touch.clientX, y: touch.clientY };
           touchStartTime = Date.now();
           isLongPress = false;
           
@@ -389,12 +400,23 @@ class DOMRenderer extends RendererInterface {
             touchTimer = null;
           }
           
-          // Only handle as normal tap if not a long press
-          if (!isLongPress && touchStartTime && (Date.now() - touchStartTime) < 500) {
+          // Check if this was a tap (not a scroll) by comparing start/end positions
+          let wasTap = false;
+          if (touchStartPos && e.changedTouches[0]) {
+            const touch = e.changedTouches[0];
+            const moveX = Math.abs(touch.clientX - touchStartPos.x);
+            const moveY = Math.abs(touch.clientY - touchStartPos.y);
+            // Only treat as tap if moved less than 10px (allows for small finger movement)
+            wasTap = moveX < 10 && moveY < 10;
+          }
+          
+          // Only handle as normal tap if not a long press and it was actually a tap (not scroll)
+          if (!isLongPress && touchStartTime && (Date.now() - touchStartTime) < 500 && wasTap) {
             handleTileAction(e);
           }
           
           touchStartTime = null;
+          touchStartPos = null;
         });
         
         // Touch cancel - cleanup
@@ -404,6 +426,7 @@ class DOMRenderer extends RendererInterface {
             touchTimer = null;
           }
           touchStartTime = null;
+          touchStartPos = null;
           isLongPress = false;
         });
         

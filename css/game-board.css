@@ -48,8 +48,8 @@
   position: relative;
   cursor: pointer;
   transition: all 0.2s ease;
-  /* Touch-friendly sizing on mobile */
-  touch-action: manipulation;
+  /* Touch-friendly sizing on mobile - allow panning for scrolling */
+  touch-action: pan-x pan-y;
   -webkit-tap-highlight-color: transparent;
   /* Ensure tiles are always visible */
   min-width: 60px;
