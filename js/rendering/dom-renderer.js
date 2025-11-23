@@ -285,6 +285,8 @@ class DOMRenderer extends RendererInterface {
             });
           });
         }, delay);
+      });
+    });
   }
   
   /**
