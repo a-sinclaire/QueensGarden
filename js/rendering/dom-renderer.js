@@ -397,19 +397,21 @@ class DOMRenderer extends RendererInterface {
       });
     });
     
-    // Update debug display after a brief delay
-    setTimeout(() => {
-      const actualScrollX = boardEl.scrollLeft;
-      const actualScrollY = boardEl.scrollTop;
-      
-      // Update debug display with current scroll
-      const debugEl = document.getElementById('mobile-debug');
-      if (debugEl && window.innerWidth <= 768) {
-        const debugContent = debugEl.querySelector('.debug-content');
-        if (debugContent) {
-          const currentScrollX = Math.round(actualScrollX);
-          const currentScrollY = Math.round(actualScrollY);
-          debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
+    // Update debug display after scroll starts
+    // Use requestAnimationFrame to check scroll position after browser applies it
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const actualScrollX = boardEl.scrollLeft;
+        const actualScrollY = boardEl.scrollTop;
+        
+        // Update debug display with current scroll
+        const debugEl = document.getElementById('mobile-debug');
+        if (debugEl && window.innerWidth <= 768) {
+          const debugContent = debugEl.querySelector('.debug-content');
+          if (debugContent) {
+            const currentScrollX = Math.round(actualScrollX);
+            const currentScrollY = Math.round(actualScrollY);
+            debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
 Bounds: X[${minX}, ${maxX}] Y[${minY}, ${maxY}]
 Offset: X=${playerXOffset} Y=${playerYOffset}
 Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}
@@ -422,9 +424,10 @@ MaxScroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}
 Final: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}
 Current: X=${currentScrollX} Y=${currentScrollY}
 Viewport: ${viewportWidth}x${viewportHeight}`;
+          }
         }
-      }
-    }, 100);
+      });
+    });
   }
   
   _updateBoard(board, playerPos) {
