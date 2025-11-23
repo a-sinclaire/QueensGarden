@@ -12,7 +12,18 @@ let keyboardHandler = null; // Store reference to keyboard event handler
 // Initialize game when page loads
 document.addEventListener('DOMContentLoaded', () => {
   setupQueenSelection();
+  setupVersion();
 });
+
+/**
+ * Setup version number display
+ */
+function setupVersion() {
+  const versionEl = document.getElementById('version-number');
+  if (versionEl && typeof GAME_VERSION !== 'undefined') {
+    versionEl.textContent = GAME_VERSION.toString();
+  }
+}
 
 /**
  * Setup queen selection screen
