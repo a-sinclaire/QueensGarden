@@ -182,307 +182,48 @@ class DOMRenderer extends RendererInterface {
   }
   
   /**
-   * Center board on player position (mobile) - Camera Handler
+   * Center board on player position (mobile) - Simple scrollable approach
    */
   _centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY) {
-    // Use multiple requestAnimationFrame calls to ensure DOM is fully rendered
+    // Simple approach: Let CSS handle the container, we just scroll to center the player
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         // Calculate tile size (including gap) - match CSS values
-        const tileWidth = window.innerWidth <= 480 ? 65 : 70; // Mobile tile width
-        const tileHeight = window.innerWidth <= 480 ? 85 : 90; // Mobile tile height
+        const tileWidth = window.innerWidth <= 480 ? 65 : 70;
+        const tileHeight = window.innerWidth <= 480 ? 85 : 90;
         const gap = 2;
         const totalTileWidth = tileWidth + gap;
         const totalTileHeight = tileHeight + gap;
         
-        // Get viewport dimensions (what's visible)
-        // Always use window.innerWidth/Height - these are the actual viewport dimensions
-        // The container will be constrained to these dimensions
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
+        // Get viewport dimensions from the container
+        const viewportWidth = boardEl.clientWidth || window.innerWidth;
+        const viewportHeight = boardEl.clientHeight || window.innerHeight;
         
-        // Calculate actual board content size (tiles only)
-        // Padding matches CSS: 0.5rem on mobile (8px), 1rem on desktop (16px)
-        const padding = window.innerWidth <= 768 ? 8 : 16;
-        const boardContentWidth = (maxX - minX + 1) * totalTileWidth + (padding * 2);
-        const boardContentHeight = (maxY - minY + 1) * totalTileHeight + (padding * 2);
-        
-        // Add viewport-sized padding on all sides to allow scrolling in all directions
-        const extraPaddingX = viewportWidth;
-        const extraPaddingY = viewportHeight;
-        const totalBoardWidth = boardContentWidth + (extraPaddingX * 2);
-        const totalBoardHeight = boardContentHeight + (extraPaddingY * 2);
-        
-        // CRITICAL: The board container must be constrained to viewport size
-        // The CONTENT inside (the board grid + padding) should be larger to enable scrolling
-        // Set container to viewport size (this is what clientWidth/clientHeight will be)
-        // Use !important to override any CSS that might be setting width/height
-        // Force the container to exact pixel values using min/max to prevent expansion
-        boardEl.style.setProperty('width', `${viewportWidth}px`, 'important');
-        boardEl.style.setProperty('height', `${viewportHeight}px`, 'important');
-        boardEl.style.setProperty('min-width', `${viewportWidth}px`, 'important');
-        boardEl.style.setProperty('min-height', `${viewportHeight}px`, 'important');
-        boardEl.style.setProperty('max-width', `${viewportWidth}px`, 'important');
-        boardEl.style.setProperty('max-height', `${viewportHeight}px`, 'important');
-        
-        // Also set on the parent game-area to ensure it doesn't expand
-        const gameArea = boardEl.parentElement;
-        if (gameArea) {
-          gameArea.style.setProperty('width', `${viewportWidth}px`, 'important');
-          gameArea.style.setProperty('height', `${viewportHeight}px`, 'important');
-          gameArea.style.setProperty('min-width', `${viewportWidth}px`, 'important');
-          gameArea.style.setProperty('min-height', `${viewportHeight}px`, 'important');
-          gameArea.style.setProperty('max-width', `${viewportWidth}px`, 'important');
-          gameArea.style.setProperty('max-height', `${viewportHeight}px`, 'important');
-          gameArea.style.setProperty('overflow', 'hidden', 'important');
-        }
-        
-        // Force immediate reflow to apply styles
-        void boardEl.offsetWidth;
-        void boardEl.offsetHeight;
-        
-        // Add padding to board container to create scrollable space
-        // The padding makes the content area larger than the viewport
-        boardEl.style.paddingLeft = `${extraPaddingX}px`;
-        boardEl.style.paddingTop = `${extraPaddingY}px`;
-        boardEl.style.paddingRight = `${extraPaddingX}px`;
-        boardEl.style.paddingBottom = `${extraPaddingY}px`;
-        
-        // Force display properties for scrolling
-        boardEl.style.display = 'flex'; // Keep flex for board layout
-        boardEl.style.flexDirection = 'column'; // Keep column direction
-        boardEl.style.position = 'relative';
-        boardEl.style.setProperty('box-sizing', 'border-box', 'important');
-        
-        // Ensure overflow is set to allow scrolling
-        boardEl.style.overflowX = 'scroll';
-        boardEl.style.overflowY = 'scroll';
-        
-        // The board grid content (rows) will naturally be boardContentWidth x boardContentHeight
-        // With padding, the total scrollable area will be:
-        // scrollWidth = paddingLeft + boardContentWidth + paddingRight
-        // scrollHeight = paddingTop + boardContentHeight + paddingBottom
-        // This should make scrollWidth > clientWidth and scrollHeight > clientHeight
+        // Get padding from computed style
+        const computedStyle = window.getComputedStyle(boardEl);
+        const padding = parseInt(computedStyle.paddingLeft) || (window.innerWidth <= 768 ? 8 : 16);
         
         // Calculate player's position relative to board bounds
         const playerXOffset = playerPos.x - minX;
         const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
         
-        // Calculate player tile center position in pixels (relative to board content)
-        // Account for the padding we added
-        // Tiles are laid out with gaps between them (gap = 2px)
-        // For X: first tile starts at padding + extraPaddingX
-        //        each subsequent tile is offset by totalTileWidth (tileWidth + gap)
-        //        tile center is at: tileStart + (tileWidth / 2)
-        // Note: The gap is between tiles, so tile positions are: 0, totalTileWidth, 2*totalTileWidth, etc.
-        const tileStartX = padding + extraPaddingX + (playerXOffset * totalTileWidth);
-        const tileStartY = padding + extraPaddingY + (playerYOffset * totalTileHeight);
-        // Center of tile is exactly at tileStart + (tileWidth / 2)
+        // Calculate player tile center position in pixels
+        // Tile starts at: padding + (offset * totalTileWidth)
+        const tileStartX = padding + (playerXOffset * totalTileWidth);
+        const tileStartY = padding + (playerYOffset * totalTileHeight);
         const playerPixelX = tileStartX + (tileWidth / 2);
         const playerPixelY = tileStartY + (tileHeight / 2);
         
-        // Debug: log the calculation to verify it's correct
-        if (window.innerWidth <= 768) {
-          console.log('Tile center calculation:', {
-            playerPos: { x: playerPos.x, y: playerPos.y },
-            bounds: { minX, maxX, minY, maxY },
-            offset: { x: playerXOffset, y: playerYOffset },
-            tileSize: { width: tileWidth, height: tileHeight },
-            totalTileSize: { width: totalTileWidth, height: totalTileHeight },
-            tileStart: { x: tileStartX, y: tileStartY },
-            center: { x: playerPixelX, y: playerPixelY },
-            padding,
-            extraPadding: { x: extraPaddingX, y: extraPaddingY }
-          });
-        }
-        
-        // Calculate scroll position to center player EXACTLY in viewport
-        // This centers the player tile's center point in the viewport center
-        // scrollX = playerPixelX - (viewportWidth / 2)
-        // scrollY = playerPixelY - (viewportHeight / 2)
+        // Calculate scroll position to center player in viewport
         const scrollX = playerPixelX - (viewportWidth / 2);
         const scrollY = playerPixelY - (viewportHeight / 2);
         
-        // Wait for size to apply, then scroll
-        // Use longer delay on actual mobile devices to ensure styles are applied
-        const isMobile = window.innerWidth <= 768;
-        const delay = isMobile ? 300 : 100; // Longer delay for mobile to ensure constraint applies
-        
-        setTimeout(() => {
-          // Force multiple reflows to ensure sizes are fully applied
-          void boardEl.offsetWidth;
-          void boardEl.offsetHeight;
-          void boardEl.scrollWidth;
-          void boardEl.scrollHeight;
-          
-          // Check if container is properly constrained, if not, force it again
-          const currentWidth = boardEl.clientWidth;
-          const currentHeight = boardEl.clientHeight;
-          if (Math.abs(currentWidth - viewportWidth) > 1 || Math.abs(currentHeight - viewportHeight) > 1) {
-            console.warn(`Container still not constrained before scroll! Expected ${viewportWidth}x${viewportHeight}, got ${currentWidth}x${currentHeight}, forcing again...`);
-            boardEl.style.setProperty('width', `${viewportWidth}px`, 'important');
-            boardEl.style.setProperty('height', `${viewportHeight}px`, 'important');
-            boardEl.style.setProperty('min-width', `${viewportWidth}px`, 'important');
-            boardEl.style.setProperty('min-height', `${viewportHeight}px`, 'important');
-            boardEl.style.setProperty('max-width', `${viewportWidth}px`, 'important');
-            boardEl.style.setProperty('max-height', `${viewportHeight}px`, 'important');
-            // Force reflow
-            void boardEl.offsetWidth;
-            void boardEl.offsetHeight;
-          }
-          
-          // Wait a bit more for browser to process
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              // On mobile, wait one more frame to ensure everything is ready
-              if (isMobile) {
-                requestAnimationFrame(() => {
-                  this._performScroll(boardEl, playerPos, minX, maxX, minY, maxY, viewportWidth, viewportHeight, totalBoardWidth, totalBoardHeight, scrollX, scrollY, playerXOffset, playerYOffset, playerPixelX, playerPixelY, extraPaddingX, extraPaddingY);
-                });
-              } else {
-                this._performScroll(boardEl, playerPos, minX, maxX, minY, maxY, viewportWidth, viewportHeight, totalBoardWidth, totalBoardHeight, scrollX, scrollY, playerXOffset, playerYOffset, playerPixelX, playerPixelY, extraPaddingX, extraPaddingY);
-              }
-            });
-          });
-        }, delay);
-      });
-    });
-  }
-  
-  /**
-   * Perform the actual scroll operation (extracted for clarity)
-   */
-  _performScroll(boardEl, playerPos, minX, maxX, minY, maxY, viewportWidth, viewportHeight, totalBoardWidth, totalBoardHeight, scrollX, scrollY, playerXOffset, playerYOffset, playerPixelX, playerPixelY, extraPaddingX, extraPaddingY) {
-    // Force a reflow to ensure styles are applied
-    void boardEl.offsetWidth;
-    void boardEl.offsetHeight;
-    
-    // If container is still not constrained, force it again
-    const currentWidth = boardEl.clientWidth;
-    const currentHeight = boardEl.clientHeight;
-    if (currentWidth !== viewportWidth || currentHeight !== viewportHeight) {
-      console.warn(`Container not constrained! Expected ${viewportWidth}x${viewportHeight}, got ${currentWidth}x${currentHeight}`);
-      boardEl.style.setProperty('width', `${viewportWidth}px`, 'important');
-      boardEl.style.setProperty('height', `${viewportHeight}px`, 'important');
-      // Force another reflow
-      void boardEl.offsetWidth;
-      void boardEl.offsetHeight;
-    }
-    
-    // Get actual scrollable dimensions after size is set
-    const scrollWidth = boardEl.scrollWidth;
-    const scrollHeight = boardEl.scrollHeight;
-    const clientWidth = boardEl.clientWidth;
-    const clientHeight = boardEl.clientHeight;
-    const offsetWidth = boardEl.offsetWidth;
-    const offsetHeight = boardEl.offsetHeight;
-  
-    // Debug: check if board is actually scrollable
-    const canScrollX = scrollWidth > clientWidth;
-    const canScrollY = scrollHeight > clientHeight;
-    
-    // Only log dimensions if there's an issue (to reduce console spam)
-    if (!canScrollX || !canScrollY) {
-      console.log('Board dimensions:', {
-        offsetWidth,
-        offsetHeight,
-        scrollWidth,
-        scrollHeight,
-        clientWidth,
-        clientHeight,
-        viewportWidth,
-        viewportHeight,
-        totalBoardWidth,
-        totalBoardHeight,
-        canScrollX,
-        canScrollY,
-        computedWidth: window.getComputedStyle(boardEl).width,
-        computedHeight: window.getComputedStyle(boardEl).height
-      });
-      
-      // If board isn't scrollable, log detailed diagnostics
-      const computedStyle = window.getComputedStyle(boardEl);
-      console.warn('Board not scrollable! Diagnostics:', {
-        inlineWidth: boardEl.style.width,
-        inlineHeight: boardEl.style.height,
-        computedWidth: computedStyle.width,
-        computedHeight: computedStyle.height,
-        computedMaxWidth: computedStyle.maxWidth,
-        computedMaxHeight: computedStyle.maxHeight,
-        parentWidth: boardEl.parentElement?.clientWidth,
-        parentHeight: boardEl.parentElement?.clientHeight
-      });
-    }
-    
-    // Calculate maximum scroll positions using clientWidth/Height (actual viewport)
-    const maxScrollX = Math.max(0, scrollWidth - clientWidth);
-    const maxScrollY = Math.max(0, scrollHeight - clientHeight);
-    
-    // Always center on player - don't clamp if it would prevent centering
-    // But ensure we don't scroll beyond bounds
-    let finalScrollX = scrollX;
-    let finalScrollY = scrollY;
-    
-    // Only clamp if we're at the edges and can't center perfectly
-    if (scrollX < 0) {
-      finalScrollX = 0;
-    } else if (scrollX > maxScrollX) {
-      finalScrollX = maxScrollX;
-    }
-    
-    if (scrollY < 0) {
-      finalScrollY = 0;
-    } else if (scrollY > maxScrollY) {
-      finalScrollY = maxScrollY;
-    }
-    
-    // Check if board is actually scrollable
-    // Only warn if we actually need to scroll but can't
-    if ((finalScrollX > 0 || finalScrollY > 0) && !canScrollX && !canScrollY) {
-      const errorMsg = `Board not scrollable! scrollWidth=${scrollWidth}, clientWidth=${clientWidth}, scrollHeight=${scrollHeight}, clientHeight=${clientHeight}`;
-      console.warn(errorMsg);
-      addMobileConsoleLog(errorMsg, 'warn');
-      // Still try to scroll - might work even if dimensions suggest it won't
-    }
-    
-    // Always use smooth scrolling for consistent behavior
-    // The board should be manually scrollable, and we just adjust it when player moves
-    // Use smooth scrolling directly - browser will handle canceling previous animations
-    boardEl.scrollTo({
-      left: finalScrollX,
-      top: finalScrollY,
-      behavior: 'smooth'
-    });
-    
-    // Update debug display after scroll starts
-    // Use requestAnimationFrame to check scroll position after browser applies it
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const actualScrollX = boardEl.scrollLeft;
-        const actualScrollY = boardEl.scrollTop;
-        
-        // Update debug display with current scroll
-        const debugEl = document.getElementById('mobile-debug');
-        if (debugEl && window.innerWidth <= 768) {
-          const debugContent = debugEl.querySelector('.debug-content');
-          if (debugContent) {
-            const currentScrollX = Math.round(actualScrollX);
-            const currentScrollY = Math.round(actualScrollY);
-            debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
-Bounds: X[${minX}, ${maxX}] Y[${minY}, ${maxY}]
-Offset: X=${playerXOffset} Y=${playerYOffset}
-Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}
-Scroll: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}
-Board: ${boardEl.offsetWidth}x${boardEl.offsetHeight}
-Scroll: ${scrollWidth}x${scrollHeight}
-Client: ${clientWidth}x${clientHeight}
-CanScroll: X=${canScrollX} Y=${canScrollY}
-MaxScroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}
-Final: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}
-Current: X=${currentScrollX} Y=${currentScrollY}
-Viewport: ${viewportWidth}x${viewportHeight}`;
-          }
-        }
+        // Scroll smoothly to center the player
+        boardEl.scrollTo({
+          left: Math.max(0, scrollX),
+          top: Math.max(0, scrollY),
+          behavior: 'smooth'
+        });
       });
     });
   }
