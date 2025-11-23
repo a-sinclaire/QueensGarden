@@ -211,20 +211,18 @@ class DOMRenderer extends RendererInterface {
         const totalBoardHeight = boardContentHeight + (extraPaddingY * 2);
         
         // CRITICAL: The board container must be constrained to viewport size
-        // The CONTENT inside (the board grid) should be larger to enable scrolling
+        // The CONTENT inside (the board grid + padding) should be larger to enable scrolling
         // Set container to viewport size (this is what clientWidth/clientHeight will be)
         boardEl.style.setProperty('width', `${viewportWidth}px`, 'important');
         boardEl.style.setProperty('height', `${viewportHeight}px`, 'important');
         boardEl.style.setProperty('max-width', `${viewportWidth}px`, 'important');
         boardEl.style.setProperty('max-height', `${viewportHeight}px`, 'important');
-        
-        // Now set the CONTENT size (the actual board grid) to be larger
-        // This is done by setting min-width/min-height on the container
-        // The container will expand its scrollWidth/scrollHeight to accommodate
-        boardEl.style.setProperty('min-width', `${totalBoardWidth}px`, 'important');
-        boardEl.style.setProperty('min-height', `${totalBoardHeight}px`, 'important');
+        // Remove min-width/min-height - they override width/height
+        boardEl.style.removeProperty('min-width');
+        boardEl.style.removeProperty('min-height');
         
         // Add padding to board container to create scrollable space
+        // The padding makes the content area larger than the viewport
         boardEl.style.paddingLeft = `${extraPaddingX}px`;
         boardEl.style.paddingTop = `${extraPaddingY}px`;
         boardEl.style.paddingRight = `${extraPaddingX}px`;
@@ -237,6 +235,20 @@ class DOMRenderer extends RendererInterface {
         // Ensure overflow is set to allow scrolling
         boardEl.style.overflowX = 'scroll';
         boardEl.style.overflowY = 'scroll';
+        
+        // Now we need to ensure the CONTENT (the board grid) is sized correctly
+        // The board grid is created in _updateBoard, but we need to ensure it's wide/tall enough
+        // The grid itself should be at least totalBoardWidth x totalBoardHeight
+        // We'll set this on the board grid element (the flex container with tiles)
+        const boardGrid = boardEl; // boardEl IS the grid container
+        // Set the grid's content size via a wrapper or by ensuring tiles span the full width
+        // Actually, the grid is flex-direction: column, so each row is a flex item
+        // The width comes from the widest row, height from sum of rows
+        // We need to ensure the grid content is at least totalBoardWidth x totalBoardHeight
+        // We can do this by setting a min-width/min-height on the grid's content box
+        // But since it's flex, we need to ensure the rows are wide enough
+        // For now, let's try setting the grid's internal sizing
+        boardEl.style.setProperty('box-sizing', 'border-box', 'important');
         
         // Calculate player's position relative to board bounds
         const playerXOffset = playerPos.x - minX;
@@ -499,10 +511,19 @@ Viewport: ${viewportWidth}x${viewportHeight}`;
     // Get adjacent tiles for tap-to-move highlighting (mobile)
     const adjacentTiles = this._getAdjacentMoveableTiles(board, playerPos);
     
+    // Calculate row width to ensure content is wide enough for scrolling
+    const tileWidth = window.innerWidth <= 480 ? 65 : 70;
+    const gap = 2;
+    const totalTileWidth = tileWidth + gap;
+    const rowWidth = (maxX - minX + 1) * totalTileWidth;
+    
     // Create rows (from top to bottom, y descending)
     for (let y = maxY; y >= minY; y--) {
       const row = document.createElement('div');
       row.className = 'board-row';
+      // Ensure row is wide enough to make container scrollable
+      row.style.minWidth = `${rowWidth}px`;
+      row.style.width = `${rowWidth}px`;
       
       for (let x = minX; x <= maxX; x++) {
         const key = `${x},${y}`;
