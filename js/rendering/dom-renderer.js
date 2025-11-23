@@ -202,9 +202,9 @@ class DOMRenderer extends RendererInterface {
       // Calculate expected board height to ensure container is tall enough
       const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
       
-      // Get viewport dimensions from the container
-      const viewportWidth = boardEl.clientWidth || window.innerWidth;
-      const viewportHeight = boardEl.clientHeight || window.innerHeight;
+      // Get viewport dimensions - use window, not container (container may have grown)
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
       
       // Calculate player's position relative to board bounds
       const playerXOffset = playerPos.x - minX;
@@ -228,8 +228,19 @@ class DOMRenderer extends RendererInterface {
         playerPixelY + (viewportHeight / 2) // Tall enough to scroll down to center player
       );
       
-      // Spacer is added in _updateBoard to ensure content is tall enough
-      // Just force reflow here to ensure browser has calculated scrollHeight correctly
+      // CRITICAL: Ensure container stays at viewport height for scrolling to work
+      // Container must have: clientHeight = viewport (710px), scrollHeight > clientHeight
+      // If container has grown (clientHeight > viewport), force it back to viewport height
+      const currentClientHeight = boardEl.clientHeight;
+      if (currentClientHeight > viewportHeight) {
+        // Container grew - force it back to viewport height
+        boardEl.style.height = `${viewportHeight}px`;
+        boardEl.style.maxHeight = `${viewportHeight}px`;
+        // Force reflow
+        void boardEl.offsetHeight;
+      }
+      
+      // Force reflow to ensure browser has calculated scrollHeight correctly
       void boardEl.offsetHeight;
       void boardEl.scrollHeight;
       void boardEl.offsetHeight;
@@ -566,7 +577,8 @@ class DOMRenderer extends RendererInterface {
       const computedStyle = window.getComputedStyle(boardEl);
       const padding = parseInt(computedStyle.paddingTop) || parseInt(computedStyle.paddingLeft) || 8;
       const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
-      const viewportHeight = boardEl.clientHeight || window.innerHeight;
+      // Use window.innerHeight, not clientHeight (container may have grown)
+      const viewportHeight = window.innerHeight;
       const playerYOffset = maxY - playerPos.y;
       const tileStartY = padding + (playerYOffset * totalTileHeight);
       const playerPixelY = tileStartY + (tileHeight / 2);
