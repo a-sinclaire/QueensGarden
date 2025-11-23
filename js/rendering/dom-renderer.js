@@ -188,12 +188,18 @@ class DOMRenderer extends RendererInterface {
     // Simple approach: Let CSS handle the container, we just scroll to center the player
     // Use setTimeout to ensure DOM is fully rendered and browser has recalculated layout
     setTimeout(() => {
-      // Calculate expected board height first to ensure container is tall enough
+      // Calculate tile size (including gap) - match CSS values
+      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
       const tileHeight = window.innerWidth <= 480 ? 85 : 90;
       const gap = 2;
+      const totalTileWidth = tileWidth + gap;
       const totalTileHeight = tileHeight + gap;
+      
+      // Get padding from computed style
       const computedStyle = window.getComputedStyle(boardEl);
       const padding = parseInt(computedStyle.paddingTop) || parseInt(computedStyle.paddingLeft) || (window.innerWidth <= 768 ? 8 : 16);
+      
+      // Calculate expected board height to ensure container is tall enough
       const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
       
       // Ensure container is tall enough to enable scrolling
@@ -203,10 +209,6 @@ class DOMRenderer extends RendererInterface {
         // Force reflow
         void boardEl.offsetHeight;
       }
-      
-      // Calculate tile size (including gap) - match CSS values
-      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
-      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
       const gap = 2;
       const totalTileWidth = tileWidth + gap;
       const totalTileHeight = tileHeight + gap;
@@ -789,5 +791,10 @@ class DOMRenderer extends RendererInterface {
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = DOMRenderer;
+}
+
+// Make available globally for script tag usage
+if (typeof window !== 'undefined') {
+  window.DOMRenderer = DOMRenderer;
 }
 
