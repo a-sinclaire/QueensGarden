@@ -54,6 +54,8 @@
     scroll-behavior: smooth;
     /* Ensure container can scroll in all directions */
     -webkit-overflow-scrolling: touch;
+    /* Allow scrolling in all directions */
+    overscroll-behavior: contain;
   }
 }
 

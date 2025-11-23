@@ -213,18 +213,26 @@ class DOMRenderer extends RendererInterface {
         const scrollX = playerPixelX - (viewportWidth / 2);
         const scrollY = playerPixelY - (viewportHeight / 2);
         
-        // Ensure board container is large enough to scroll
-        // Set minimum size to allow scrolling in all directions
-        const boardWidth = (maxX - minX + 1) * totalTileWidth + (padding * 2);
-        const boardHeight = (maxY - minY + 1) * totalTileHeight + (padding * 2);
-        const minBoardWidth = Math.max(boardWidth, viewportWidth * 2);
-        const minBoardHeight = Math.max(boardHeight, viewportHeight * 2);
+        // Ensure board container is large enough to scroll in ALL directions
+        // We need extra space on all sides to allow centering
+        const boardContentWidth = (maxX - minX + 1) * totalTileWidth + (padding * 2);
+        const boardContentHeight = (maxY - minY + 1) * totalTileHeight + (padding * 2);
         
+        // Make board at least 3x viewport size to allow scrolling in all directions
+        const minBoardWidth = Math.max(boardContentWidth, viewportWidth * 3);
+        const minBoardHeight = Math.max(boardContentHeight, viewportHeight * 3);
+        
+        // Set size to ensure scrolling is possible
         boardEl.style.minWidth = `${minBoardWidth}px`;
         boardEl.style.minHeight = `${minBoardHeight}px`;
+        boardEl.style.width = `${minBoardWidth}px`;
+        boardEl.style.height = `${minBoardHeight}px`;
         
-        // Wait a moment for size to apply, then scroll
+        // Wait for size to apply, then scroll
         setTimeout(() => {
+          // Force a reflow to ensure sizes are applied
+          boardEl.offsetHeight;
+          
           // Get actual scrollable dimensions after size is set
           const scrollWidth = boardEl.scrollWidth;
           const scrollHeight = boardEl.scrollHeight;
@@ -237,13 +245,26 @@ class DOMRenderer extends RendererInterface {
           const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
           const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
           
+          // Debug logging
+          console.log('Camera centering:', {
+            playerPos: { x: playerPos.x, y: playerPos.y },
+            bounds: { minX, maxX, minY, maxY },
+            playerOffset: { x: playerXOffset, y: playerYOffset },
+            playerPixel: { x: playerPixelX, y: playerPixelY },
+            scroll: { x: scrollX, y: scrollY },
+            scrollDims: { width: scrollWidth, height: scrollHeight },
+            maxScroll: { x: maxScrollX, y: maxScrollY },
+            finalScroll: { x: finalScrollX, y: finalScrollY },
+            viewport: { width: viewportWidth, height: viewportHeight }
+          });
+          
           // Scroll the board container smoothly
           boardEl.scrollTo({
             left: finalScrollX,
             top: finalScrollY,
             behavior: 'smooth'
           });
-        }, 10);
+        }, 50);
       });
     });
   }
