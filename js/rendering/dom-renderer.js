@@ -286,18 +286,45 @@ class DOMRenderer extends RendererInterface {
           const isFirstRender = !boardEl.dataset.hasScrolled;
           boardEl.dataset.hasScrolled = 'true';
           
-          // Force scroll - use scrollLeft/scrollTop for immediate effect
-          // This ensures the scroll actually happens
+          // Force scroll immediately - use direct assignment for reliability
           boardEl.scrollLeft = finalScrollX;
           boardEl.scrollTop = finalScrollY;
           
-          // Then use scrollTo for smooth behavior on subsequent moves
-          if (!isFirstRender) {
+          // Verify scroll was applied
+          const actualScrollX = boardEl.scrollLeft;
+          const actualScrollY = boardEl.scrollTop;
+          
+          // If scroll didn't apply (still at 0,0), try scrollTo as fallback
+          if ((actualScrollX === 0 && finalScrollX > 0) || (actualScrollY === 0 && finalScrollY > 0)) {
+            console.warn('Direct scroll failed, trying scrollTo:', {
+              expected: { x: finalScrollX, y: finalScrollY },
+              actual: { x: actualScrollX, y: actualScrollY }
+            });
+            // Try scrollTo with auto behavior first
             boardEl.scrollTo({
               left: finalScrollX,
               top: finalScrollY,
-              behavior: 'smooth'
+              behavior: 'auto'
             });
+            // Then apply smooth if not first render
+            if (!isFirstRender) {
+              setTimeout(() => {
+                boardEl.scrollTo({
+                  left: finalScrollX,
+                  top: finalScrollY,
+                  behavior: 'smooth'
+                });
+              }, 10);
+            }
+          } else if (!isFirstRender) {
+            // Scroll worked, apply smooth behavior for subsequent moves
+            setTimeout(() => {
+              boardEl.scrollTo({
+                left: finalScrollX,
+                top: finalScrollY,
+                behavior: 'smooth'
+              });
+            }, 10);
           }
           
           // Update debug display after scroll (use delay to read actual scroll position)
@@ -326,12 +353,11 @@ Viewport: ${viewportWidth}x${viewportHeight}`;
             }
           };
           
-          // Update immediately for instant scroll, delay for smooth scroll
-          if (isFirstRender) {
-            setTimeout(updateDebug, 10);
-          } else {
-            setTimeout(updateDebug, 150); // Wait for smooth scroll to complete
-          }
+          // Update debug display immediately and after scroll
+          updateDebug(); // Show immediately with direct scroll values
+          setTimeout(() => {
+            updateDebug(); // Update again after any scrollTo completes
+          }, isFirstRender ? 50 : 200);
           
           // Also log to console for desktop debugging
           console.log('Camera centering:', {
