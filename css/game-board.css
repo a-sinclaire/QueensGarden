@@ -18,14 +18,16 @@
   .board-container {
     padding: 0.5rem;
     /* Ensure board is centered and scrollable */
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-start;
+    align-items: flex-start;
     width: fit-content;
     min-width: 100%;
     overflow-x: auto;
     overflow-y: auto;
     /* Center player position */
     scroll-behavior: smooth;
+    /* Ensure board can scroll in all directions */
+    position: relative;
   }
 }
 

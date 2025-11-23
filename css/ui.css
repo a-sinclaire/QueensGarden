@@ -32,6 +32,8 @@
     overflow: hidden;
     padding: 0;
     position: relative;
+    /* Account for header being hidden */
+    margin-top: 0;
   }
   
   /* Hide mobile control buttons - using tap-to-move instead */

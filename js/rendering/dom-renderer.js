@@ -151,24 +151,43 @@ class DOMRenderer extends RendererInterface {
    * Center board on player position (mobile)
    */
   _centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY) {
-    // Calculate tile size (including gap)
-    const tileWidth = 70; // Mobile tile width
-    const tileHeight = 90; // Mobile tile height
-    const gap = 2;
-    const totalTileWidth = tileWidth + gap;
-    const totalTileHeight = tileHeight + gap;
-    
-    // Calculate player's position relative to board bounds
-    const playerXOffset = playerPos.x - minX;
-    const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
-    
-    // Calculate scroll position to center player
-    const scrollX = (playerXOffset * totalTileWidth) - (window.innerWidth / 2) + (totalTileWidth / 2);
-    const scrollY = (playerYOffset * totalTileHeight) - (window.innerHeight / 2) + (totalTileHeight / 2);
-    
-    // Scroll the board container
-    boardEl.scrollLeft = Math.max(0, scrollX);
-    boardEl.scrollTop = Math.max(0, scrollY);
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      // Wait a bit more for layout to settle
+      setTimeout(() => {
+        // Calculate tile size (including gap) - match CSS values
+        const tileWidth = window.innerWidth <= 480 ? 65 : 70; // Mobile tile width
+        const tileHeight = window.innerWidth <= 480 ? 85 : 90; // Mobile tile height
+        const gap = 2;
+        const totalTileWidth = tileWidth + gap;
+        const totalTileHeight = tileHeight + gap;
+        
+        // Get actual board container dimensions
+        const containerRect = boardEl.getBoundingClientRect();
+        const containerWidth = containerRect.width || window.innerWidth;
+        const containerHeight = containerRect.height || window.innerHeight;
+        
+        // Calculate player's position relative to board bounds
+        const playerXOffset = playerPos.x - minX;
+        const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
+        
+        // Calculate scroll position to center player in viewport
+        // Player tile center position in pixels
+        const playerPixelX = (playerXOffset * totalTileWidth) + (totalTileWidth / 2);
+        const playerPixelY = (playerYOffset * totalTileHeight) + (totalTileHeight / 2);
+        
+        // Scroll to center player in viewport
+        const scrollX = playerPixelX - (containerWidth / 2);
+        const scrollY = playerPixelY - (containerHeight / 2);
+        
+        // Scroll the board container smoothly
+        boardEl.scrollTo({
+          left: Math.max(0, scrollX),
+          top: Math.max(0, scrollY),
+          behavior: 'smooth'
+        });
+      }, 100);
+    });
   }
   
   _updateBoard(board, playerPos) {
