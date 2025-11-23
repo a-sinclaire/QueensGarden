@@ -298,6 +298,7 @@ Scroll: ${scrollWidth}x${scrollHeight}
 CanScroll: X=${canScrollX} Y=${canScrollY}
 MaxScroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}
 Final: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}
+Current: X=${Math.round(boardEl.scrollLeft)} Y=${Math.round(boardEl.scrollTop)}
 Viewport: ${viewportWidth}x${viewportHeight}`;
             }
           }
