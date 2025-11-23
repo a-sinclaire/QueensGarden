@@ -340,23 +340,64 @@ class DOMRenderer extends RendererInterface {
         // After first render - always use deadzone rules
         // If player is outside dead zone, scroll by exactly one tile spacing
         
+        // Debug: Log deadzone calculations (only on mobile, and only if player moved)
+        const playerMoved = this.lastPlayerPos && 
+          (this.lastPlayerPos.x !== playerPos.x || this.lastPlayerPos.y !== playerPos.y);
+        if (playerMoved && window.innerWidth <= 768) {
+          console.log('Deadzone check:', {
+            playerScreenX: Math.round(playerScreenX),
+            playerScreenY: Math.round(playerScreenY),
+            deadZoneLeft: Math.round(deadZoneLeft),
+            deadZoneRight: Math.round(deadZoneRight),
+            deadZoneTop: Math.round(deadZoneTop),
+            deadZoneBottom: Math.round(deadZoneBottom),
+            viewportWidth,
+            viewportHeight,
+            currentScrollX: Math.round(currentScrollX),
+            currentScrollY: Math.round(currentScrollY),
+            playerPos: { x: playerPos.x, y: playerPos.y }
+          });
+        }
+        
+        // Only adjust horizontal scroll if player is outside horizontal dead zone
         if (playerScreenX < deadZoneLeft) {
           // Player too far left - scroll LEFT (decrease scrollX) to move board right, bringing player right
           scrollX = currentScrollX - totalTileWidth;
+          if (playerMoved && window.innerWidth <= 768) {
+            console.log('  → Scrolling LEFT (player too far left)');
+          }
         } else if (playerScreenX > deadZoneRight) {
           // Player too far right - scroll RIGHT (increase scrollX) to move board left, bringing player left
           scrollX = currentScrollX + totalTileWidth;
+          if (playerMoved && window.innerWidth <= 768) {
+            console.log('  → Scrolling RIGHT (player too far right)');
+          }
+        } else {
+          // Player is within dead zone horizontally - keep current scroll
+          if (playerMoved && window.innerWidth <= 768) {
+            console.log('  → No horizontal scroll (within deadzone)');
+          }
         }
-        // If player is within dead zone horizontally, don't scroll horizontally
         
+        // Only adjust vertical scroll if player is outside vertical dead zone
         if (playerScreenY < deadZoneTop) {
           // Player too far up - scroll UP (decrease scrollY) to move board down, bringing player down
           scrollY = currentScrollY - totalTileHeight;
+          if (playerMoved && window.innerWidth <= 768) {
+            console.log('  → Scrolling UP (player too far up)');
+          }
         } else if (playerScreenY > deadZoneBottom) {
           // Player too far down - scroll DOWN (increase scrollY) to move board up, bringing player up
           scrollY = currentScrollY + totalTileHeight;
+          if (playerMoved && window.innerWidth <= 768) {
+            console.log('  → Scrolling DOWN (player too far down)');
+          }
+        } else {
+          // Player is within dead zone vertically - keep current scroll
+          if (playerMoved && window.innerWidth <= 768) {
+            console.log('  → No vertical scroll (within deadzone)');
+          }
         }
-        // If player is within dead zone vertically, don't scroll vertically
       }
       
       // Calculate minimum board height needed to allow scrolling to player position
