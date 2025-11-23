@@ -581,8 +581,13 @@ class DOMRenderer extends RendererInterface {
     maxY += 2;
     
     // Preserve scroll position before clearing board (prevents jump when bounds change)
+    // CRITICAL: When board bounds change, clearing innerHTML can reset scroll position
+    // We need to preserve it and pass it to _centerBoardOnPlayer to use instead of reading it
     const savedScrollX = boardEl.scrollLeft;
     const savedScrollY = boardEl.scrollTop;
+    
+    // Store saved scroll for use in _centerBoardOnPlayer
+    this._savedScrollBeforeRebuild = { x: savedScrollX, y: savedScrollY };
     
     // Clear board
     boardEl.innerHTML = '';
