@@ -211,6 +211,7 @@
     }
     
     .hud-debug {
+      display: none !important; /* Keep hidden even on small screens */
       max-height: 100px;
       font-size: 0.6rem;
     }
