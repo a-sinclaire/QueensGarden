@@ -455,11 +455,19 @@ class DOMRenderer extends RendererInterface {
         const debugEl = document.getElementById('debug-content');
         if (debugEl) {
           let debugText = `Viewport: ${viewportWidth}×${viewportHeight}\n`;
+          debugText += `Board Bounds: X(${minX}-${maxX}) Y(${minY}-${maxY})\n`;
+          debugText += `Player Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}\n`;
           debugText += `Player Screen: X=${Math.round(playerScreenX)} Y=${Math.round(playerScreenY)}\n`;
           debugText += `Deadzone X: ${Math.round(deadZoneLeft)}-${Math.round(deadZoneRight)}\n`;
           debugText += `Deadzone Y: ${Math.round(deadZoneTop)}-${Math.round(deadZoneBottom)}\n`;
           debugText += `Scroll: X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}\n`;
           debugText += `Player Pos: (${playerPos.x}, ${playerPos.y})\n`;
+          
+          // Show previous values for comparison
+          if (this.lastPlayerPixelX !== null) {
+            debugText += `\nLast Pixel: X=${Math.round(this.lastPlayerPixelX)} Y=${Math.round(this.lastPlayerPixelY)}`;
+            debugText += `\nPixel Delta: X=${Math.round(playerPixelX - this.lastPlayerPixelX)} Y=${Math.round(playerPixelY - this.lastPlayerPixelY)}`;
+          }
           
           // Determine scroll action
           let scrollAction = '';
