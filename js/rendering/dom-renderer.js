@@ -218,11 +218,13 @@ class DOMRenderer extends RendererInterface {
         const scrollX = playerPixelX - (viewportWidth / 2);
         const scrollY = playerPixelY - (viewportHeight / 2);
         
-        // Scroll smoothly to center the player
+        // Scroll to center the player
+        // Use instant scrolling on mobile (smooth looks bad), smooth on desktop
+        const isMobile = window.innerWidth <= 768;
         boardEl.scrollTo({
           left: Math.max(0, scrollX),
           top: Math.max(0, scrollY),
-          behavior: 'smooth'
+          behavior: isMobile ? 'auto' : 'smooth'
         });
       });
     });

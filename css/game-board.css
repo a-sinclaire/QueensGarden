@@ -10,9 +10,12 @@
   gap: 2px;
   padding: 1rem;
   margin: 0;
-  /* Content determines size */
+  /* Content determines size - must be larger than container to enable scrolling */
   width: fit-content;
   min-width: 100%;
+  min-height: 100%;
+  /* Ensure content can be taller/wider than container */
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
@@ -23,6 +26,8 @@
     /* Content determines size, container scrolls */
     width: fit-content;
     min-width: 100%;
+    min-height: 100%;
+    flex-shrink: 0;
   }
 }
 
