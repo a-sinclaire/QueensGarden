@@ -236,6 +236,42 @@ class DOMRenderer extends RendererInterface {
   }
   
   /**
+   * Get list of adjacent tiles that can be moved to
+   */
+  _getAdjacentMoveableTiles(board, playerPos) {
+    if (!this.gameEngine) {
+      return [];
+    }
+    
+    const adjacentPositions = [
+      { x: playerPos.x, y: playerPos.y + 1 },   // North
+      { x: playerPos.x, y: playerPos.y - 1 },   // South
+      { x: playerPos.x + 1, y: playerPos.y },   // East
+      { x: playerPos.x - 1, y: playerPos.y }     // West
+    ];
+    
+    const moveableTiles = [];
+    
+    for (const pos of adjacentPositions) {
+      const tile = board.get(`${pos.x},${pos.y}`);
+      if (tile) {
+        // Check if move is valid
+        const validation = this.gameEngine.rulesEngine.canMove(
+          playerPos,
+          pos,
+          board,
+          this.gameEngine.player
+        );
+        if (validation.valid) {
+          moveableTiles.push(pos);
+        }
+      }
+    }
+    
+    return moveableTiles;
+  }
+  
+  /**
    * Get list of teleport destinations (Aces and central chamber)
    * Can only teleport FROM Aces, not from central chamber
    */
