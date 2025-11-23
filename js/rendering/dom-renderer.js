@@ -231,9 +231,12 @@ class DOMRenderer extends RendererInterface {
       const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
       
       // Use actual scroll dimensions - they reflect the real rendered size
-      // Only use expected if actual seems wrong (too small)
+      // If actual is smaller than expected and we need to scroll, use expected (browser hasn't updated)
+      const needsScrollDown = scrollY > 0 && actualScrollHeight <= viewportHeight;
       const boardWidth = actualScrollWidth > 0 ? actualScrollWidth : expectedBoardWidth;
-      const boardHeight = actualScrollHeight > viewportHeight ? actualScrollHeight : Math.max(actualScrollHeight, expectedBoardHeight);
+      const boardHeight = needsScrollDown && expectedBoardHeight > actualScrollHeight 
+        ? expectedBoardHeight 
+        : Math.max(actualScrollHeight, expectedBoardHeight);
       
       // Calculate max scroll positions
       const maxScrollX = Math.max(0, boardWidth - viewportWidth);
