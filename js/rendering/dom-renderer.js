@@ -657,6 +657,9 @@ class DOMRenderer extends RendererInterface {
           tileEl.classList.add('player-position');
           const marker = document.createElement('div');
           marker.className = 'tile-player-marker';
+          // Apply cache-bust color for debugging (changes with each deployment)
+          marker.style.backgroundColor = this.cacheBustColor;
+          marker.style.borderColor = this.cacheBustColor;
           tileEl.appendChild(marker);
         }
         
