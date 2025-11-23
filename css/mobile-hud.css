@@ -76,9 +76,76 @@
   font-weight: bold;
 }
 
-.party-suit.king {
-  opacity: 0.6;
-  font-size: 1rem;
+.hud-kings {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  margin-top: 60px; /* Below health */
+  background-color: rgba(26, 26, 46, 0.95);
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  min-width: 80px;
+}
+
+.kings-suits {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.kings-suit {
+  font-size: 1.2rem;
+  line-height: 1;
+  display: inline-block;
+  color: #ffd700;
+}
+
+.kings-count {
+  font-size: 0.75rem;
+  color: var(--text-color);
+  opacity: 0.8;
+  margin-top: 0.25rem;
+  text-align: center;
+}
+
+.hud-destroy-btn {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background-color: var(--health-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  font-weight: bold;
+  display: none; /* Hidden - using tap and hold instead */
+}
+
+.hud-destroy-btn:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.hud-destroy-btn.active {
+  background-color: #ff6b6b;
+  box-shadow: 0 0 10px #ff6b6b;
+}
+
+/* Visual feedback for long press on destroyable tiles */
+.tile.long-press-active {
+  transform: scale(1.1);
+  border-color: var(--health-color) !important;
+  box-shadow: 0 0 15px var(--health-color) !important;
+  animation: pulse-destroy 0.5s ease-in-out infinite;
 }
 
 @media (max-width: 768px) {
@@ -87,5 +154,13 @@
   }
   
   /* HUD is fixed position, doesn't need padding */
+  
+  /* Adjust kings position for smaller screens */
+  @media (max-height: 600px) {
+    .hud-kings {
+      margin-top: 50px;
+      padding: 0.4rem 0.6rem;
+    }
+  }
 }
 

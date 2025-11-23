@@ -240,6 +240,7 @@ function toggleDestroyMode() {
   // Store in window for renderer access
   window.destroyMode = destroyMode;
   window.selectedKing = selectedKing;
+  window.toggleDestroyMode = toggleDestroyMode; // Make available for mobile HUD
   
   // Re-render to show highlights
   if (gameEngine) {

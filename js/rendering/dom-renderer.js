@@ -41,11 +41,11 @@ class DOMRenderer extends RendererInterface {
     // Update collected Kings
     this._updateKings(gameState.player.collectedKings);
     
-    // Update mobile HUD
-    this._updateMobileHUD(gameState.player);
-    
-    // Update board
+    // Update board first (needed for destroy mode state)
     this._updateBoard(gameState.board, gameState.player.position);
+    
+    // Update mobile HUD (after board to sync destroy mode state)
+    this._updateMobileHUD(gameState.player);
     
     // Update turn counter
     this._updateTurn(gameState.turn);
@@ -105,7 +105,7 @@ class DOMRenderer extends RendererInterface {
   }
   
   /**
-   * Update mobile HUD (health and party display)
+   * Update mobile HUD (health, party, and kings display)
    */
   _updateMobileHUD(player) {
     // Update mobile health display
@@ -114,35 +114,85 @@ class DOMRenderer extends RendererInterface {
       mobileHealthEl.textContent = `${player.health}/${GAME_RULES.startingHealth}`;
     }
     
-    // Update mobile party display (compact suit display)
+    // Update mobile party display (compact suit display - Queens only)
     const mobilePartyEl = document.getElementById('mobile-party-suits');
     if (mobilePartyEl && this.gameEngine && this.gameEngine.startingQueen) {
       // Get starting queen suit (own suit)
       const ownSuit = this.gameEngine.startingQueen.suit;
       
-      // Combine party and kings
-      const partySuits = player.party.map(q => ({ type: 'queen', suit: q.suit }));
-      const kingSuits = player.collectedKings.map(k => ({ type: 'king', suit: k.suit }));
-      const allSuits = [...partySuits, ...kingSuits];
+      // Only show Queens in party
+      const partySuits = player.party.map(q => ({ suit: q.suit }));
       
       // Sort: own suit first, then others
-      allSuits.sort((a, b) => {
+      partySuits.sort((a, b) => {
         if (a.suit === ownSuit) return -1;
         if (b.suit === ownSuit) return 1;
         return 0;
       });
       
       // Render suits
-      mobilePartyEl.innerHTML = allSuits.map(item => {
+      mobilePartyEl.innerHTML = partySuits.map(item => {
         const suitSymbol = this._getSuitSymbol(item.suit);
         const isOwn = item.suit === ownSuit;
-        const isKing = item.type === 'king';
-        return `<span class="party-suit ${isOwn ? 'own-suit' : ''} ${isKing ? 'king' : ''}" title="${item.type === 'king' ? 'King' : 'Queen'} of ${item.suit}">${suitSymbol}</span>`;
+        return `<span class="party-suit ${isOwn ? 'own-suit' : ''}" title="Queen of ${item.suit}">${suitSymbol}</span>`;
       }).join('');
       
-      // If no party/kings, show placeholder
-      if (allSuits.length === 0) {
+      // If no party, show placeholder
+      if (partySuits.length === 0) {
         mobilePartyEl.innerHTML = '<span style="opacity: 0.5; font-size: 0.8rem;">None</span>';
+      }
+    }
+    
+    // Update mobile kings display
+    const mobileKingsEl = document.getElementById('mobile-kings-suits');
+    const mobileKingsCountEl = document.getElementById('mobile-kings-count');
+    const mobileDestroyBtn = document.getElementById('mobile-destroy-btn');
+    
+    if (mobileKingsEl && this.gameEngine) {
+      // Show Kings as suits
+      const kingSuits = player.collectedKings.map(k => k.suit);
+      
+      // Render king suits
+      mobileKingsEl.innerHTML = kingSuits.map(suit => {
+        const suitSymbol = this._getSuitSymbol(suit);
+        return `<span class="kings-suit" title="King of ${suit}">${suitSymbol}</span>`;
+      }).join('');
+      
+      // If no kings, show placeholder
+      if (kingSuits.length === 0) {
+        mobileKingsEl.innerHTML = '<span style="opacity: 0.5; font-size: 0.8rem;">None</span>';
+      }
+      
+      // Update bomb count (available destroy abilities)
+      if (mobileKingsCountEl) {
+        const totalKings = player.collectedKings.length;
+        const usedKings = player.collectedKings.filter(k => 
+          this.gameEngine.player.hasKingAbilityUsed(k)
+        ).length;
+        const availableKings = totalKings - usedKings;
+        mobileKingsCountEl.textContent = `${availableKings}/${totalKings}`;
+        mobileKingsCountEl.title = `${availableKings} destroy ability${availableKings !== 1 ? 'ies' : ''} available`;
+      }
+      
+      // Show/hide destroy button
+      if (mobileDestroyBtn) {
+        const availableKings = player.collectedKings.filter(k => 
+          !this.gameEngine.player.hasKingAbilityUsed(k)
+        );
+        
+        if (availableKings.length > 0) {
+          mobileDestroyBtn.style.display = 'block';
+          mobileDestroyBtn.classList.toggle('active', this.destroyMode);
+          mobileDestroyBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.toggleDestroyMode) {
+              window.toggleDestroyMode();
+            }
+          };
+        } else {
+          mobileDestroyBtn.style.display = 'none';
+        }
       }
     }
   }
@@ -288,7 +338,16 @@ class DOMRenderer extends RendererInterface {
         tileEl.className = 'tile';
         
         // Add click and touch handlers for mobile support
+        let touchStartTime = null;
+        let touchTimer = null;
+        let isLongPress = false;
+        
         const handleTileAction = (e) => {
+          // Don't handle if it was a long press
+          if (isLongPress) {
+            isLongPress = false;
+            return;
+          }
           e.preventDefault();
           e.stopPropagation();
           if (window.handleTileClick) {
@@ -296,8 +355,80 @@ class DOMRenderer extends RendererInterface {
           }
         };
         
+        // Touch start - begin long press timer
+        tileEl.addEventListener('touchstart', (e) => {
+          touchStartTime = Date.now();
+          isLongPress = false;
+          
+          // Check if this tile is destroyable (adjacent to player)
+          if (this.gameEngine && !this.destroyMode) {
+            const playerPos = this.gameEngine.player.position;
+            const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
+            
+            if (isAdjacent) {
+              // Start long press timer (500ms)
+              touchTimer = setTimeout(() => {
+                isLongPress = true;
+                
+                // Check if player has available Kings
+                const availableKings = this.gameEngine.player.collectedKings.filter(king => 
+                  !this.gameEngine.player.hasKingAbilityUsed(king)
+                );
+                
+                if (availableKings.length > 0) {
+                  // Activate destroy mode
+                  if (window.toggleDestroyMode) {
+                    window.toggleDestroyMode();
+                  }
+                  
+                  // Provide haptic feedback if available
+                  if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                  }
+                  
+                  // Visual feedback
+                  tileEl.style.transform = 'scale(1.1)';
+                  tileEl.style.transition = 'transform 0.1s';
+                  
+                  // After activating, handle the tile click for destroy
+                  setTimeout(() => {
+                    if (window.handleTileClick) {
+                      window.handleTileClick(x, y);
+                    }
+                  }, 100);
+                }
+              }, 500); // 500ms hold time
+            }
+          }
+        }, { passive: true });
+        
+        // Touch end - cancel timer if released early
+        tileEl.addEventListener('touchend', (e) => {
+          if (touchTimer) {
+            clearTimeout(touchTimer);
+            touchTimer = null;
+          }
+          
+          // Only handle as normal tap if not a long press
+          if (!isLongPress && touchStartTime && (Date.now() - touchStartTime) < 500) {
+            handleTileAction(e);
+          }
+          
+          touchStartTime = null;
+        });
+        
+        // Touch cancel - cleanup
+        tileEl.addEventListener('touchcancel', () => {
+          if (touchTimer) {
+            clearTimeout(touchTimer);
+            touchTimer = null;
+          }
+          touchStartTime = null;
+          isLongPress = false;
+        });
+        
+        // Click handler for desktop
         tileEl.addEventListener('click', handleTileAction);
-        tileEl.addEventListener('touchend', handleTileAction);
         
         // Check if destroyable (in destroy mode)
         const isDestroyable = destroyableTiles.some(dt => dt.x === x && dt.y === y);
