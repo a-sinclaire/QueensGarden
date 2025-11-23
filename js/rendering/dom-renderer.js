@@ -228,27 +228,11 @@ class DOMRenderer extends RendererInterface {
         playerPixelY + (viewportHeight / 2) // Tall enough to scroll down to center player
       );
       
-      // CRITICAL: For scrolling to work, the container must have:
-      // - clientHeight = viewport height (710px) - the visible area
-      // - scrollHeight > clientHeight - the total scrollable content
-      // 
-      // The problem: If we set height: auto, container grows to fit content,
-      // making clientHeight = scrollHeight = no scrolling.
-      //
-      // Solution: Keep container at viewport height, ensure content overflows.
-      // Since container uses flexbox with rows as direct children, rows determine scrollHeight.
-      // We just need to ensure container stays at viewport height.
-      if (minBoardHeightForScroll > viewportHeight) {
-        // Don't set height: auto - that makes container = content (no scrolling)
-        // Keep height at viewport, but remove height: 100% constraint if needed
-        // Actually, height: 100% should be fine if parent allows it
-        // The key is that rows inside make scrollHeight > clientHeight
-        // Just ensure we don't override with height: auto
-        // Force reflow to ensure browser has calculated scrollHeight correctly
-        void boardEl.offsetHeight;
-        void boardEl.scrollHeight;
-        void boardEl.offsetHeight;
-      }
+      // Spacer is added in _updateBoard to ensure content is tall enough
+      // Just force reflow here to ensure browser has calculated scrollHeight correctly
+      void boardEl.offsetHeight;
+      void boardEl.scrollHeight;
+      void boardEl.offsetHeight;
       
       // Force browser to recalculate layout - read multiple times to ensure it's updated
       void boardEl.offsetHeight;
@@ -572,6 +556,47 @@ class DOMRenderer extends RendererInterface {
       }
       
       boardEl.appendChild(row);
+    }
+    
+    // Add spacer at bottom to ensure board is tall enough for scrolling (mobile only)
+    if (window.innerWidth <= 768) {
+      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
+      const gap = 2;
+      const totalTileHeight = tileHeight + gap;
+      const computedStyle = window.getComputedStyle(boardEl);
+      const padding = parseInt(computedStyle.paddingTop) || parseInt(computedStyle.paddingLeft) || 8;
+      const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
+      const viewportHeight = boardEl.clientHeight || window.innerHeight;
+      const playerYOffset = maxY - playerPos.y;
+      const tileStartY = padding + (playerYOffset * totalTileHeight);
+      const playerPixelY = tileStartY + (tileHeight / 2);
+      const minBoardHeightForScroll = Math.max(
+        expectedBoardHeight,
+        playerPixelY + (viewportHeight / 2)
+      );
+      
+      if (minBoardHeightForScroll > viewportHeight) {
+        // Add spacer to make content tall enough
+        let spacer = boardEl.querySelector('.scroll-spacer');
+        if (!spacer) {
+          spacer = document.createElement('div');
+          spacer.className = 'scroll-spacer';
+          spacer.style.width = '100%';
+          spacer.style.flexShrink = '0';
+          boardEl.appendChild(spacer);
+        }
+        // Calculate spacer height needed
+        void boardEl.offsetHeight; // Force reflow
+        const currentScrollHeight = boardEl.scrollHeight;
+        const spacerHeight = Math.max(0, minBoardHeightForScroll - currentScrollHeight);
+        spacer.style.height = `${spacerHeight}px`;
+      } else {
+        // Remove spacer if not needed
+        const spacer = boardEl.querySelector('.scroll-spacer');
+        if (spacer) {
+          spacer.remove();
+        }
+      }
     }
     
     // Center camera on player AFTER board is rendered (mobile only)
