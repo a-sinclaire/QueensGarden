@@ -213,6 +213,7 @@ class GameEngine {
         this.player.addQueenToParty(card.clone());
         // Remove card from board, replace with empty tile
         tile.card = null;
+        tile.revealed = true; // Empty tiles are always revealed and passable
         this.renderer.onQueenCollected(card);
       }
     } else if (cardType === 'king') {
@@ -231,6 +232,7 @@ class GameEngine {
         // Note: Since the tile becomes empty, no damage is taken from it
         // Future moves will correctly calculate damage based on updated immunities
         tile.card = null;
+        tile.revealed = true; // Empty tiles are always revealed and passable
         
         this.renderer.onKingCollected(card);
         
