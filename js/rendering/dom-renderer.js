@@ -250,11 +250,12 @@ class DOMRenderer extends RendererInterface {
         
         // Calculate player tile center position in pixels (relative to board content)
         // Account for the padding we added
-        // Use exact center of tile: (offset * tileSize) + (tileSize / 2) + padding
-        // For X: tile starts at (offset * totalTileWidth) + padding + extraPaddingX
-        //        center is at start + (tileWidth / 2)
-        const tileStartX = (playerXOffset * totalTileWidth) + padding + extraPaddingX;
-        const tileStartY = (playerYOffset * totalTileHeight) + padding + extraPaddingY;
+        // Tiles are laid out with gaps between them
+        // For X: first tile starts at padding + extraPaddingX
+        //        each subsequent tile is offset by totalTileWidth (tileWidth + gap)
+        //        tile center is at: tileStart + (tileWidth / 2)
+        const tileStartX = padding + extraPaddingX + (playerXOffset * totalTileWidth);
+        const tileStartY = padding + extraPaddingY + (playerYOffset * totalTileHeight);
         const playerPixelX = tileStartX + (tileWidth / 2);
         const playerPixelY = tileStartY + (tileHeight / 2);
         
@@ -381,20 +382,11 @@ class DOMRenderer extends RendererInterface {
     
     // Always use smooth scrolling for consistent behavior
     // The board should be manually scrollable, and we just adjust it when player moves
-    // Cancel any ongoing scroll animation first
+    // Use smooth scrolling directly - browser will handle canceling previous animations
     boardEl.scrollTo({
       left: finalScrollX,
       top: finalScrollY,
-      behavior: 'auto' // Use auto first to cancel any ongoing animation
-    });
-    
-    // Then apply smooth scroll after a tiny delay
-    requestAnimationFrame(() => {
-      boardEl.scrollTo({
-        left: finalScrollX,
-        top: finalScrollY,
-        behavior: 'smooth'
-      });
+      behavior: 'smooth'
     });
     
     // Update debug display after scroll starts
