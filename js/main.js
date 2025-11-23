@@ -86,7 +86,7 @@ function setupMobileControls() {
   const mobileButtons = document.querySelectorAll('.mobile-btn');
   
   mobileButtons.forEach(btn => {
-    // Use both click and touchstart for better mobile support
+    // Use both click and touchend for better mobile support
     const handleMove = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -104,13 +104,108 @@ function setupMobileControls() {
           setTimeout(() => {
             btn.style.backgroundColor = '';
           }, 200);
+        } else {
+          // Visual feedback for successful move
+          btn.style.backgroundColor = 'var(--party-color)';
+          setTimeout(() => {
+            btn.style.backgroundColor = '';
+          }, 150);
         }
       }
     };
     
+    // Prevent default touch behaviors
+    btn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+    
     btn.addEventListener('click', handleMove);
     btn.addEventListener('touchend', handleMove);
   });
+  
+  // Add swipe gesture support for movement
+  setupSwipeControls();
+}
+
+/**
+ * Setup swipe gesture controls for mobile
+ */
+function setupSwipeControls() {
+  let touchStartX = null;
+  let touchStartY = null;
+  let touchEndX = null;
+  let touchEndY = null;
+  
+  const minSwipeDistance = 50; // Minimum distance for a swipe
+  
+  const handleTouchStart = (e) => {
+    if (destroyMode) return; // Don't interfere with destroy mode
+    
+    const firstTouch = e.touches[0];
+    touchStartX = firstTouch.clientX;
+    touchStartY = firstTouch.clientY;
+  };
+  
+  const handleTouchEnd = (e) => {
+    if (!gameEngine || gameEngine.gameOver || destroyMode) {
+      return;
+    }
+    
+    if (touchStartX === null || touchStartY === null) {
+      return;
+    }
+    
+    const lastTouch = e.changedTouches[0];
+    touchEndX = lastTouch.clientX;
+    touchEndY = lastTouch.clientY;
+    
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    
+    // Check if it's a significant swipe
+    if (Math.abs(deltaX) < minSwipeDistance && Math.abs(deltaY) < minSwipeDistance) {
+      return; // Not a swipe, might be a tap
+    }
+    
+    // Determine direction based on which axis has larger movement
+    let direction = null;
+    
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal swipe
+      if (deltaX > 0) {
+        direction = 'east';
+      } else {
+        direction = 'west';
+      }
+    } else {
+      // Vertical swipe
+      if (deltaY > 0) {
+        direction = 'south';
+      } else {
+        direction = 'north';
+      }
+    }
+    
+    if (direction) {
+      e.preventDefault();
+      const result = gameEngine.movePlayer(direction);
+      if (!result.success) {
+        // Visual feedback could be added here
+        console.log('Invalid move:', result.message);
+      }
+    }
+    
+    // Reset
+    touchStartX = null;
+    touchStartY = null;
+  };
+  
+  // Add swipe listeners to the game board
+  const gameBoard = document.getElementById('game-board');
+  if (gameBoard) {
+    gameBoard.addEventListener('touchstart', handleTouchStart, { passive: true });
+    gameBoard.addEventListener('touchend', handleTouchEnd, { passive: false });
+  }
 }
 
 /**

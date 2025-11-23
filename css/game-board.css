@@ -9,6 +9,8 @@
   align-items: center;
   gap: 2px;
   padding: 1rem;
+  /* Enable touch gestures for swipe */
+  touch-action: pan-x pan-y;
 }
 
 .board-row {
