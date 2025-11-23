@@ -21,6 +21,44 @@ class DOMRenderer extends RendererInterface {
     this.deadZoneSize = 0.7;
     // Track if this is the very first render (game initialization)
     this.isFirstRender = true;
+    // Cache-bust color for debugging (changes with each deployment)
+    this.cacheBustColor = this._getCacheBustColor();
+  }
+  
+  /**
+   * Generate a color from cache-bust value for debugging
+   * @private
+   */
+  _getCacheBustColor() {
+    // Try to extract cache-bust value from script tags
+    const scripts = document.querySelectorAll('script[src*="?cb="]');
+    let cacheBust = 'default';
+    if (scripts.length > 0) {
+      const src = scripts[0].getAttribute('src');
+      const match = src.match(/[?&]cb=([^&"']+)/);
+      if (match) {
+        cacheBust = match[1];
+      }
+    }
+    
+    // Simple hash function to convert string to color
+    let hash = 0;
+    for (let i = 0; i < cacheBust.length; i++) {
+      hash = cacheBust.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Generate RGB values (bright colors for visibility)
+    const r = (hash & 0xFF0000) >> 16;
+    const g = (hash & 0x00FF00) >> 8;
+    const b = hash & 0x0000FF;
+    
+    // Ensure minimum brightness
+    const minBrightness = 100;
+    const finalR = Math.max(r, minBrightness);
+    const finalG = Math.max(g, minBrightness);
+    const finalB = Math.max(b, minBrightness);
+    
+    return `rgb(${finalR}, ${finalG}, ${finalB})`;
   }
   
   initialize(gameEngine) {
