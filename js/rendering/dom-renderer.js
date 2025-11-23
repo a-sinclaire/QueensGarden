@@ -281,14 +281,28 @@ class DOMRenderer extends RendererInterface {
             finalScrollY = maxScrollY;
           }
           
-          // Debug display (on-screen for mobile)
-          const debugEl = document.getElementById('mobile-debug');
-          if (debugEl && window.innerWidth <= 768) {
-            const debugContent = debugEl.querySelector('.debug-content');
-            if (debugContent) {
-              const canScrollX = scrollWidth > viewportWidth;
-              const canScrollY = scrollHeight > viewportHeight;
-              debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
+          // Scroll the board container first
+          // Use instant scroll on first render to avoid dead space, smooth for subsequent moves
+          const isFirstRender = !boardEl.dataset.hasScrolled;
+          boardEl.dataset.hasScrolled = 'true';
+          
+          boardEl.scrollTo({
+            left: finalScrollX,
+            top: finalScrollY,
+            behavior: isFirstRender ? 'auto' : 'smooth' // Instant on first render
+          });
+          
+          // Update debug display after scroll (use delay to read actual scroll position)
+          const updateDebug = () => {
+            const debugEl = document.getElementById('mobile-debug');
+            if (debugEl && window.innerWidth <= 768) {
+              const debugContent = debugEl.querySelector('.debug-content');
+              if (debugContent) {
+                const canScrollX = scrollWidth > viewportWidth;
+                const canScrollY = scrollHeight > viewportHeight;
+                const currentScrollX = Math.round(boardEl.scrollLeft);
+                const currentScrollY = Math.round(boardEl.scrollTop);
+                debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
 Bounds: X[${minX}, ${maxX}] Y[${minY}, ${maxY}]
 Offset: X=${playerXOffset} Y=${playerYOffset}
 Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}
@@ -298,9 +312,17 @@ Scroll: ${scrollWidth}x${scrollHeight}
 CanScroll: X=${canScrollX} Y=${canScrollY}
 MaxScroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}
 Final: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}
-Current: X=${Math.round(boardEl.scrollLeft)} Y=${Math.round(boardEl.scrollTop)}
+Current: X=${currentScrollX} Y=${currentScrollY}
 Viewport: ${viewportWidth}x${viewportHeight}`;
+              }
             }
+          };
+          
+          // Update immediately for instant scroll, delay for smooth scroll
+          if (isFirstRender) {
+            setTimeout(updateDebug, 10);
+          } else {
+            setTimeout(updateDebug, 150); // Wait for smooth scroll to complete
           }
           
           // Also log to console for desktop debugging
@@ -313,18 +335,8 @@ Viewport: ${viewportWidth}x${viewportHeight}`;
             scrollDims: { width: scrollWidth, height: scrollHeight },
             maxScroll: { x: maxScrollX, y: maxScrollY },
             finalScroll: { x: finalScrollX, y: finalScrollY },
+            currentScroll: { x: boardEl.scrollLeft, y: boardEl.scrollTop },
             viewport: { width: viewportWidth, height: viewportHeight }
-          });
-          
-          // Scroll the board container
-          // Use instant scroll on first render to avoid dead space, smooth for subsequent moves
-          const isFirstRender = !boardEl.dataset.hasScrolled;
-          boardEl.dataset.hasScrolled = 'true';
-          
-          boardEl.scrollTo({
-            left: finalScrollX,
-            top: finalScrollY,
-            behavior: isFirstRender ? 'auto' : 'smooth' // Instant on first render
           });
         }, 50);
       });
