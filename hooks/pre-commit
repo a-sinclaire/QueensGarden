@@ -1,0 +1,63 @@
+#!/bin/bash
+# Pre-commit hook: Update cache-busting and run checks
+
+set -e  # Exit on error
+
+echo "Running pre-commit checks..."
+
+# Get the project root directory
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+cd "$PROJECT_ROOT"
+
+# 1. Update cache-busting to current commit hash
+echo "Updating cache-busting..."
+if [ -f "update-cache-bust.sh" ]; then
+  bash update-cache-bust.sh
+  # Stage the updated index.html
+  git add index.html
+else
+  echo "Warning: update-cache-bust.sh not found, skipping cache-bust update"
+fi
+
+# 2. Check for syntax errors in JavaScript files
+echo "Checking JavaScript syntax..."
+JS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.js$' || true)
+if [ -n "$JS_FILES" ]; then
+  for file in $JS_FILES; do
+    if [ -f "$file" ]; then
+      echo "  Checking $file..."
+      # Use node to check syntax
+      node -c "$file" || {
+        echo "Error: Syntax error in $file"
+        exit 1
+      }
+    fi
+  done
+fi
+
+# 3. Check HTML syntax (basic validation)
+echo "Checking HTML syntax..."
+HTML_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.html$' || true)
+if [ -n "$HTML_FILES" ]; then
+  for file in $HTML_FILES; do
+    if [ -f "$file" ]; then
+      echo "  Checking $file..."
+      # Basic check: ensure file is not empty and has basic HTML structure
+      if ! grep -q "<!DOCTYPE html>" "$file" 2>/dev/null; then
+        echo "Warning: $file may not be valid HTML (missing DOCTYPE)"
+      fi
+    fi
+  done
+fi
+
+# 4. Warn about uncommitted changes to version.js (should only change on releases)
+if git diff --cached --name-only | grep -q "js/config/version.js"; then
+  echo ""
+  echo "⚠️  WARNING: You're committing changes to version.js"
+  echo "   Make sure you've updated CHANGELOG.md as well!"
+  echo ""
+fi
+
+echo "Pre-commit checks passed! ✓"
+exit 0
+

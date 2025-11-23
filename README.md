@@ -56,10 +56,23 @@ The game is built with a clean separation of concerns:
 
 ## Development
 
+### Setup
+
+After cloning the repository, run:
+```bash
+./setup-git-hooks.sh
+```
+
+This installs git hooks that will:
+- Automatically update cache-busting values before each commit
+- Check JavaScript syntax before committing
+- Check HTML syntax before committing
+- Warn if you're committing version.js changes (remind you to update CHANGELOG.md)
+
 ### Version Management
 
 - **Version numbers** (`js/config/version.js`): Only bump for releases. Follow semantic versioning (major.minor.patch).
-- **Cache-busting** (`?cb=` in `index.html`): Increment this number whenever you deploy changes to force browsers to reload. This is separate from version numbers - you can increment it multiple times between version bumps.
+- **Cache-busting** (`?cb=` in `index.html`): Automatically updated to git commit hash by the pre-commit hook. This ensures browsers reload files on each deployment.
 - **Changelog**: Update `CHANGELOG.md` whenever you bump the version number.
 
 ### Adding New Features
