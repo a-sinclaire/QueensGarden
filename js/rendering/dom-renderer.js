@@ -211,16 +211,23 @@ class DOMRenderer extends RendererInterface {
         const totalBoardHeight = boardContentHeight + (extraPaddingY * 2);
         
         // Set board container size to allow scrolling
+        // Use explicit pixel values to ensure scrolling works
         boardEl.style.width = `${totalBoardWidth}px`;
         boardEl.style.height = `${totalBoardHeight}px`;
         boardEl.style.minWidth = `${totalBoardWidth}px`;
         boardEl.style.minHeight = `${totalBoardHeight}px`;
+        boardEl.style.maxWidth = 'none';
+        boardEl.style.maxHeight = 'none';
         
         // Add padding to board container to create scrollable space
         boardEl.style.paddingLeft = `${extraPaddingX}px`;
         boardEl.style.paddingTop = `${extraPaddingY}px`;
         boardEl.style.paddingRight = `${extraPaddingX}px`;
         boardEl.style.paddingBottom = `${extraPaddingY}px`;
+        
+        // Force display properties for scrolling
+        boardEl.style.display = 'block';
+        boardEl.style.position = 'relative';
         
         // Calculate player's position relative to board bounds
         const playerXOffset = playerPos.x - minX;
@@ -286,7 +293,22 @@ class DOMRenderer extends RendererInterface {
           const isFirstRender = !boardEl.dataset.hasScrolled;
           boardEl.dataset.hasScrolled = 'true';
           
-          // Force scroll immediately - use direct assignment for reliability
+          // Check if board is actually scrollable before trying to scroll
+          const canActuallyScrollX = boardEl.scrollWidth > boardEl.clientWidth;
+          const canActuallyScrollY = boardEl.scrollHeight > boardEl.clientHeight;
+          
+          if (!canActuallyScrollX && finalScrollX > 0) {
+            const warnMsg = `Board not scrollable X! scrollWidth=${boardEl.scrollWidth}, clientWidth=${boardEl.clientWidth}, totalWidth=${totalBoardWidth}`;
+            console.warn(warnMsg);
+            addMobileConsoleLog(warnMsg, 'warn');
+          }
+          if (!canActuallyScrollY && finalScrollY > 0) {
+            const warnMsg = `Board not scrollable Y! scrollHeight=${boardEl.scrollHeight}, clientHeight=${boardEl.clientHeight}, totalHeight=${totalBoardHeight}`;
+            console.warn(warnMsg);
+            addMobileConsoleLog(warnMsg, 'warn');
+          }
+          
+          // Try scrolling
           boardEl.scrollLeft = finalScrollX;
           boardEl.scrollTop = finalScrollY;
           
@@ -294,31 +316,36 @@ class DOMRenderer extends RendererInterface {
           const actualScrollX = boardEl.scrollLeft;
           const actualScrollY = boardEl.scrollTop;
           
-          // If scroll didn't apply (still at 0,0), try scrollTo as fallback
-          if ((actualScrollX === 0 && finalScrollX > 0) || (actualScrollY === 0 && finalScrollY > 0)) {
-            const warnMsg = `Scroll failed! Expected: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}, Got: X=${Math.round(actualScrollX)} Y=${Math.round(actualScrollY)}`;
+          // If scroll didn't apply, try scrollTo
+          if (Math.abs(actualScrollX - finalScrollX) > 1 || Math.abs(actualScrollY - finalScrollY) > 1) {
+            const warnMsg = `Scroll failed! Expected: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}, Got: X=${Math.round(actualScrollX)} Y=${Math.round(actualScrollY)}, scrollWidth=${boardEl.scrollWidth}, clientWidth=${boardEl.clientWidth}`;
             console.warn('Direct scroll failed, trying scrollTo:', {
               expected: { x: finalScrollX, y: finalScrollY },
-              actual: { x: actualScrollX, y: actualScrollY }
+              actual: { x: actualScrollX, y: actualScrollY },
+              scrollWidth: boardEl.scrollWidth,
+              scrollHeight: boardEl.scrollHeight,
+              clientWidth: boardEl.clientWidth,
+              clientHeight: boardEl.clientHeight
             });
-            // Show on-screen console
             addMobileConsoleLog(warnMsg, 'warn');
-            // Try scrollTo with auto behavior first
+            
+            // Try scrollTo with auto behavior
             boardEl.scrollTo({
               left: finalScrollX,
               top: finalScrollY,
               behavior: 'auto'
             });
-            // Then apply smooth if not first render
-            if (!isFirstRender) {
-              setTimeout(() => {
-                boardEl.scrollTo({
-                  left: finalScrollX,
-                  top: finalScrollY,
-                  behavior: 'smooth'
-                });
-              }, 10);
-            }
+            
+            // Check again after scrollTo
+            setTimeout(() => {
+              const afterScrollX = boardEl.scrollLeft;
+              const afterScrollY = boardEl.scrollTop;
+              if (Math.abs(afterScrollX - finalScrollX) > 1 || Math.abs(afterScrollY - finalScrollY) > 1) {
+                const errorMsg = `scrollTo also failed! Still at X=${Math.round(afterScrollX)} Y=${Math.round(afterScrollY)}`;
+                console.error(errorMsg);
+                addMobileConsoleLog(errorMsg, 'error');
+              }
+            }, 50);
           } else if (!isFirstRender) {
             // Scroll worked, apply smooth behavior for subsequent moves
             setTimeout(() => {
