@@ -11,6 +11,10 @@ class DOMRenderer extends RendererInterface {
     this.gameEngine = null;
     this.destroyMode = false;
     this.selectedKing = null;
+    // Track previous player position and scroll for relative scrolling
+    this.lastPlayerPos = null;
+    this.lastScrollX = null;
+    this.lastScrollY = null;
   }
   
   initialize(gameEngine) {
@@ -21,6 +25,10 @@ class DOMRenderer extends RendererInterface {
     }
     // Initialize DOM structure
     this._createDOMStructure();
+    // Reset scroll tracking
+    this.lastPlayerPos = null;
+    this.lastScrollX = null;
+    this.lastScrollY = null;
   }
   
   render(gameState) {
@@ -216,9 +224,53 @@ class DOMRenderer extends RendererInterface {
       const playerPixelX = tileStartX + (tileWidth / 2);
       const playerPixelY = tileStartY + (tileHeight / 2);
       
-      // Calculate scroll position to center player in viewport
-      const scrollX = playerPixelX - (viewportWidth / 2);
-      const scrollY = playerPixelY - (viewportHeight / 2);
+      // Get current scroll position
+      const currentScrollX = boardEl.scrollLeft;
+      const currentScrollY = boardEl.scrollTop;
+      
+      // Calculate desired scroll position
+      // If we have previous position, maintain relative position by scrolling by movement delta
+      // Otherwise, center the player
+      let scrollX, scrollY;
+      if (this.lastPlayerPos && this.lastScrollX !== null && this.lastScrollY !== null) {
+        // Calculate how much player moved in pixels
+        const lastPlayerXOffset = this.lastPlayerPos.x - minX;
+        const lastPlayerYOffset = maxY - this.lastPlayerPos.y;
+        const lastTileStartX = padding + (lastPlayerXOffset * totalTileWidth);
+        const lastTileStartY = padding + (lastPlayerYOffset * totalTileHeight);
+        const lastPlayerPixelX = lastTileStartX + (tileWidth / 2);
+        const lastPlayerPixelY = lastTileStartY + (tileHeight / 2);
+        
+        const deltaX = playerPixelX - lastPlayerPixelX;
+        const deltaY = playerPixelY - lastPlayerPixelY;
+        
+        // Scroll by the same amount the player moved to maintain relative position
+        scrollX = this.lastScrollX + deltaX;
+        scrollY = this.lastScrollY + deltaY;
+        
+        // But ensure player stays visible (within 20% margin of viewport edges)
+        const marginX = viewportWidth * 0.2;
+        const marginY = viewportHeight * 0.2;
+        const playerScreenX = playerPixelX - scrollX;
+        const playerScreenY = playerPixelY - scrollY;
+        
+        // Adjust scroll if player is too close to edges
+        if (playerScreenX < marginX) {
+          scrollX = playerPixelX - marginX;
+        } else if (playerScreenX > viewportWidth - marginX) {
+          scrollX = playerPixelX - (viewportWidth - marginX);
+        }
+        
+        if (playerScreenY < marginY) {
+          scrollY = playerPixelY - marginY;
+        } else if (playerScreenY > viewportHeight - marginY) {
+          scrollY = playerPixelY - (viewportHeight - marginY);
+        }
+      } else {
+        // First time or no previous position - center the player
+        scrollX = playerPixelX - (viewportWidth / 2);
+        scrollY = playerPixelY - (viewportHeight / 2);
+      }
       
       // Calculate minimum board height needed to allow scrolling to player position
       // Need: playerPixelY + (viewportHeight / 2) to allow scrolling down
@@ -269,10 +321,6 @@ class DOMRenderer extends RendererInterface {
       const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
       const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
       
-      // Get current scroll position
-      const currentScrollX = boardEl.scrollLeft;
-      const currentScrollY = boardEl.scrollTop;
-      
       // Only scroll if position changed significantly (more than 1px)
       const scrollThreshold = 1;
       const needsScrollX = Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
@@ -312,6 +360,17 @@ class DOMRenderer extends RendererInterface {
             behavior: 'smooth'
           });
         }
+        
+        // Store current position and scroll for next frame
+        this.lastPlayerPos = { x: playerPos.x, y: playerPos.y };
+        this.lastScrollX = finalScrollX;
+        this.lastScrollY = finalScrollY;
+      } else {
+        // Player didn't move significantly, but update stored position and scroll
+        // (in case user manually scrolled)
+        this.lastPlayerPos = { x: playerPos.x, y: playerPos.y };
+        this.lastScrollX = currentScrollX;
+        this.lastScrollY = currentScrollY;
       }
     }, 0); // Use setTimeout(0) to ensure DOM is fully rendered
   }
