@@ -223,8 +223,9 @@ class DOMRenderer extends RendererInterface {
             tileEl.classList.add('revealed');
           }
         } else {
-          // Unexplored tile
+          // Unexplored tile - still show border so grid is visible
           tileEl.style.opacity = '0.3';
+          tileEl.style.border = '1px solid rgba(83, 52, 131, 0.3)'; // Subtle border for grid visibility
         }
         
         row.appendChild(tileEl);

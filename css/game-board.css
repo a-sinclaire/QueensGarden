@@ -20,6 +20,9 @@
     /* Ensure board is centered and scrollable */
     justify-content: center;
     align-items: center;
+    width: fit-content;
+    min-width: 100%;
+    overflow-x: auto;
   }
 }
 
@@ -43,6 +46,9 @@
   /* Touch-friendly sizing on mobile */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  /* Ensure tiles are always visible */
+  min-width: 60px;
+  min-height: 80px;
 }
 
 /* Larger tiles on mobile */
