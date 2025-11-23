@@ -86,9 +86,6 @@
     display: block;
   }
   
-  /* Ensure game area accounts for HUD */
-  .game-area {
-    padding-top: 70px; /* Space for HUD */
-  }
+  /* HUD is fixed position, doesn't need padding */
 }
 
