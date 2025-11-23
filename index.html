@@ -12,8 +12,36 @@
 <body>
     <div id="game-container">
         <header>
-            <h1>Queen's Garden</h1>
+            <div class="header-content">
+                <h1>Queen's Garden</h1>
+                <div class="header-actions">
+                    <span class="version">v<span id="version-number">1.0.0</span></span>
+                    <button id="help-btn" class="help-btn" title="Help & Information">?</button>
+                </div>
+            </div>
         </header>
+        
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Help & Information</h2>
+                    <button class="modal-close" id="help-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="help-tabs">
+                        <button class="tab-btn active" data-tab="controls">Controls</button>
+                        <button class="tab-btn" data-tab="rules">Rules</button>
+                        <button class="tab-btn" data-tab="credits">Credits</button>
+                    </div>
+                    <div class="tab-content">
+                        <div id="tab-controls" class="tab-pane active"></div>
+                        <div id="tab-rules" class="tab-pane"></div>
+                        <div id="tab-credits" class="tab-pane"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div id="game-setup" class="setup-screen">
             <h2>Choose Your Queen</h2>
@@ -29,9 +57,9 @@
             <div class="game-layout">
                 <aside class="sidebar">
                     <div class="info-panel">
-                        <div id="turn-display">Turn: 0</div>
-                        <div id="health-display">Health: 20/20</div>
-                        <div id="deck-size">Deck: 0</div>
+                        <div id="turn-display" data-tooltip="Current turn number">Turn: 0</div>
+                        <div id="health-display" data-tooltip="Your health. If it reaches 0, you lose!">Health: 20/20</div>
+                        <div id="deck-size" data-tooltip="Remaining cards in the deck">Deck: 0</div>
                         <div id="destroy-mode" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background-color: var(--health-color); border-radius: 4px;">
                             <strong>Destroy Mode Active</strong><br>
                             <small>Click adjacent tiles to destroy (Press X to cancel)</small>
@@ -39,16 +67,16 @@
                     </div>
                     
                     <div class="party-panel">
-                        <h3>Party</h3>
+                        <h3 data-tooltip="Queens in your party grant immunity to their suits">Party</h3>
                         <div id="party-display"></div>
-                        <div id="immunities-display"></div>
+                        <div id="immunities-display" data-tooltip="Suits you are immune to damage from"></div>
                     </div>
                     
                     <div class="kings-panel">
-                        <h3>Collected Kings</h3>
+                        <h3 data-tooltip="Collect all 4 Kings to win!">Collected Kings</h3>
                         <div id="kings-display"></div>
                         <div id="king-abilities" style="margin-top: 0.5rem;">
-                            <button id="destroy-mode-btn" style="display: none; width: 100%; padding: 0.5rem; background-color: var(--health-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            <button id="destroy-mode-btn" data-tooltip="Press X to toggle destroy mode. Click adjacent tiles to destroy them." style="display: none; width: 100%; padding: 0.5rem; background-color: var(--health-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
                                 Use King to Destroy Tile (X)
                             </button>
                         </div>
@@ -58,6 +86,18 @@
                 <main class="game-area">
                     <div id="game-board" class="board-container">
                         <!-- Board will be rendered here -->
+                    </div>
+                    
+                    <!-- Mobile touch controls -->
+                    <div id="mobile-controls" class="mobile-controls" title="Swipe on the board or use these buttons to move">
+                        <div class="mobile-control-row">
+                            <button class="mobile-btn" data-direction="north" aria-label="Move North" type="button">↑</button>
+                        </div>
+                        <div class="mobile-control-row">
+                            <button class="mobile-btn" data-direction="west" aria-label="Move West" type="button">←</button>
+                            <button class="mobile-btn" data-direction="south" aria-label="Move South" type="button">↓</button>
+                            <button class="mobile-btn" data-direction="east" aria-label="Move East" type="button">→</button>
+                        </div>
                     </div>
                     
                     <div id="damage-notification" class="notification"></div>
@@ -73,6 +113,7 @@
     </div>
     
     <!-- Load game configuration and rules -->
+    <script src="js/config/version.js"></script>
     <script src="js/config/game-rules.js"></script>
     <script src="js/config/assets-config.js"></script>
     
@@ -90,6 +131,9 @@
     <script src="js/rendering/renderer-interface.js"></script>
     <script src="js/rendering/console-renderer.js"></script>
     <script src="js/rendering/dom-renderer.js"></script>
+    
+    <!-- Load help modal -->
+    <script src="js/help-modal.js"></script>
     
     <!-- Load main game logic -->
     <script src="js/main.js"></script>

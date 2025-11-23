@@ -12,7 +12,18 @@ let keyboardHandler = null; // Store reference to keyboard event handler
 // Initialize game when page loads
 document.addEventListener('DOMContentLoaded', () => {
   setupQueenSelection();
+  setupVersion();
 });
+
+/**
+ * Setup version number display
+ */
+function setupVersion() {
+  const versionEl = document.getElementById('version-number');
+  if (versionEl && typeof GAME_VERSION !== 'undefined') {
+    versionEl.textContent = GAME_VERSION.toString();
+  }
+}
 
 /**
  * Setup queen selection screen
@@ -51,6 +62,9 @@ function startGame(queenSuit) {
   // Setup keyboard controls
   setupKeyboardControls();
   
+  // Setup mobile touch controls
+  setupMobileControls();
+  
   // Setup restart button
   document.getElementById('restart-btn').addEventListener('click', () => {
     resetGame();
@@ -63,6 +77,48 @@ function startGame(queenSuit) {
       toggleDestroyMode();
     });
   }
+}
+
+/**
+ * Setup mobile touch controls
+ * Note: Tap-to-move is handled in the renderer when tiles are clicked
+ */
+function setupMobileControls() {
+  // Mobile controls are now handled via tap-to-move on tiles
+  // Keep button controls as backup option
+  const mobileButtons = document.querySelectorAll('.mobile-btn');
+  
+  mobileButtons.forEach(btn => {
+    const handleMove = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (!gameEngine || gameEngine.gameOver || destroyMode) {
+        return;
+      }
+      
+      const direction = btn.dataset.direction;
+      if (direction) {
+        const result = gameEngine.movePlayer(direction);
+        if (!result.success) {
+          // Visual feedback for invalid move
+          btn.style.backgroundColor = 'var(--health-color)';
+          setTimeout(() => {
+            btn.style.backgroundColor = '';
+          }, 200);
+        } else {
+          // Visual feedback for successful move
+          btn.style.backgroundColor = 'var(--party-color)';
+          setTimeout(() => {
+            btn.style.backgroundColor = '';
+          }, 150);
+        }
+      }
+    };
+    
+    btn.addEventListener('click', handleMove);
+    btn.addEventListener('touchend', handleMove);
+  });
 }
 
 /**
@@ -192,7 +248,7 @@ function toggleDestroyMode() {
 }
 
 /**
- * Handle tile click for destroy mode and teleportation
+ * Handle tile click for movement, destroy mode, and teleportation
  */
 function handleTileClick(x, y) {
   if (!gameEngine) {
@@ -213,30 +269,59 @@ function handleTileClick(x, y) {
     return;
   }
   
-  // Handle teleportation (when not in destroy mode)
-  // Can only teleport FROM Aces, not from central chamber
   const playerPos = gameEngine.player.position;
   const currentTile = gameEngine.board.get(`${playerPos.x},${playerPos.y}`);
+  const targetTile = gameEngine.board.get(`${x},${y}`);
   
+  if (!targetTile) {
+    return; // Tile doesn't exist
+  }
+  
+  // Check if clicked tile is adjacent to player (for movement)
+  const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
+  
+  // Handle teleportation (when on Ace and clicking teleport destination)
   if (currentTile) {
     const isOnAce = currentTile.card && currentTile.card.getType() === 'ace';
     
-    // Only allow teleportation from Aces
     if (isOnAce) {
-      // Check if clicked tile is a valid teleport destination
-      const targetTile = gameEngine.board.get(`${x},${y}`);
-      if (targetTile) {
-        const targetIsAce = targetTile.card && targetTile.card.getType() === 'ace';
-        const targetIsCentralChamber = targetTile.isCentralChamber;
-        
-        if (targetIsAce || targetIsCentralChamber) {
-          // Teleport!
-          const result = gameEngine.teleport({ x, y });
-          if (!result.success) {
-            alert(result.message);
-          }
-          // Success is handled by renderer update
+      const targetIsAce = targetTile.card && targetTile.card.getType() === 'ace';
+      const targetIsCentralChamber = targetTile.isCentralChamber;
+      
+      if (targetIsAce || targetIsCentralChamber) {
+        // Teleport!
+        const result = gameEngine.teleport({ x, y });
+        if (!result.success) {
+          alert(result.message);
         }
+        return;
+      }
+    }
+  }
+  
+  // Handle tap-to-move (if tile is adjacent)
+  if (isAdjacent) {
+    // Determine direction
+    let direction = null;
+    if (x === playerPos.x) {
+      if (y > playerPos.y) {
+        direction = 'north';
+      } else if (y < playerPos.y) {
+        direction = 'south';
+      }
+    } else if (y === playerPos.y) {
+      if (x > playerPos.x) {
+        direction = 'east';
+      } else if (x < playerPos.x) {
+        direction = 'west';
+      }
+    }
+    
+    if (direction) {
+      const result = gameEngine.movePlayer(direction);
+      if (!result.success) {
+        // Visual feedback for invalid move (could show a brief message)
+        console.log('Cannot move:', result.message);
       }
     }
   }

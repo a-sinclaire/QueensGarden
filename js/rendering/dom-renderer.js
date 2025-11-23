@@ -132,6 +132,9 @@ class DOMRenderer extends RendererInterface {
     // Get teleport destinations if player is on Ace or central chamber
     const teleportDestinations = this._getTeleportDestinations(board, playerPos);
     
+    // Get adjacent tiles for tap-to-move highlighting (mobile)
+    const adjacentTiles = this._getAdjacentMoveableTiles(board, playerPos);
+    
     // Create rows (from top to bottom, y descending)
     for (let y = maxY; y >= minY; y--) {
       const row = document.createElement('div');
@@ -143,12 +146,17 @@ class DOMRenderer extends RendererInterface {
         const tileEl = document.createElement('div');
         tileEl.className = 'tile';
         
-        // Add click handler
-        tileEl.addEventListener('click', () => {
+        // Add click and touch handlers for mobile support
+        const handleTileAction = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
           if (window.handleTileClick) {
             window.handleTileClick(x, y);
           }
-        });
+        };
+        
+        tileEl.addEventListener('click', handleTileAction);
+        tileEl.addEventListener('touchend', handleTileAction);
         
         // Check if destroyable (in destroy mode)
         const isDestroyable = destroyableTiles.some(dt => dt.x === x && dt.y === y);
@@ -164,6 +172,13 @@ class DOMRenderer extends RendererInterface {
           tileEl.classList.add('teleport-destination');
           tileEl.style.cursor = 'pointer';
           tileEl.title = 'Click to teleport here';
+        }
+        
+        // Highlight adjacent tiles for tap-to-move (mobile)
+        const isAdjacentMoveable = adjacentTiles.some(at => at.x === x && at.y === y);
+        if (isAdjacentMoveable && !this.destroyMode && !isTeleportDest) {
+          tileEl.classList.add('adjacent-moveable');
+          tileEl.title = 'Tap to move here';
         }
         
         // Check if player is here
@@ -208,8 +223,9 @@ class DOMRenderer extends RendererInterface {
             tileEl.classList.add('revealed');
           }
         } else {
-          // Unexplored tile
+          // Unexplored tile - still show border so grid is visible
           tileEl.style.opacity = '0.3';
+          tileEl.style.border = '1px solid rgba(83, 52, 131, 0.3)'; // Subtle border for grid visibility
         }
         
         row.appendChild(tileEl);
@@ -217,6 +233,42 @@ class DOMRenderer extends RendererInterface {
       
       boardEl.appendChild(row);
     }
+  }
+  
+  /**
+   * Get list of adjacent tiles that can be moved to
+   */
+  _getAdjacentMoveableTiles(board, playerPos) {
+    if (!this.gameEngine) {
+      return [];
+    }
+    
+    const adjacentPositions = [
+      { x: playerPos.x, y: playerPos.y + 1 },   // North
+      { x: playerPos.x, y: playerPos.y - 1 },   // South
+      { x: playerPos.x + 1, y: playerPos.y },   // East
+      { x: playerPos.x - 1, y: playerPos.y }     // West
+    ];
+    
+    const moveableTiles = [];
+    
+    for (const pos of adjacentPositions) {
+      const tile = board.get(`${pos.x},${pos.y}`);
+      if (tile) {
+        // Check if move is valid
+        const validation = this.gameEngine.rulesEngine.canMove(
+          playerPos,
+          pos,
+          board,
+          this.gameEngine.player
+        );
+        if (validation.valid) {
+          moveableTiles.push(pos);
+        }
+      }
+    }
+    
+    return moveableTiles;
   }
   
   /**
