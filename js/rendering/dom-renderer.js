@@ -171,28 +171,12 @@ class DOMRenderer extends RendererInterface {
         ).length;
         const availableKings = totalKings - usedKings;
         mobileKingsCountEl.textContent = `${availableKings}/${totalKings}`;
-        mobileKingsCountEl.title = `${availableKings} destroy ability${availableKings !== 1 ? 'ies' : ''} available`;
+        mobileKingsCountEl.title = `${availableKings} destroy ability${availableKings !== 1 ? 'ies' : ''} available. Tap and hold adjacent tiles to destroy.`;
       }
       
-      // Show/hide destroy button
+      // Destroy button is hidden - using tap and hold instead
       if (mobileDestroyBtn) {
-        const availableKings = player.collectedKings.filter(k => 
-          !this.gameEngine.player.hasKingAbilityUsed(k)
-        );
-        
-        if (availableKings.length > 0) {
-          mobileDestroyBtn.style.display = 'block';
-          mobileDestroyBtn.classList.toggle('active', this.destroyMode);
-          mobileDestroyBtn.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (window.toggleDestroyMode) {
-              window.toggleDestroyMode();
-            }
-          };
-        } else {
-          mobileDestroyBtn.style.display = 'none';
-        }
+        mobileDestroyBtn.style.display = 'none';
       }
     }
   }
