@@ -203,11 +203,31 @@ class DOMRenderer extends RendererInterface {
         const playerXOffset = playerPos.x - minX;
         const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
         
-        // Calculate player tile center position in pixels (relative to board content)
-        // Account for the extra padding we added
+        // Calculate actual board content size (tiles only)
         const padding = 8;
-        const extraPaddingX = viewportWidth; // Extra padding on left
-        const extraPaddingY = viewportHeight; // Extra padding on top
+        const boardContentWidth = (maxX - minX + 1) * totalTileWidth + (padding * 2);
+        const boardContentHeight = (maxY - minY + 1) * totalTileHeight + (padding * 2);
+        
+        // Add viewport-sized padding on all sides to allow scrolling in all directions
+        const extraPaddingX = viewportWidth;
+        const extraPaddingY = viewportHeight;
+        const totalBoardWidth = boardContentWidth + (extraPaddingX * 2);
+        const totalBoardHeight = boardContentHeight + (extraPaddingY * 2);
+        
+        // Set board container size to allow scrolling
+        boardEl.style.width = `${totalBoardWidth}px`;
+        boardEl.style.height = `${totalBoardHeight}px`;
+        boardEl.style.minWidth = `${totalBoardWidth}px`;
+        boardEl.style.minHeight = `${totalBoardHeight}px`;
+        
+        // Add padding to board container to create scrollable space
+        boardEl.style.paddingLeft = `${extraPaddingX}px`;
+        boardEl.style.paddingTop = `${extraPaddingY}px`;
+        boardEl.style.paddingRight = `${extraPaddingX}px`;
+        boardEl.style.paddingBottom = `${extraPaddingY}px`;
+        
+        // Calculate player tile center position in pixels (relative to board content)
+        // Account for the padding we added
         const playerPixelX = (playerXOffset * totalTileWidth) + (totalTileWidth / 2) + padding + extraPaddingX;
         const playerPixelY = (playerYOffset * totalTileHeight) + (totalTileHeight / 2) + padding + extraPaddingY;
         
@@ -215,36 +235,27 @@ class DOMRenderer extends RendererInterface {
         const scrollX = playerPixelX - (viewportWidth / 2);
         const scrollY = playerPixelY - (viewportHeight / 2);
         
-        // Ensure board container is large enough to scroll in ALL directions
-        // Calculate actual board content size
-        const boardContentWidth = (maxX - minX + 1) * totalTileWidth + (padding * 2);
-        const boardContentHeight = (maxY - minY + 1) * totalTileHeight + (padding * 2);
-        
-        // Make board large enough to allow scrolling in all directions
-        // Add extra padding on all sides equal to viewport size
-        const minBoardWidth = boardContentWidth + (viewportWidth * 2);
-        const minBoardHeight = boardContentHeight + (viewportHeight * 2);
-        
-        // Set size to ensure scrolling is possible
-        boardEl.style.minWidth = `${minBoardWidth}px`;
-        boardEl.style.minHeight = `${minBoardHeight}px`;
-        boardEl.style.width = `${minBoardWidth}px`;
-        boardEl.style.height = `${minBoardHeight}px`;
-        
-        // Also ensure the board content starts with padding to allow negative scroll
-        boardEl.style.paddingLeft = `${viewportWidth}px`;
-        boardEl.style.paddingTop = `${viewportHeight}px`;
-        boardEl.style.paddingRight = `${viewportWidth}px`;
-        boardEl.style.paddingBottom = `${viewportHeight}px`;
-        
         // Wait for size to apply, then scroll
         setTimeout(() => {
           // Force a reflow to ensure sizes are applied
-          boardEl.offsetHeight;
+          void boardEl.offsetWidth;
+          void boardEl.offsetHeight;
           
           // Get actual scrollable dimensions after size is set
           const scrollWidth = boardEl.scrollWidth;
           const scrollHeight = boardEl.scrollHeight;
+          
+          // Debug: check if board is actually scrollable
+          console.log('Board dimensions:', {
+            width: boardEl.offsetWidth,
+            height: boardEl.offsetHeight,
+            scrollWidth,
+            scrollHeight,
+            viewportWidth,
+            viewportHeight,
+            canScrollX: scrollWidth > viewportWidth,
+            canScrollY: scrollHeight > viewportHeight
+          });
           
           // Calculate maximum scroll positions
           const maxScrollX = Math.max(0, scrollWidth - viewportWidth);
