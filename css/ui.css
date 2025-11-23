@@ -42,13 +42,13 @@
   }
   
   .board-container {
-    padding: 0.5rem;
-    overflow-x: auto;
-    overflow-y: auto;
-    width: fit-content;
+    padding: 0;
+    overflow-x: scroll !important;
+    overflow-y: scroll !important;
+    width: 100%;
     min-width: 100%;
     max-width: none;
-    margin: 0 auto;
+    margin: 0;
     height: 100%;
     /* Center player position */
     scroll-behavior: smooth;
@@ -56,6 +56,8 @@
     -webkit-overflow-scrolling: touch;
     /* Allow scrolling in all directions */
     overscroll-behavior: contain;
+    /* Force scrolling */
+    position: relative;
   }
 }
 
