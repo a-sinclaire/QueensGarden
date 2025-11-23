@@ -580,8 +580,17 @@ class DOMRenderer extends RendererInterface {
     minY -= 2;
     maxY += 2;
     
+    // Preserve scroll position before clearing board (prevents jump when bounds change)
+    const savedScrollX = boardEl.scrollLeft;
+    const savedScrollY = boardEl.scrollTop;
+    
     // Clear board
     boardEl.innerHTML = '';
+    
+    // Restore scroll position immediately after clearing (before browser recalculates layout)
+    // This prevents the scroll from jumping when the board is rebuilt
+    boardEl.scrollLeft = savedScrollX;
+    boardEl.scrollTop = savedScrollY;
     
     // Get destroyable tiles if in destroy mode
     const destroyableTiles = this.destroyMode && this.selectedKing && this.gameEngine

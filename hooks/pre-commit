@@ -130,12 +130,19 @@ if echo "$CHANGED_FILES" | grep -q "js/config/version.js"; then
   echo ""
 fi
 
-# Check for new files that might need documentation
+# Check for new files that might need documentation or cache-busting
 NEW_FILES=$(git diff --cached --name-only --diff-filter=A | grep -E "\.(js|html|css)$" || true)
 if [ -n "$NEW_FILES" ]; then
   echo "  ⚠️  New files added:"
   echo "$NEW_FILES" | sed 's/^/     → /'
   echo "     → Consider updating README.md project structure if adding major components"
+  
+  # Check if new JS/CSS files need cache-busting in index.html
+  NEW_JS_CSS=$(echo "$NEW_FILES" | grep -E "\.(js|css)$" || true)
+  if [ -n "$NEW_JS_CSS" ]; then
+    echo "     → New JS/CSS files detected - ensure they're added to index.html with cache-busting (?cb= or ?v=)"
+  fi
+  
   DOC_WARNINGS=$((DOC_WARNINGS + 1))
 fi
 
