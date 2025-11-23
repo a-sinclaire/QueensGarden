@@ -153,7 +153,7 @@ class DOMRenderer extends RendererInterface {
   _centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY) {
     // Use requestAnimationFrame to ensure DOM is updated
     requestAnimationFrame(() => {
-      // Wait a bit more for layout to settle
+      // Wait for layout to settle
       setTimeout(() => {
         // Calculate tile size (including gap) - match CSS values
         const tileWidth = window.innerWidth <= 480 ? 65 : 70; // Mobile tile width
@@ -162,31 +162,35 @@ class DOMRenderer extends RendererInterface {
         const totalTileWidth = tileWidth + gap;
         const totalTileHeight = tileHeight + gap;
         
-        // Get actual board container dimensions
-        const containerRect = boardEl.getBoundingClientRect();
-        const containerWidth = containerRect.width || window.innerWidth;
-        const containerHeight = containerRect.height || window.innerHeight;
+        // Get viewport dimensions (what's visible)
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
         
         // Calculate player's position relative to board bounds
         const playerXOffset = playerPos.x - minX;
         const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
         
-        // Calculate scroll position to center player in viewport
-        // Player tile center position in pixels
-        const playerPixelX = (playerXOffset * totalTileWidth) + (totalTileWidth / 2);
-        const playerPixelY = (playerYOffset * totalTileHeight) + (totalTileHeight / 2);
+        // Calculate player tile center position in pixels (relative to board content)
+        // Add padding offset (0.5rem = 8px typically)
+        const padding = 8;
+        const playerPixelX = (playerXOffset * totalTileWidth) + (totalTileWidth / 2) + padding;
+        const playerPixelY = (playerYOffset * totalTileHeight) + (totalTileHeight / 2) + padding;
         
-        // Scroll to center player in viewport
-        const scrollX = playerPixelX - (containerWidth / 2);
-        const scrollY = playerPixelY - (containerHeight / 2);
+        // Calculate scroll position to center player in viewport
+        const scrollX = playerPixelX - (viewportWidth / 2);
+        const scrollY = playerPixelY - (viewportHeight / 2);
+        
+        // Ensure we don't scroll beyond bounds
+        const maxScrollX = Math.max(0, boardEl.scrollWidth - viewportWidth);
+        const maxScrollY = Math.max(0, boardEl.scrollHeight - viewportHeight);
         
         // Scroll the board container smoothly
         boardEl.scrollTo({
-          left: Math.max(0, scrollX),
-          top: Math.max(0, scrollY),
+          left: Math.max(0, Math.min(scrollX, maxScrollX)),
+          top: Math.max(0, Math.min(scrollY, maxScrollY)),
           behavior: 'smooth'
         });
-      }, 100);
+      }, 50);
     });
   }
   
