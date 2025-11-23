@@ -217,17 +217,27 @@ class DOMRenderer extends RendererInterface {
       const scrollX = playerPixelX - (viewportWidth / 2);
       const scrollY = playerPixelY - (viewportHeight / 2);
       
-      // Force browser to recalculate layout
+      // Force browser to recalculate layout - read multiple times to ensure it's updated
       void boardEl.offsetHeight;
-      void boardEl.scrollHeight; // Force reading scrollHeight to trigger layout
+      void boardEl.scrollHeight;
+      void boardEl.offsetHeight; // Force again
       
-      // Calculate expected board dimensions from bounds (always use this - more reliable)
+      // Get actual scroll dimensions from browser (most reliable)
+      const actualScrollWidth = boardEl.scrollWidth;
+      const actualScrollHeight = boardEl.scrollHeight;
+      
+      // Calculate expected board dimensions from bounds (for comparison/debugging)
       const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
       const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
       
-      // Use expected dimensions directly - they're always correct
-      const maxScrollX = Math.max(0, expectedBoardWidth - viewportWidth);
-      const maxScrollY = Math.max(0, expectedBoardHeight - viewportHeight);
+      // Use actual scroll dimensions - they reflect the real rendered size
+      // Only use expected if actual seems wrong (too small)
+      const boardWidth = actualScrollWidth > 0 ? actualScrollWidth : expectedBoardWidth;
+      const boardHeight = actualScrollHeight > viewportHeight ? actualScrollHeight : Math.max(actualScrollHeight, expectedBoardHeight);
+      
+      // Calculate max scroll positions
+      const maxScrollX = Math.max(0, boardWidth - viewportWidth);
+      const maxScrollY = Math.max(0, boardHeight - viewportHeight);
       
       // Clamp scroll values to valid range
       const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
@@ -262,8 +272,22 @@ class DOMRenderer extends RendererInterface {
                 maxScrollY,
                 expectedBoardHeight,
                 actualScrollHeight: boardEl.scrollHeight,
-                viewportHeight
+                boardHeight,
+                viewportHeight,
+                canScroll: boardEl.scrollHeight > boardEl.clientHeight
               });
+              
+              // If board isn't tall enough, try to force it by setting min-height
+              if (boardEl.scrollHeight <= boardEl.clientHeight && expectedBoardHeight > boardEl.clientHeight) {
+                console.warn('Board not tall enough! Forcing min-height...');
+                boardEl.style.minHeight = `${expectedBoardHeight}px`;
+                // Try scrolling again after forcing height
+                setTimeout(() => {
+                  const newMaxScrollY = Math.max(0, boardEl.scrollHeight - viewportHeight);
+                  const newFinalScrollY = Math.max(0, Math.min(scrollY, newMaxScrollY));
+                  boardEl.scrollTop = newFinalScrollY;
+                }, 10);
+              }
             }
           }
         } else {
