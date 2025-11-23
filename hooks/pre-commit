@@ -50,14 +50,94 @@ if [ -n "$HTML_FILES" ]; then
   done
 fi
 
-# 4. Warn about uncommitted changes to version.js (should only change on releases)
-if git diff --cached --name-only | grep -q "js/config/version.js"; then
+# 4. Documentation checks - warn about changes that might need documentation updates
+echo ""
+echo "Checking for documentation updates needed..."
+
+DOC_WARNINGS=0
+
+# Get list of changed files
+CHANGED_FILES=$(git diff --cached --name-only)
+
+# Check for game rules changes
+if echo "$CHANGED_FILES" | grep -qE "(js/config/game-rules\.js|js/core/rules-engine\.js|js/core/game-engine\.js)"; then
+  echo "  ⚠️  Game rules/logic files modified!"
+  echo "     → Check if 'game rules' file needs updating"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for control/input changes
+if echo "$CHANGED_FILES" | grep -qE "(js/main\.js|index\.html)" && \
+   git diff --cached | grep -qE "(addEventListener|keydown|keypress|keyup|touchstart|touchend|click|Arrow|WASD|controls)"; then
+  echo "  ⚠️  Input/control handling modified!"
+  echo "     → Check if CONTROLS.md needs updating"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for UI/feature additions
+if echo "$CHANGED_FILES" | grep -qE "(js/rendering/dom-renderer\.js|index\.html|css/)" && \
+   git diff --cached | grep -qE "(class=|id=|data-|button|modal|hud|display|feature)"; then
+  echo "  ⚠️  UI elements or features modified!"
+  echo "     → Check if README.md 'How to Play' or feature descriptions need updating"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for help modal content changes
+if echo "$CHANGED_FILES" | grep -qE "(js/help-modal\.js|CONTROLS\.md|CREDITS\.md|game rules)"; then
+  echo "  ⚠️  Help modal content files modified!"
+  echo "     → Verify help modal displays correctly (test in browser)"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for configuration changes
+if echo "$CHANGED_FILES" | grep -qE "(js/config/.*\.js)"; then
+  echo "  ⚠️  Configuration files modified!"
+  echo "     → Check if README.md 'Development' or 'Configuration' sections need updating"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for version.js changes (should always update changelog)
+if echo "$CHANGED_FILES" | grep -q "js/config/version.js"; then
   echo ""
-  echo "⚠️  WARNING: You're committing changes to version.js"
-  echo "   Make sure you've updated CHANGELOG.md as well!"
+  echo "  ⚠️  WARNING: You're committing changes to version.js"
+  if ! echo "$CHANGED_FILES" | grep -q "CHANGELOG.md"; then
+    echo "     → CHANGELOG.md is NOT in this commit!"
+    echo "     → You MUST update CHANGELOG.md when bumping version numbers"
+    DOC_WARNINGS=$((DOC_WARNINGS + 1))
+  else
+    echo "     → Good! CHANGELOG.md is included in this commit"
+  fi
   echo ""
 fi
 
+# Check for new files that might need documentation
+NEW_FILES=$(git diff --cached --name-only --diff-filter=A | grep -E "\.(js|html|css)$" || true)
+if [ -n "$NEW_FILES" ]; then
+  echo "  ⚠️  New files added:"
+  echo "$NEW_FILES" | sed 's/^/     → /'
+  echo "     → Consider updating README.md project structure if adding major components"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for mobile-specific changes
+if git diff --cached | grep -qE "(mobile|touch|@media|responsive|viewport)"; then
+  echo "  ⚠️  Mobile/responsive code modified!"
+  echo "     → Test on actual mobile device if possible"
+  echo "     → Check if README.md 'Browser Compatibility' or mobile features need updating"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Summary
+if [ $DOC_WARNINGS -gt 0 ]; then
+  echo ""
+  echo "📝 Documentation reminders: $DOC_WARNINGS potential update(s) needed"
+  echo "   Please review the warnings above and update documentation as needed."
+  echo ""
+else
+  echo "  ✓ No obvious documentation updates needed"
+fi
+
+echo ""
 echo "Pre-commit checks passed! ✓"
 exit 0
 
