@@ -285,11 +285,18 @@ class DOMRenderer extends RendererInterface {
   _centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY) {
     // Simple approach: Let CSS handle the container, we just scroll to center the player
     // Use setTimeout to ensure DOM is fully rendered and browser has recalculated layout
+    
+    // Capture preserved scroll BEFORE setTimeout (in case board was just rebuilt)
+    const preservedScroll = this._savedScrollBeforeRebuild 
+      ? { x: this._savedScrollBeforeRebuild.x, y: this._savedScrollBeforeRebuild.y }
+      : null;
+    
     setTimeout(() => {
       // Always update stored scroll position from actual scroll (handles manual scrolling)
       // This ensures relative scrolling works even if user manually scrolled
-      const actualScrollX = boardEl.scrollLeft;
-      const actualScrollY = boardEl.scrollTop;
+      // BUT: If we have preserved scroll (board was just rebuilt), use that instead
+      const actualScrollX = preservedScroll ? preservedScroll.x : boardEl.scrollLeft;
+      const actualScrollY = preservedScroll ? preservedScroll.y : boardEl.scrollTop;
       
       // If scroll position changed significantly from what we stored, user manually scrolled
       // We'll update stored positions after calculating current player pixel position
@@ -330,17 +337,10 @@ class DOMRenderer extends RendererInterface {
       const playerPixelX = tileStartX + (tileWidth / 2);
       const playerPixelY = tileStartY + (tileHeight / 2);
       
-      // Use the actual scroll position, but if we just rebuilt the board, use the preserved scroll
-      // This prevents using a reset scroll position (0,0) after innerHTML = ''
-      const currentScrollX = (this._savedScrollBeforeRebuild && this._savedScrollBeforeRebuild.x !== undefined)
-        ? this._savedScrollBeforeRebuild.x
-        : boardEl.scrollLeft;
-      const currentScrollY = (this._savedScrollBeforeRebuild && this._savedScrollBeforeRebuild.y !== undefined)
-        ? this._savedScrollBeforeRebuild.y
-        : boardEl.scrollTop;
-      
-      // Clear the saved scroll after using it (so next frame uses actual scroll)
-      this._savedScrollBeforeRebuild = null;
+      // Use the actual scroll position from the board element
+      // Note: If board was just rebuilt, the preserved scroll is handled in the setTimeout closure
+      const currentScrollX = boardEl.scrollLeft;
+      const currentScrollY = boardEl.scrollTop;
       
       // Calculate desired scroll position
       // Logic: Don't auto-scroll if player is within dead zone (configurable % of viewport)
