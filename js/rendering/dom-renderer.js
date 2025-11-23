@@ -202,24 +202,16 @@ class DOMRenderer extends RendererInterface {
       // Calculate expected board height to ensure container is tall enough
       const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
       
-      // Ensure container is tall enough to enable scrolling
+      // Get viewport dimensions from the container
+      const viewportWidth = boardEl.clientWidth || window.innerWidth;
       const viewportHeight = boardEl.clientHeight || window.innerHeight;
+      
+      // Ensure container is tall enough to enable scrolling
       if (expectedBoardHeight > viewportHeight && boardEl.scrollHeight <= viewportHeight) {
         boardEl.style.minHeight = `${expectedBoardHeight}px`;
         // Force reflow
         void boardEl.offsetHeight;
       }
-      const gap = 2;
-      const totalTileWidth = tileWidth + gap;
-      const totalTileHeight = tileHeight + gap;
-      
-      // Get viewport dimensions from the container
-      const viewportWidth = boardEl.clientWidth || window.innerWidth;
-      const viewportHeight = boardEl.clientHeight || window.innerHeight;
-      
-      // Get padding from computed style
-      const computedStyle = window.getComputedStyle(boardEl);
-      const padding = parseInt(computedStyle.paddingLeft) || (window.innerWidth <= 768 ? 8 : 16);
       
       // Calculate player's position relative to board bounds
       const playerXOffset = playerPos.x - minX;
@@ -244,9 +236,8 @@ class DOMRenderer extends RendererInterface {
       const actualScrollWidth = boardEl.scrollWidth;
       const actualScrollHeight = boardEl.scrollHeight;
       
-      // Calculate expected board dimensions from bounds (for comparison/debugging)
+      // Calculate expected board width from bounds (height already calculated above)
       const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
-      const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
       
       // Use actual scroll dimensions - they reflect the real rendered size
       // If actual is smaller than expected and we need to scroll, use expected (browser hasn't updated)
