@@ -186,118 +186,96 @@ class DOMRenderer extends RendererInterface {
    */
   _centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY) {
     // Simple approach: Let CSS handle the container, we just scroll to center the player
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        // Calculate tile size (including gap) - match CSS values
-        const tileWidth = window.innerWidth <= 480 ? 65 : 70;
-        const tileHeight = window.innerWidth <= 480 ? 85 : 90;
-        const gap = 2;
-        const totalTileWidth = tileWidth + gap;
-        const totalTileHeight = tileHeight + gap;
+    // Use setTimeout to ensure DOM is fully rendered and browser has recalculated layout
+    setTimeout(() => {
+      // Calculate tile size (including gap) - match CSS values
+      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
+      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
+      const gap = 2;
+      const totalTileWidth = tileWidth + gap;
+      const totalTileHeight = tileHeight + gap;
+      
+      // Get viewport dimensions from the container
+      const viewportWidth = boardEl.clientWidth || window.innerWidth;
+      const viewportHeight = boardEl.clientHeight || window.innerHeight;
+      
+      // Get padding from computed style
+      const computedStyle = window.getComputedStyle(boardEl);
+      const padding = parseInt(computedStyle.paddingLeft) || (window.innerWidth <= 768 ? 8 : 16);
+      
+      // Calculate player's position relative to board bounds
+      const playerXOffset = playerPos.x - minX;
+      const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
+      
+      // Calculate player tile center position in pixels
+      const tileStartX = padding + (playerXOffset * totalTileWidth);
+      const tileStartY = padding + (playerYOffset * totalTileHeight);
+      const playerPixelX = tileStartX + (tileWidth / 2);
+      const playerPixelY = tileStartY + (tileHeight / 2);
+      
+      // Calculate scroll position to center player in viewport
+      const scrollX = playerPixelX - (viewportWidth / 2);
+      const scrollY = playerPixelY - (viewportHeight / 2);
+      
+      // Force browser to recalculate layout
+      void boardEl.offsetHeight;
+      void boardEl.scrollHeight; // Force reading scrollHeight to trigger layout
+      
+      // Calculate expected board dimensions from bounds (always use this - more reliable)
+      const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
+      const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
+      
+      // Use expected dimensions directly - they're always correct
+      const maxScrollX = Math.max(0, expectedBoardWidth - viewportWidth);
+      const maxScrollY = Math.max(0, expectedBoardHeight - viewportHeight);
+      
+      // Clamp scroll values to valid range
+      const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
+      const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
+      
+      // Get current scroll position
+      const currentScrollX = boardEl.scrollLeft;
+      const currentScrollY = boardEl.scrollTop;
+      
+      // Only scroll if position changed significantly (more than 1px)
+      const scrollThreshold = 1;
+      const needsScrollX = Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
+      const needsScrollY = Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
+      
+      if (needsScrollX || needsScrollY) {
+        const isMobile = window.innerWidth <= 768;
         
-        // Get viewport dimensions from the container
-        const viewportWidth = boardEl.clientWidth || window.innerWidth;
-        const viewportHeight = boardEl.clientHeight || window.innerHeight;
-        
-        // Get padding from computed style
-        const computedStyle = window.getComputedStyle(boardEl);
-        const padding = parseInt(computedStyle.paddingLeft) || (window.innerWidth <= 768 ? 8 : 16);
-        
-        // Calculate player's position relative to board bounds
-        const playerXOffset = playerPos.x - minX;
-        const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
-        
-        // Calculate player tile center position in pixels
-        // Tile starts at: padding + (offset * totalTileWidth)
-        const tileStartX = padding + (playerXOffset * totalTileWidth);
-        const tileStartY = padding + (playerYOffset * totalTileHeight);
-        const playerPixelX = tileStartX + (tileWidth / 2);
-        const playerPixelY = tileStartY + (tileHeight / 2);
-        
-        // Calculate scroll position to center player in viewport
-        const scrollX = playerPixelX - (viewportWidth / 2);
-        const scrollY = playerPixelY - (viewportHeight / 2);
-        
-        // Force browser to recalculate layout before reading scroll dimensions
-        // This is critical when moving down - new rows increase scrollHeight
-        void boardEl.offsetHeight; // Force reflow
-        
-        // Get current scroll position to check if we need to scroll
-        const currentScrollX = boardEl.scrollLeft;
-        const currentScrollY = boardEl.scrollTop;
-        
-        // Calculate expected board dimensions from bounds (more reliable than reading scrollHeight)
-        const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
-        const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
-        
-        // Use actual scroll dimensions, but fall back to expected if they seem wrong
-        const actualScrollWidth = boardEl.scrollWidth;
-        const actualScrollHeight = boardEl.scrollHeight;
-        
-        // If actual is significantly smaller than expected, use expected (browser hasn't updated yet)
-        const boardWidth = actualScrollWidth >= expectedBoardWidth ? actualScrollWidth : expectedBoardWidth;
-        const boardHeight = actualScrollHeight >= expectedBoardHeight ? actualScrollHeight : expectedBoardHeight;
-        
-        // Calculate max scroll positions
-        const maxScrollX = Math.max(0, boardWidth - viewportWidth);
-        const maxScrollY = Math.max(0, boardHeight - viewportHeight);
-        
-        // Clamp scroll values to valid range
-        const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
-        const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
-        
-        // Only scroll if position changed significantly (more than 1px)
-        const scrollThreshold = 1;
-        const needsScrollX = Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
-        const needsScrollY = Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
-        
-        if (needsScrollX || needsScrollY) {
-          // Use instant scrolling on mobile (smooth looks bad), smooth on desktop
-          const isMobile = window.innerWidth <= 768;
-          
-          // For mobile, set scrollTop/scrollLeft directly for instant scroll
-          // This is more reliable than scrollTo() on some mobile browsers
-          if (isMobile) {
-            if (needsScrollX) {
-              boardEl.scrollLeft = finalScrollX;
-            }
-            if (needsScrollY) {
-              boardEl.scrollTop = finalScrollY;
-            }
-          } else {
-            // Desktop: use smooth scrolling
-            boardEl.scrollTo({
-              left: finalScrollX,
-              top: finalScrollY,
-              behavior: 'smooth'
-            });
+        if (isMobile) {
+          // Mobile: direct assignment for instant scroll
+          if (needsScrollX) {
+            boardEl.scrollLeft = finalScrollX;
           }
-          
-          // Debug log for down scrolling issue
-          if (window.innerWidth <= 768 && needsScrollY) {
-            // Verify scroll actually happened after a brief delay
-            setTimeout(() => {
-              const actualScrollTop = boardEl.scrollTop;
-              if (Math.abs(actualScrollTop - finalScrollY) > 2) {
-                console.warn('Scroll failed! Expected:', finalScrollY, 'Got:', actualScrollTop, {
-                  playerPixelY,
-                  viewportHeight,
-                  scrollY,
-                  currentScrollY,
-                  finalScrollY,
-                  maxScrollY,
-                  scrollHeight: boardEl.scrollHeight,
-                  clientHeight: boardEl.clientHeight,
-                  canScroll: boardEl.scrollHeight > boardEl.clientHeight
-                });
-                // Try forcing again
-                boardEl.scrollTop = finalScrollY;
-              }
-            }, 50);
+          if (needsScrollY) {
+            boardEl.scrollTop = finalScrollY;
+            // Verify it worked
+            if (Math.abs(boardEl.scrollTop - finalScrollY) > 1) {
+              console.warn('Down scroll failed!', {
+                playerPos,
+                playerPixelY,
+                scrollY,
+                finalScrollY,
+                maxScrollY,
+                expectedBoardHeight,
+                actualScrollHeight: boardEl.scrollHeight,
+                viewportHeight
+              });
+            }
           }
+        } else {
+          // Desktop: smooth scrolling
+          boardEl.scrollTo({
+            left: finalScrollX,
+            top: finalScrollY,
+            behavior: 'smooth'
+          });
         }
-      });
-    });
+      }
+    }, 0); // Use setTimeout(0) to ensure DOM is fully rendered
   }
   
   _updateBoard(board, playerPos) {

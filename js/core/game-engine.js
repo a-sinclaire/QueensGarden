@@ -278,8 +278,9 @@ class GameEngine {
     
     // Calculate damage if teleporting TO an Ace of a suit you're not immune to
     // No damage when teleporting to central chamber
+    let damage = 0;
     if (targetIsAce && !this.player.isImmuneTo(targetTile.card.suit)) {
-      const damage = targetTile.card.value; // Aces are worth 1
+      damage = targetTile.card.value; // Aces are worth 1
       this.player.takeDamage(damage);
       this.renderer.onDamage(damage, this.player.health, 'Teleport');
     }
