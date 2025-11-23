@@ -27,12 +27,11 @@
   
   .game-area {
     order: 2; /* Show game area second */
-    width: 100%;
+    width: 100vw;
     height: 100vh;
-    overflow: visible; /* Allow board container to scroll */
+    overflow: hidden; /* Hide overflow, board-container handles scrolling */
     padding: 0;
     position: relative;
-    /* Account for header being hidden */
     margin-top: 0;
   }
   
@@ -42,26 +41,20 @@
   }
   
   .board-container {
+    /* Simple scrollable container - fills parent, scrolls content */
+    width: 100%;
+    height: 100%;
+    overflow: auto;
     padding: 0;
-    overflow-x: scroll !important;
-    overflow-y: scroll !important;
-    /* Container should be constrained to viewport */
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
     margin: 0;
-    /* Content can be larger (set via min-width/min-height in JS) */
-    min-width: fit-content;
-    min-height: fit-content;
-    /* Center player position */
+    /* Smooth scrolling */
     scroll-behavior: smooth;
-    /* Ensure container can scroll in all directions */
     -webkit-overflow-scrolling: touch;
-    /* Allow scrolling in all directions */
     overscroll-behavior: contain;
-    /* Force scrolling */
-    position: relative;
+    /* Let content determine size */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
