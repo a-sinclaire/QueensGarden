@@ -9,8 +9,18 @@
   align-items: center;
   gap: 2px;
   padding: 1rem;
-  /* Enable touch gestures for swipe */
-  touch-action: pan-x pan-y;
+  /* Center the board */
+  margin: 0 auto;
+  width: fit-content;
+}
+
+@media (max-width: 768px) {
+  .board-container {
+    padding: 0.5rem;
+    /* Ensure board is centered and scrollable */
+    justify-content: center;
+    align-items: center;
+  }
 }
 
 .board-row {
@@ -109,6 +119,24 @@
   }
   50% {
     box-shadow: 0 0 20px #4ecdc4, 0 0 30px #4ecdc4;
+  }
+}
+
+/* Adjacent tiles for tap-to-move (mobile) */
+.tile.adjacent-moveable {
+  border: 2px solid var(--party-color);
+  box-shadow: 0 0 8px var(--party-color);
+}
+
+@media (max-width: 768px) {
+  .tile.adjacent-moveable {
+    border: 2px solid var(--party-color);
+    box-shadow: 0 0 8px var(--party-color);
+  }
+  
+  .tile.adjacent-moveable:active {
+    transform: scale(0.95);
+    background-color: var(--accent-color);
   }
 }
 

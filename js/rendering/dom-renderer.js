@@ -132,6 +132,9 @@ class DOMRenderer extends RendererInterface {
     // Get teleport destinations if player is on Ace or central chamber
     const teleportDestinations = this._getTeleportDestinations(board, playerPos);
     
+    // Get adjacent tiles for tap-to-move highlighting (mobile)
+    const adjacentTiles = this._getAdjacentMoveableTiles(board, playerPos);
+    
     // Create rows (from top to bottom, y descending)
     for (let y = maxY; y >= minY; y--) {
       const row = document.createElement('div');
@@ -169,6 +172,13 @@ class DOMRenderer extends RendererInterface {
           tileEl.classList.add('teleport-destination');
           tileEl.style.cursor = 'pointer';
           tileEl.title = 'Click to teleport here';
+        }
+        
+        // Highlight adjacent tiles for tap-to-move (mobile)
+        const isAdjacentMoveable = adjacentTiles.some(at => at.x === x && at.y === y);
+        if (isAdjacentMoveable && !this.destroyMode && !isTeleportDest) {
+          tileEl.classList.add('adjacent-moveable');
+          tileEl.title = 'Tap to move here';
         }
         
         // Check if player is here

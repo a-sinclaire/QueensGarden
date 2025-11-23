@@ -81,12 +81,14 @@ function startGame(queenSuit) {
 
 /**
  * Setup mobile touch controls
+ * Note: Tap-to-move is handled in the renderer when tiles are clicked
  */
 function setupMobileControls() {
+  // Mobile controls are now handled via tap-to-move on tiles
+  // Keep button controls as backup option
   const mobileButtons = document.querySelectorAll('.mobile-btn');
   
   mobileButtons.forEach(btn => {
-    // Use both click and touchend for better mobile support
     const handleMove = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -114,98 +116,9 @@ function setupMobileControls() {
       }
     };
     
-    // Prevent default touch behaviors
-    btn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-    }, { passive: false });
-    
     btn.addEventListener('click', handleMove);
     btn.addEventListener('touchend', handleMove);
   });
-  
-  // Add swipe gesture support for movement
-  setupSwipeControls();
-}
-
-/**
- * Setup swipe gesture controls for mobile
- */
-function setupSwipeControls() {
-  let touchStartX = null;
-  let touchStartY = null;
-  let touchEndX = null;
-  let touchEndY = null;
-  
-  const minSwipeDistance = 50; // Minimum distance for a swipe
-  
-  const handleTouchStart = (e) => {
-    if (destroyMode) return; // Don't interfere with destroy mode
-    
-    const firstTouch = e.touches[0];
-    touchStartX = firstTouch.clientX;
-    touchStartY = firstTouch.clientY;
-  };
-  
-  const handleTouchEnd = (e) => {
-    if (!gameEngine || gameEngine.gameOver || destroyMode) {
-      return;
-    }
-    
-    if (touchStartX === null || touchStartY === null) {
-      return;
-    }
-    
-    const lastTouch = e.changedTouches[0];
-    touchEndX = lastTouch.clientX;
-    touchEndY = lastTouch.clientY;
-    
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
-    
-    // Check if it's a significant swipe
-    if (Math.abs(deltaX) < minSwipeDistance && Math.abs(deltaY) < minSwipeDistance) {
-      return; // Not a swipe, might be a tap
-    }
-    
-    // Determine direction based on which axis has larger movement
-    let direction = null;
-    
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      // Horizontal swipe
-      if (deltaX > 0) {
-        direction = 'east';
-      } else {
-        direction = 'west';
-      }
-    } else {
-      // Vertical swipe
-      if (deltaY > 0) {
-        direction = 'south';
-      } else {
-        direction = 'north';
-      }
-    }
-    
-    if (direction) {
-      e.preventDefault();
-      const result = gameEngine.movePlayer(direction);
-      if (!result.success) {
-        // Visual feedback could be added here
-        console.log('Invalid move:', result.message);
-      }
-    }
-    
-    // Reset
-    touchStartX = null;
-    touchStartY = null;
-  };
-  
-  // Add swipe listeners to the game board
-  const gameBoard = document.getElementById('game-board');
-  if (gameBoard) {
-    gameBoard.addEventListener('touchstart', handleTouchStart, { passive: true });
-    gameBoard.addEventListener('touchend', handleTouchEnd, { passive: false });
-  }
 }
 
 /**
@@ -335,7 +248,7 @@ function toggleDestroyMode() {
 }
 
 /**
- * Handle tile click for destroy mode and teleportation
+ * Handle tile click for movement, destroy mode, and teleportation
  */
 function handleTileClick(x, y) {
   if (!gameEngine) {
@@ -356,30 +269,59 @@ function handleTileClick(x, y) {
     return;
   }
   
-  // Handle teleportation (when not in destroy mode)
-  // Can only teleport FROM Aces, not from central chamber
   const playerPos = gameEngine.player.position;
   const currentTile = gameEngine.board.get(`${playerPos.x},${playerPos.y}`);
+  const targetTile = gameEngine.board.get(`${x},${y}`);
   
+  if (!targetTile) {
+    return; // Tile doesn't exist
+  }
+  
+  // Check if clicked tile is adjacent to player (for movement)
+  const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
+  
+  // Handle teleportation (when on Ace and clicking teleport destination)
   if (currentTile) {
     const isOnAce = currentTile.card && currentTile.card.getType() === 'ace';
     
-    // Only allow teleportation from Aces
     if (isOnAce) {
-      // Check if clicked tile is a valid teleport destination
-      const targetTile = gameEngine.board.get(`${x},${y}`);
-      if (targetTile) {
-        const targetIsAce = targetTile.card && targetTile.card.getType() === 'ace';
-        const targetIsCentralChamber = targetTile.isCentralChamber;
-        
-        if (targetIsAce || targetIsCentralChamber) {
-          // Teleport!
-          const result = gameEngine.teleport({ x, y });
-          if (!result.success) {
-            alert(result.message);
-          }
-          // Success is handled by renderer update
+      const targetIsAce = targetTile.card && targetTile.card.getType() === 'ace';
+      const targetIsCentralChamber = targetTile.isCentralChamber;
+      
+      if (targetIsAce || targetIsCentralChamber) {
+        // Teleport!
+        const result = gameEngine.teleport({ x, y });
+        if (!result.success) {
+          alert(result.message);
         }
+        return;
+      }
+    }
+  }
+  
+  // Handle tap-to-move (if tile is adjacent)
+  if (isAdjacent) {
+    // Determine direction
+    let direction = null;
+    if (x === playerPos.x) {
+      if (y > playerPos.y) {
+        direction = 'north';
+      } else if (y < playerPos.y) {
+        direction = 'south';
+      }
+    } else if (y === playerPos.y) {
+      if (x > playerPos.x) {
+        direction = 'east';
+      } else if (x < playerPos.x) {
+        direction = 'west';
+      }
+    }
+    
+    if (direction) {
+      const result = gameEngine.movePlayer(direction);
+      if (!result.success) {
+        // Visual feedback for invalid move (could show a brief message)
+        console.log('Cannot move:', result.message);
       }
     }
   }

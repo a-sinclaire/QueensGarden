@@ -19,10 +19,52 @@
   .sidebar {
     width: 100%;
     max-width: 100%;
+    order: 1; /* Show sidebar first on mobile */
+    padding: 0.75rem;
+    gap: 1rem;
   }
   
   .game-layout {
     flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .game-area {
+    order: 2; /* Show game area second */
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-bottom: 1rem;
+  }
+  
+  /* Make info more prominent on mobile */
+  .info-panel {
+    font-size: 1.1rem;
+    padding: 0.75rem;
+  }
+  
+  #health-display {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  
+  .party-panel, .kings-panel {
+    font-size: 1rem;
+    padding: 0.75rem;
+  }
+  
+  /* Hide mobile control buttons - using tap-to-move instead */
+  .mobile-controls {
+    display: none !important;
+  }
+  
+  .board-container {
+    padding: 0.5rem;
+    overflow-x: auto;
+    overflow-y: visible;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
   }
 }
 
