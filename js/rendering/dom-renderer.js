@@ -543,17 +543,26 @@ class DOMRenderer extends RendererInterface {
       this.lastPlayerPixelX = playerPixelX;
       this.lastPlayerPixelY = playerPixelY;
       // Use actual scroll position from DOM (handles manual scrolling and programmatic scrolling)
-      // Read AFTER any scrolling has happened
-      const finalActualScrollX = boardEl.scrollLeft;
-      const finalActualScrollY = boardEl.scrollTop;
+      // Read AFTER any scrolling has happened, but use preserved scroll if board was just rebuilt
+      const finalActualScrollX = preservedScroll ? preservedScroll.x : boardEl.scrollLeft;
+      const finalActualScrollY = preservedScroll ? preservedScroll.y : boardEl.scrollTop;
       this.lastScrollX = finalActualScrollX;
       this.lastScrollY = finalActualScrollY;
+      
+      // Clear preserved scroll after using it
+      if (preservedScroll) {
+        this._savedScrollBeforeRebuild = null;
+      }
       
       // Debug: Log final scroll position
       if (window.innerWidth <= 768 && window._debugPlayerMoved) {
         const debugEl = document.getElementById('debug-content');
         if (debugEl) {
           debugEl.textContent += `\n\nAfter scroll: X=${Math.round(finalActualScrollX)} Y=${Math.round(finalActualScrollY)}`;
+          if (preservedScroll) {
+            debugEl.textContent += ` (preserved)`;
+          }
+          debugEl.textContent += `\nDOM scroll: X=${Math.round(boardEl.scrollLeft)} Y=${Math.round(boardEl.scrollTop)}`;
         }
       }
       
