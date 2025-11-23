@@ -199,10 +199,6 @@ class DOMRenderer extends RendererInterface {
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         
-        // Calculate player's position relative to board bounds
-        const playerXOffset = playerPos.x - minX;
-        const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
-        
         // Calculate actual board content size (tiles only)
         const padding = 8;
         const boardContentWidth = (maxX - minX + 1) * totalTileWidth + (padding * 2);
@@ -225,6 +221,10 @@ class DOMRenderer extends RendererInterface {
         boardEl.style.paddingTop = `${extraPaddingY}px`;
         boardEl.style.paddingRight = `${extraPaddingX}px`;
         boardEl.style.paddingBottom = `${extraPaddingY}px`;
+        
+        // Calculate player's position relative to board bounds
+        const playerXOffset = playerPos.x - minX;
+        const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
         
         // Calculate player tile center position in pixels (relative to board content)
         // Account for the padding we added
@@ -270,12 +270,16 @@ class DOMRenderer extends RendererInterface {
           if (debugEl && window.innerWidth <= 768) {
             const debugContent = debugEl.querySelector('.debug-content');
             if (debugContent) {
+              const canScrollX = scrollWidth > viewportWidth;
+              const canScrollY = scrollHeight > viewportHeight;
               debugContent.textContent = `Player: (${playerPos.x}, ${playerPos.y})
 Bounds: X[${minX}, ${maxX}] Y[${minY}, ${maxY}]
 Offset: X=${playerXOffset} Y=${playerYOffset}
 Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}
 Scroll: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}
-Board: ${scrollWidth}x${scrollHeight}
+Board: ${boardEl.offsetWidth}x${boardEl.offsetHeight}
+Scroll: ${scrollWidth}x${scrollHeight}
+CanScroll: X=${canScrollX} Y=${canScrollY}
 MaxScroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}
 Final: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}
 Viewport: ${viewportWidth}x${viewportHeight}`;
