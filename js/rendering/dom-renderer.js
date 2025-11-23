@@ -292,9 +292,21 @@ class DOMRenderer extends RendererInterface {
                             this.lastScrollX === null || this.lastScrollY === null);
       
       if (isFirstFrame) {
-        // First frame - center the player
-        scrollX = playerPixelX - (viewportWidth / 2);
-        scrollY = playerPixelY - (viewportHeight / 2);
+        // First frame - only center if player is outside dead zone or off-screen
+        // Don't force centering if player is already within the dead zone
+        if (playerScreenX < deadZoneLeft || playerScreenX > deadZoneRight || 
+            playerScreenX < 0 || playerScreenX > viewportWidth) {
+          // Player outside dead zone horizontally or off-screen - center horizontally
+          scrollX = playerPixelX - (viewportWidth / 2);
+        }
+        // Otherwise keep current horizontal scroll
+        
+        if (playerScreenY < deadZoneTop || playerScreenY > deadZoneBottom ||
+            playerScreenY < 0 || playerScreenY > viewportHeight) {
+          // Player outside dead zone vertically or off-screen - center vertically
+          scrollY = playerPixelY - (viewportHeight / 2);
+        }
+        // Otherwise keep current vertical scroll
       } else {
         // Not first frame - check if player is outside dead zone
         // If outside, scroll by exactly how much the queen moves (tile + gap)
