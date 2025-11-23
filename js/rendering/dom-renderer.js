@@ -228,10 +228,12 @@ class DOMRenderer extends RendererInterface {
         
         // Calculate player tile center position in pixels (relative to board content)
         // Account for the padding we added
+        // Use exact center of tile: (offset * tileSize) + (tileSize / 2) + padding
         const playerPixelX = (playerXOffset * totalTileWidth) + (totalTileWidth / 2) + padding + extraPaddingX;
         const playerPixelY = (playerYOffset * totalTileHeight) + (totalTileHeight / 2) + padding + extraPaddingY;
         
-        // Calculate scroll position to center player in viewport
+        // Calculate scroll position to center player EXACTLY in viewport
+        // This centers the player tile's center point in the viewport center
         const scrollX = playerPixelX - (viewportWidth / 2);
         const scrollY = playerPixelY - (viewportHeight / 2);
         
@@ -261,9 +263,23 @@ class DOMRenderer extends RendererInterface {
           const maxScrollX = Math.max(0, scrollWidth - viewportWidth);
           const maxScrollY = Math.max(0, scrollHeight - viewportHeight);
           
-          // Clamp scroll values to valid range
-          const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
-          const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
+          // Always center on player - don't clamp if it would prevent centering
+          // But ensure we don't scroll beyond bounds
+          let finalScrollX = scrollX;
+          let finalScrollY = scrollY;
+          
+          // Only clamp if we're at the edges and can't center perfectly
+          if (scrollX < 0) {
+            finalScrollX = 0;
+          } else if (scrollX > maxScrollX) {
+            finalScrollX = maxScrollX;
+          }
+          
+          if (scrollY < 0) {
+            finalScrollY = 0;
+          } else if (scrollY > maxScrollY) {
+            finalScrollY = maxScrollY;
+          }
           
           // Debug display (on-screen for mobile)
           const debugEl = document.getElementById('mobile-debug');
