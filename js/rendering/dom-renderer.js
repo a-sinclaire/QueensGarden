@@ -196,15 +196,10 @@ class DOMRenderer extends RendererInterface {
         const totalTileHeight = tileHeight + gap;
         
         // Get viewport dimensions (what's visible)
-        // Use the actual container's parent dimensions if available, otherwise window
-        // This accounts for device pixel ratio and any scaling
-        const gameArea = boardEl.parentElement;
-        const viewportWidth = gameArea ? gameArea.clientWidth : window.innerWidth;
-        const viewportHeight = gameArea ? gameArea.clientHeight : window.innerHeight;
-        
-        // Fallback to window if parent dimensions are invalid
-        const finalViewportWidth = viewportWidth > 0 ? viewportWidth : window.innerWidth;
-        const finalViewportHeight = viewportHeight > 0 ? viewportHeight : window.innerHeight;
+        // Always use window.innerWidth/Height - these are the actual viewport dimensions
+        // The container will be constrained to these dimensions
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
         
         // Calculate actual board content size (tiles only)
         // Padding matches CSS: 0.5rem on mobile (8px), 1rem on desktop (16px)
