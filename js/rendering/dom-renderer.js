@@ -251,11 +251,17 @@ class DOMRenderer extends RendererInterface {
         // Calculate player tile center position in pixels (relative to board content)
         // Account for the padding we added
         // Use exact center of tile: (offset * tileSize) + (tileSize / 2) + padding
-        const playerPixelX = (playerXOffset * totalTileWidth) + (totalTileWidth / 2) + padding + extraPaddingX;
-        const playerPixelY = (playerYOffset * totalTileHeight) + (totalTileHeight / 2) + padding + extraPaddingY;
+        // For X: tile starts at (offset * totalTileWidth) + padding + extraPaddingX
+        //        center is at start + (tileWidth / 2)
+        const tileStartX = (playerXOffset * totalTileWidth) + padding + extraPaddingX;
+        const tileStartY = (playerYOffset * totalTileHeight) + padding + extraPaddingY;
+        const playerPixelX = tileStartX + (tileWidth / 2);
+        const playerPixelY = tileStartY + (tileHeight / 2);
         
         // Calculate scroll position to center player EXACTLY in viewport
         // This centers the player tile's center point in the viewport center
+        // scrollX = playerPixelX - (viewportWidth / 2)
+        // scrollY = playerPixelY - (viewportHeight / 2)
         const scrollX = playerPixelX - (viewportWidth / 2);
         const scrollY = playerPixelY - (viewportHeight / 2);
         
@@ -375,10 +381,20 @@ class DOMRenderer extends RendererInterface {
     
     // Always use smooth scrolling for consistent behavior
     // The board should be manually scrollable, and we just adjust it when player moves
+    // Cancel any ongoing scroll animation first
     boardEl.scrollTo({
       left: finalScrollX,
       top: finalScrollY,
-      behavior: 'smooth'
+      behavior: 'auto' // Use auto first to cancel any ongoing animation
+    });
+    
+    // Then apply smooth scroll after a tiny delay
+    requestAnimationFrame(() => {
+      boardEl.scrollTo({
+        left: finalScrollX,
+        top: finalScrollY,
+        behavior: 'smooth'
+      });
     });
     
     // Update debug display after a brief delay
