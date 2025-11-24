@@ -31,7 +31,7 @@
        Use min-width instead to allow board-container to grow wider than viewport for horizontal scrolling.
        This is the same pattern as height: flex: 1 allows vertical growth, min-width allows horizontal growth. */
     min-width: 100vw;
-    width: 100%; /* Ensure it takes full width of parent */
+    width: 100vw; /* Use viewport width to ensure it starts at left edge */
     /* Use flex: 1 like desktop - allows natural growth vertically */
     flex: 1;
     display: flex;
@@ -41,9 +41,8 @@
     overflow: visible; /* Allow overflow for scrolling */
     padding: 0;
     position: relative;
-    margin-top: 0;
-    margin-left: 0; /* Ensure no left margin */
-    margin-right: 0; /* Ensure no right margin */
+    margin: 0; /* Ensure no margins */
+    left: 0; /* Ensure it starts at left edge */
     /* Prevent browser from capturing scroll, but allow element scrolling */
     overscroll-behavior: none;
   }
