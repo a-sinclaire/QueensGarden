@@ -1185,20 +1185,17 @@ class DOMRenderer extends RendererInterface {
       const playerPixelX = tileStartX + (tileWidth / 2);
       const playerPixelY = tileStartY + (tileHeight / 2);
       
-      // Calculate spacer needs for first render (if centering requires negative scroll)
-      let topSpacer = 0;
-      let leftSpacer = 0;
-      if (this.isFirstRender) {
-        const centerScrollX = playerPixelX - (viewportWidth / 2);
-        const centerScrollY = playerPixelY - (viewportHeight / 2);
-        topSpacer = centerScrollY < 0 ? Math.abs(centerScrollY) : 0;
-        leftSpacer = centerScrollX < 0 ? Math.abs(centerScrollX) : 0;
-        this._topSpacerNeeded = topSpacer;
-        this._leftSpacerNeeded = leftSpacer;
-      } else {
-        this._topSpacerNeeded = 0;
-        this._leftSpacerNeeded = 0;
-      }
+      // Calculate spacer needs for centering (needed for manual scrolling to work)
+      // These spacers allow scrolling to negative positions (above/left of content)
+      // Calculate once and keep them permanently (not just on first render)
+      const centerScrollX = playerPixelX - (viewportWidth / 2);
+      const centerScrollY = playerPixelY - (viewportHeight / 2);
+      const topSpacer = centerScrollY < 0 ? Math.abs(centerScrollY) : 0;
+      const leftSpacer = centerScrollX < 0 ? Math.abs(centerScrollX) : 0;
+      
+      // Store for use in scroll calculation
+      this._topSpacerNeeded = topSpacer;
+      this._leftSpacerNeeded = leftSpacer;
       
       // Calculate minimum dimensions needed for centering in all directions
       const minBoardHeightForScroll = Math.max(
