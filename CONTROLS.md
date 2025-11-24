@@ -11,6 +11,9 @@
 - **X**: Toggle Destroy Mode (when you have Kings with unused abilities)
   - In destroy mode, click adjacent tiles to destroy them
   - Press X again to cancel
+- **Tap-and-Hold** (Desktop & Mobile): Hold mouse/touch on an adjacent tile for 500ms to activate destroy mode and destroy it
+  - Works on both desktop (mouse) and mobile (touch)
+  - Provides alternative to keyboard shortcut for accessibility
 
 ## Teleportation
 - Stand on an **Ace** to see teleport destinations

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-11-24
+
+### Changed
+- Improved mobile-desktop UI parity for cohesive experience
+  - Desktop party/kings displays now use suit symbols (♥♦♣♠) like mobile
+  - Health display simplified to show just number (no prefix/suffix) on both platforms
+  - Removed immunities display (shown by party suits)
+  - Removed king count from mobile HUD (shown via suit highlighting)
+- Desktop now supports tap-and-hold to destroy tiles (same as mobile)
+  - Hold mouse button for 500ms on adjacent tiles to activate destroy mode
+  - Maintains keyboard accessibility with destroy mode button
+
+### Added
+- Help button on mobile HUD (bottom-right corner) for easy access to rules and controls
+- Version number display on mobile HUD (bottom-left, subtle styling)
+- Mouse event handlers for desktop tap-and-hold functionality
+
+### Fixed
+- Mobile HUD container height to ensure help button and version number are visible
+
 ## [1.3.0] - 2025-11-24
 
 ### Fixed

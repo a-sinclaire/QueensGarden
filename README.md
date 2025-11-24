@@ -16,11 +16,19 @@ Simply open `index.html` in a modern web browser. No installation or build proce
 
 ## Controls
 
+### Desktop
 - **Arrow Keys** or **WASD**: Move your Queen
 - **Arrow Up / W**: Move North
 - **Arrow Down / S**: Move South
 - **Arrow Left / A**: Move West
 - **Arrow Right / D**: Move East
+- **X**: Toggle Destroy Mode
+- **Tap-and-Hold**: Hold mouse button on adjacent tile for 500ms to destroy
+
+### Mobile
+- **Tap**: Tap adjacent tiles to move
+- **Tap-and-Hold**: Hold on adjacent tile for 500ms to destroy
+- **Help Button**: Tap "?" button (bottom-right) for rules and controls
 
 ## Game Rules
 

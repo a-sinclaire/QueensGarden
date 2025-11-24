@@ -42,8 +42,6 @@ This file tracks current bugs, issues, and ideas for future improvements.
    - **Benefit**: Helps balance game difficulty and understand game mechanics
    - **Status**: Planned
 
-7. parity between desktop and mobile
-
 8. tutorial?
 
 ## AI Ideas
