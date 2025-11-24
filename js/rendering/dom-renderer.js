@@ -803,6 +803,7 @@ class DOMRenderer extends RendererInterface {
     // Calculate position - board starts at top-left of first row (no padding)
     // Rows are rendered from maxY down to minY, so top row is at y=maxY
     // The debug rectangle should outline the entire grid area
+    // Position it relative to the container's content, not viewport
     const debugRect = document.createElement('div');
     debugRect.className = 'board-boundary-debug';
     debugRect.style.cssText = `
@@ -816,6 +817,8 @@ class DOMRenderer extends RendererInterface {
       pointer-events: none;
       z-index: 1000;
       background: transparent;
+      /* Ensure it scrolls with content */
+      will-change: transform;
     `;
     
     // Debug info: log container and board dimensions
