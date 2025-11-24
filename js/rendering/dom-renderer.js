@@ -11,26 +11,6 @@ class DOMRenderer extends RendererInterface {
     this.gameEngine = null;
     this.destroyMode = false;
     this.selectedKing = null;
-    // Track previous player position and scroll for relative scrolling
-    this.lastPlayerPos = null;
-    this.lastPlayerPixelX = null;
-    this.lastPlayerPixelY = null;
-    this.lastScrollX = null;
-    this.lastScrollY = null;
-    // Dead zone configuration: 1.0 = 1 tile width/height from each edge
-    // This ensures consistent deadzone size regardless of screen size
-    this.deadZoneTiles = 1.0;
-    // Track if this is the very first render (game initialization)
-    this.isFirstRender = true;
-    // Track previous board bounds to detect bounds changes
-    this.lastBoardBounds = null;
-    // Store bounds change info for debug panel
-    this._lastBoundsChange = null;
-    // Track spacer sizes (set once on first render, then stay fixed)
-    this._spacersInitialized = false;
-    // Track initial scroll (calculated once, never changes since bounds are fixed)
-    this._initialScrollX = null;
-    this._initialScrollY = null;
     // Cache-bust color for debugging (changes with each deployment)
     this.cacheBustColor = this._getCacheBustColor();
   }
@@ -79,14 +59,6 @@ class DOMRenderer extends RendererInterface {
     }
     // Initialize DOM structure
     this._createDOMStructure();
-    // Reset scroll tracking
-    this.lastPlayerPos = null;
-    this.lastPlayerPixelX = null;
-    this.lastPlayerPixelY = null;
-    this.lastScrollX = null;
-    this.lastScrollY = null;
-    // Mark as first render (will center player)
-    this.isFirstRender = true;
   }
   
   render(gameState) {
@@ -126,26 +98,7 @@ class DOMRenderer extends RendererInterface {
     // This will be implemented with full HTML structure
     // For now, just ensure container exists
     
-    // Add scroll event listener to track manual scrolling (mobile only)
-    // This updates initial scroll when user manually scrolls
-    const boardContainer = document.querySelector('.board-container');
-    if (boardContainer && window.innerWidth <= 768) {
-      let scrollTimeout = null;
-      boardContainer.addEventListener('scroll', () => {
-        // Debounce to avoid too many updates
-        if (scrollTimeout) {
-          clearTimeout(scrollTimeout);
-        }
-        scrollTimeout = setTimeout(() => {
-          // User manually scrolled - update initial scroll to match
-          // This allows manual scrolling to work, but we don't auto-update scroll on every render
-          this._initialScrollX = boardContainer.scrollLeft;
-          this._initialScrollY = boardContainer.scrollTop;
-        }, 50);
-      }, { passive: true });
-    }
-    
-    // Create debug overlay for dead zone visualization
+    // Create debug overlay
     const gameArea = document.querySelector('.game-area');
     if (gameArea && !document.getElementById('debug-deadzone')) {
       const debugOverlay = document.createElement('div');
@@ -308,554 +261,52 @@ class DOMRenderer extends RendererInterface {
     }
   }
   
-  /**
-   * Center board on player position (mobile) - Simple scrollable approach
-   */
-  _centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY) {
-    // Ensure debug panel is visible and ready on mobile
-    const isMobile = window.innerWidth <= 768;
-    if (isMobile) {
-      const debugPanel = document.getElementById('mobile-debug');
-      const debugContent = document.getElementById('debug-content');
-      if (debugPanel) {
-        if (!debugPanel.style.display || debugPanel.style.display === 'none') {
-          debugPanel.style.display = 'block';
-          debugPanel.style.visibility = 'visible';
-          debugPanel.style.opacity = '1';
-        }
-      }
-      if (debugContent && debugContent.textContent === 'Waiting for camera update...') {
-        debugContent.textContent = 'Initializing camera...';
-      }
-    }
-    
-    // Simple approach: Let CSS handle the container, we just scroll to center the player
-    // Use setTimeout to ensure DOM is fully rendered and browser has recalculated layout
-    
-    // Scroll is handled in _updateBoard - this function is mainly for debug overlays
-    setTimeout(() => {
-      // Debug: Verify setTimeout callback is executing
-      if (window.innerWidth <= 768) {
-        console.log('_centerBoardOnPlayer setTimeout callback executing', {
-          playerPos: { x: playerPos.x, y: playerPos.y },
-          isFirstRender: this.isFirstRender
-        });
-      }
-      
-      // Read current scroll from DOM
-      const actualScrollX = boardEl.scrollLeft;
-      const actualScrollY = boardEl.scrollTop;
-      
-      // After first render, we maintain relative offset - scroll is preserved and adjusted when board expands
-      // Calculate tile size (including gap) - match CSS values
-      // Store these for use in scroll calculation
-      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
-      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
-      const gap = 2;
-      const totalTileWidth = tileWidth + gap;
-      const totalTileHeight = tileHeight + gap;
-      
-      // Get padding from computed style
-      const computedStyle = window.getComputedStyle(boardEl);
-      const padding = parseInt(computedStyle.paddingTop) || parseInt(computedStyle.paddingLeft) || (window.innerWidth <= 768 ? 8 : 16);
-      
-      // Calculate expected board dimensions to ensure container is tall/wide enough
-      const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
-      const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
-      
-      // Get viewport dimensions - use window, not container (container may have grown)
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      
-      // Calculate player's position relative to board bounds
-      const playerXOffset = playerPos.x - minX;
-      const playerYOffset = maxY - playerPos.y; // Y is inverted (maxY is top)
-      
-      // Calculate player tile center position in pixels
-      const tileStartX = padding + (playerXOffset * totalTileWidth);
-      const tileStartY = padding + (playerYOffset * totalTileHeight);
-      const playerPixelX = tileStartX + (tileWidth / 2);
-      const playerPixelY = tileStartY + (tileHeight / 2);
-      
-      // Use the actual scroll position from the board element
-      // CRITICAL: Use actualScrollX/Y which accounts for preserved scroll (if board was just rebuilt)
-      // This ensures we use the correct scroll position for calculations
-      const currentScrollX = actualScrollX;
-      const currentScrollY = actualScrollY;
-      
-      // Calculate desired scroll position
-      // Logic: Don't auto-scroll if player is within dead zone (configurable % of viewport)
-      // If player goes outside that area, scroll by exactly how much the queen moves (tile + gap)
-      
-      // Check if player moved (for deadzone logic - only scroll if player moved)
-      const playerMoved = this.lastPlayerPos && 
-        (this.lastPlayerPos.x !== playerPos.x || this.lastPlayerPos.y !== playerPos.y);
-      
-      // Store playerMoved for use later in the function
-      window._debugPlayerMoved = playerMoved;
-      
-      // Dead zone: tile-based (1 tile from each edge)
-      // This ensures consistent deadzone size regardless of screen size
-      const deadZoneLeft = this.deadZoneTiles * totalTileWidth;
-      const deadZoneRight = viewportWidth - (this.deadZoneTiles * totalTileWidth);
-      const deadZoneTop = this.deadZoneTiles * totalTileHeight;
-      const deadZoneBottom = viewportHeight - (this.deadZoneTiles * totalTileHeight);
-      
-      // Update debug overlay to show dead zone
-      this._updateDeadZoneDebug(deadZoneLeft, deadZoneTop, deadZoneRight - deadZoneLeft, deadZoneBottom - deadZoneTop);
-      
-      // Update center guide to show where center tile should be
-      this._updateCenterGuide(viewportWidth, viewportHeight);
-      
-      // Calculate where player is NOW (after move) on screen with current scroll
-      // This is the SINGLE source of truth for player screen position
-      const playerScreenX = playerPixelX - currentScrollX;
-      const playerScreenY = playerPixelY - currentScrollY;
-      
-      // Calculate scroll position needed
-      // On first render: center the player
-      // If preserved scroll exists (board was rebuilt with adjusted scroll): use preserved scroll
-      // Otherwise: maintain current scroll (no auto-centering)
-      let scrollX = currentScrollX;
-      let scrollY = currentScrollY;
-      
-      // Scroll is handled in _updateBoard - just use current scroll for calculations
-      // This function is mainly for debug overlays now
-      
-      // Calculate minimum board dimensions needed to allow scrolling to center player in all directions
-      // For first render centering: need enough space to scroll to center position
-      // For normal scrolling: need space for deadzone + movement
-      let minBoardHeightForScroll, minBoardWidthForScroll;
-      
-      // Spacers are set once in _updateBoard and never change
-      // Just use stored spacer values for board dimension calculations
-      const topSpacer = this._topSpacerNeeded || 0;
-      const leftSpacer = this._leftSpacerNeeded || 0;
-      
-      if (this.isFirstRender) {
-        // On first render, we need enough space to scroll to the center position
-        // Center scroll position is: playerPixelX/Y - viewportWidth/Height / 2
-        const centerScrollX = playerPixelX - (viewportWidth / 2);
-        const centerScrollY = playerPixelY - (viewportHeight / 2);
-        
-        // Board needs to be at least: center scroll position + viewport size + spacers
-        minBoardWidthForScroll = Math.max(
-          expectedBoardWidth,
-          centerScrollX + viewportWidth + leftSpacer,
-          playerPixelX + (viewportWidth / 2) + leftSpacer
-        );
-        minBoardHeightForScroll = Math.max(
-          expectedBoardHeight,
-          centerScrollY + viewportHeight + topSpacer,
-          playerPixelY + (viewportHeight / 2) + topSpacer
-        );
-      } else {
-        // Normal scrolling: need space for content + spacers
-        minBoardHeightForScroll = Math.max(
-          expectedBoardHeight,
-          playerPixelY + (viewportHeight / 2) + topSpacer,
-          playerPixelY + viewportHeight + topSpacer
-        );
-        minBoardWidthForScroll = Math.max(
-          expectedBoardWidth,
-          playerPixelX + (viewportWidth / 2) + leftSpacer,
-          playerPixelX + viewportWidth + leftSpacer
-        );
-      }
-      
-      // CRITICAL: Ensure container stays at viewport height for scrolling to work
-      // Container must have: clientHeight = viewport, scrollHeight > clientHeight
-      // BUT: Don't force height if we need more space for scrolling (spacer will handle it)
-      // Only constrain if container has grown beyond what's needed
-      const currentClientHeight = boardEl.clientHeight;
-      // Only force height if it's way too tall (more than viewport + some margin)
-      // This allows the spacer to make it tall enough for scrolling
-      if (currentClientHeight > viewportHeight * 1.1) {
-        // Container grew too much - force it back to viewport height
-        boardEl.style.height = `${viewportHeight}px`;
-        boardEl.style.maxHeight = `${viewportHeight}px`;
-        // Force reflow
-        void boardEl.offsetHeight;
-      } else {
-        // Ensure we have a max-height constraint but allow min-height to grow
-        boardEl.style.maxHeight = `${viewportHeight}px`;
-        // Don't set height - let content determine it, but ensure min-height allows scrolling
-        if (minBoardHeightForScroll > viewportHeight) {
-          boardEl.style.minHeight = `${minBoardHeightForScroll}px`;
-        }
-      }
-      
-      // Force reflow to ensure browser has calculated scrollHeight correctly
-      void boardEl.offsetHeight;
-      void boardEl.scrollHeight;
-      void boardEl.offsetHeight;
-      
-      // Force browser to recalculate layout - read multiple times to ensure it's updated
-      void boardEl.offsetHeight;
-      void boardEl.scrollHeight;
-      void boardEl.offsetHeight; // Force again
-      
-      // Get actual scroll dimensions from browser (most reliable)
-      const actualScrollWidth = boardEl.scrollWidth;
-      const actualScrollHeight = boardEl.scrollHeight;
-      
-      // expectedBoardWidth already calculated above (before minBoardWidthForScroll calculation)
-      
-      // Use the larger of actual scroll dimensions or minimum needed dimensions
-      // (minBoardWidthForScroll and minBoardHeightForScroll already calculated above)
-      const boardWidth = Math.max(actualScrollWidth, expectedBoardWidth, minBoardWidthForScroll);
-      const boardHeight = Math.max(actualScrollHeight, minBoardHeightForScroll);
-      
-      // Calculate max scroll positions
-      const maxScrollX = Math.max(0, boardWidth - viewportWidth);
-      const maxScrollY = Math.max(0, boardHeight - viewportHeight);
-      
-      // Clamp scroll values to valid range
-      // scrollX/Y already account for spacers (if first render), so use them directly
-      const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
-      const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
-      
-      // Scroll is handled in _updateBoard - no need to scroll here
-      const needsScrollX = false;
-      const needsScrollY = false;
-      
-      // Debug: Update debug panel with scroll decision
-      // Always show debug on mobile, not just when player moved
-      const isMobile = window.innerWidth <= 768;
-      if (isMobile) {
-        // Force find debug element - try multiple times if needed
-        let debugEl = document.getElementById('debug-content');
-        if (!debugEl) {
-          console.error('Debug element not found! Looking for #debug-content');
-          // Try to find it again
-          debugEl = document.querySelector('#debug-content');
-          if (!debugEl) {
-            console.error('Still not found! Trying #mobile-debug .debug-content');
-            const debugPanel = document.getElementById('mobile-debug');
-            if (debugPanel) {
-              debugEl = debugPanel.querySelector('.debug-content');
-            }
-          }
-        }
-        
-        // Always update debug panel if we're on mobile, even if element not found
-        console.log('Updating debug panel:', {
-          isMobile,
-          debugElFound: !!debugEl,
-          windowWidth: window.innerWidth
-        });
-        
-        if (debugEl) {
-          let debugText = `Player Pos: (${playerPos.x}, ${playerPos.y})\n`;
-          debugText += `Player Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}\n`;
-          debugText += `Player Screen: X=${Math.round(playerScreenX)} Y=${Math.round(playerScreenY)}\n`;
-          debugText += `Current Scroll: X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}\n`;
-          debugText += `Calculated Scroll: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}\n`;
-          debugText += `Final Scroll: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}\n`;
-          debugText += `Will scroll: X=${needsScrollX} Y=${needsScrollY}\n`;
-          debugText += `First Render: ${this.isFirstRender}\n`;
-          
-          // Show previous pixel position for comparison
-          if (this.lastPlayerPixelX !== null) {
-            debugText += `\nLast Pixel: X=${Math.round(this.lastPlayerPixelX)} Y=${Math.round(this.lastPlayerPixelY)}\n`;
-            debugText += `Pixel Delta: X=${Math.round(playerPixelX - this.lastPlayerPixelX)} Y=${Math.round(playerPixelY - this.lastPlayerPixelY)}\n`;
-          }
-          
-          // Add bounds change info (most important for debugging the offset issue)
-          if (this._lastBoundsChange) {
-            debugText += `\n=== BOUNDS CHANGE ===\n`;
-            debugText += `Old: X(${this._lastBoundsChange.oldBounds.minX}-${this._lastBoundsChange.oldBounds.maxX}) Y(${this._lastBoundsChange.oldBounds.minY}-${this._lastBoundsChange.oldBounds.maxY})\n`;
-            debugText += `New: X(${this._lastBoundsChange.newBounds.minX}-${this._lastBoundsChange.newBounds.maxX}) Y(${this._lastBoundsChange.newBounds.minY}-${this._lastBoundsChange.newBounds.maxY})\n`;
-            debugText += `Delta: X=${this._lastBoundsChange.deltaMinX} Y=${this._lastBoundsChange.deltaMinY}\n`;
-            debugText += `Scroll adj: X=${Math.round(this._lastBoundsChange.scrollAdjustX)} Y=${Math.round(this._lastBoundsChange.scrollAdjustY)}\n`;
-          }
-          
-          // Show initial scroll
-          debugText += `\n=== SCROLL ===\n`;
-          debugText += `Initial: X=${this._initialScrollX !== null ? Math.round(this._initialScrollX) : 'null'} Y=${this._initialScrollY !== null ? Math.round(this._initialScrollY) : 'null'}\n`;
-          debugText += `DOM Scroll: X=${Math.round(actualScrollX)} Y=${Math.round(actualScrollY)}\n`;
-          if (this._initialScrollX !== null && this._initialScrollY !== null) {
-            debugText += `Match: X=${Math.abs(actualScrollX - this._initialScrollX) < 1} Y=${Math.abs(actualScrollY - this._initialScrollY) < 1}\n`;
-          }
-          debugText += `Board Size: scrollWidth=${Math.round(boardEl.scrollWidth)} scrollHeight=${Math.round(boardEl.scrollHeight)}\n`;
-          debugText += `Viewport: clientWidth=${Math.round(boardEl.clientWidth)} clientHeight=${Math.round(boardEl.clientHeight)}\n`;
-          debugText += `Can Scroll: X=${boardEl.scrollWidth > boardEl.clientWidth} Y=${boardEl.scrollHeight > boardEl.clientHeight}\n`;
-          
-          // Add spacer info
-          debugText += `\nSpacers: T=${Math.round(this._topSpacerNeeded || 0)} B=${Math.round(this._bottomSpacerNeeded || 0)} L=${Math.round(this._leftSpacerNeeded || 0)} R=${Math.round(this._rightSpacerNeeded || 0)}\n`;
-          
-          try {
-            debugEl.textContent = debugText;
-            console.log('Debug Panel Updated Successfully');
-          } catch (e) {
-            console.error('Error updating debug panel:', e);
-          }
-          
-          // Also log to console for easier debugging
-          console.log('Debug Panel Updated:', {
-            needsScrollX,
-            needsScrollY,
-            finalScrollX,
-            finalScrollY,
-            currentScrollX,
-            currentScrollY,
-            boardScrollWidth: boardEl.scrollWidth,
-            boardScrollHeight: boardEl.scrollHeight,
-            boardClientWidth: boardEl.clientWidth,
-            boardClientHeight: boardEl.clientHeight,
-            isFirstRender: this.isFirstRender,
-            debugTextLength: debugText.length
-          });
-        } else {
-          // Element not found - log to console as fallback
-          console.log('DEBUG INFO (element not found):', {
-            viewport: `${viewportWidth}×${viewportHeight}`,
-            playerPixel: `X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}`,
-            currentScroll: `X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}`,
-            finalScroll: `X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}`,
-            needsScroll: `X=${needsScrollX} Y=${needsScrollY}`,
-            isFirstRender: this.isFirstRender
-          });
-        }
-      }
-      
-      if (needsScrollX || needsScrollY) {
-        const isMobile = window.innerWidth <= 768;
-        
-        // CRITICAL: On first render, ensure board is tall/wide enough before scrolling
-        if (this.isFirstRender) {
-          // Force board to be tall/wide enough for centering
-          if (minBoardHeightForScroll > boardEl.scrollHeight) {
-            boardEl.style.minHeight = `${minBoardHeightForScroll}px`;
-            void boardEl.offsetHeight; // Force reflow
-          }
-          if (minBoardWidthForScroll > boardEl.scrollWidth) {
-            // Width is handled by row width, but ensure it's wide enough
-            const rows = boardEl.querySelectorAll('.board-row');
-            rows.forEach(row => {
-              row.style.minWidth = `${minBoardWidthForScroll}px`;
-            });
-            void boardEl.offsetWidth; // Force reflow
-          }
-          // Recalculate max scroll after forcing size
-          const newMaxScrollX = Math.max(0, boardEl.scrollWidth - viewportWidth);
-          const newMaxScrollY = Math.max(0, boardEl.scrollHeight - viewportHeight);
-          // Re-clamp scroll values with new max
-          const clampedScrollX = Math.max(0, Math.min(scrollX, newMaxScrollX));
-          const clampedScrollY = Math.max(0, Math.min(scrollY, newMaxScrollY));
-          
-          // Debug: Log centering scroll
-          if (window.innerWidth <= 768) {
-            console.log('First render scroll:', {
-              scrollX,
-              scrollY,
-              clampedScrollX,
-              clampedScrollY,
-              newMaxScrollX,
-              newMaxScrollY,
-              boardWidth: boardEl.scrollWidth,
-              boardHeight: boardEl.scrollHeight,
-              minBoardWidthForScroll,
-              minBoardHeightForScroll
-            });
-          }
-          
-          if (isMobile) {
-            boardEl.scrollLeft = clampedScrollX;
-            boardEl.scrollTop = clampedScrollY;
-          } else {
-            boardEl.scrollTo({
-              left: clampedScrollX,
-              top: clampedScrollY,
-              behavior: 'smooth'
-            });
-          }
-        } else {
-          // Normal scrolling after first render
-          if (isMobile) {
-            // Mobile: direct assignment for instant scroll
-            if (needsScrollX) {
-              boardEl.scrollLeft = finalScrollX;
-            }
-            if (needsScrollY) {
-              // If board isn't tall enough to scroll, force it to be taller first
-              if (boardEl.scrollHeight <= boardEl.clientHeight && expectedBoardHeight > boardEl.clientHeight) {
-                // Force the container to be tall enough to enable scrolling
-                boardEl.style.minHeight = `${expectedBoardHeight}px`;
-                // Force reflow
-                void boardEl.offsetHeight;
-                // Recalculate after forcing height
-                const newScrollHeight = boardEl.scrollHeight;
-                const newMaxScrollY = Math.max(0, newScrollHeight - viewportHeight);
-                const newFinalScrollY = Math.max(0, Math.min(scrollY, newMaxScrollY));
-                boardEl.scrollTop = newFinalScrollY;
-              } else {
-                boardEl.scrollTop = finalScrollY;
-              }
-            }
-          } else {
-            // Desktop: smooth scrolling
-            boardEl.scrollTo({
-              left: finalScrollX,
-              top: finalScrollY,
-              behavior: 'smooth'
-            });
-          }
-        }
-      }
-      
-      // Always update stored position and scroll to actual DOM values
-      // This ensures manual scrolling is tracked correctly
-      this.lastPlayerPos = { x: playerPos.x, y: playerPos.y };
-      this.lastPlayerPixelX = playerPixelX;
-      this.lastPlayerPixelY = playerPixelY;
-      
-      // Update stored scroll position from DOM
-      this.lastScrollX = boardEl.scrollLeft;
-      this.lastScrollY = boardEl.scrollTop;
-      
-      // Update debug panel with final scroll values AFTER scrolling
-      if (isMobile) {
-        const debugEl = document.getElementById('debug-content');
-        if (!debugEl) {
-          console.error('Debug element not found after scroll! Looking for #debug-content');
-        }
-        if (debugEl) {
-          const actualScrollAfter = boardEl.scrollLeft;
-          const actualScrollYAfter = boardEl.scrollTop;
-          debugEl.textContent += `\n\n=== AFTER SCROLL ===`;
-          debugEl.textContent += `\n  Initial Scroll: X=${this._initialScrollX !== null ? Math.round(this._initialScrollX) : 'null'} Y=${this._initialScrollY !== null ? Math.round(this._initialScrollY) : 'null'}`;
-          debugEl.textContent += `\n  Actual DOM Scroll: X=${Math.round(actualScrollAfter)} Y=${Math.round(actualScrollYAfter)}`;
-          debugEl.textContent += `\n  Stored Scroll: X=${Math.round(this.lastScrollX)} Y=${Math.round(this.lastScrollY)}`;
-          if (this._initialScrollX !== null && this._initialScrollY !== null) {
-            debugEl.textContent += `\n  Scroll Match X: ${Math.abs(actualScrollAfter - this._initialScrollX) < 1}`;
-            debugEl.textContent += `\n  Scroll Match Y: ${Math.abs(actualScrollYAfter - this._initialScrollY) < 1}`;
-          }
-          
-          // Check if scroll actually happened
-          if (needsScrollX || needsScrollY) {
-            if (this.isFirstRender) {
-              debugEl.textContent += `\n  ⚠️ FIRST RENDER: Scroll should have happened!`;
-            }
-            if (needsScrollX && Math.abs(actualScrollAfter - finalScrollX) > 1) {
-              debugEl.textContent += `\n  ❌ X SCROLL FAILED! Expected ${Math.round(finalScrollX)}, got ${Math.round(actualScrollAfter)}`;
-            }
-            if (needsScrollY && Math.abs(actualScrollYAfter - finalScrollY) > 1) {
-              debugEl.textContent += `\n  ❌ Y SCROLL FAILED! Expected ${Math.round(finalScrollY)}, got ${Math.round(actualScrollYAfter)}`;
-            }
-          }
-          
-          console.log('After scroll check:', {
-            needsScrollX,
-            needsScrollY,
-            expectedX: finalScrollX,
-            expectedY: finalScrollY,
-            actualX: actualScrollAfter,
-            actualY: actualScrollYAfter,
-            matchX: Math.abs(actualScrollAfter - finalScrollX) < 1,
-            matchY: Math.abs(actualScrollYAfter - finalScrollY) < 1
-          });
-        }
-      }
-      
-      // Mark first render as complete ONLY after we've actually scrolled
-      // This ensures first render centering happens reliably
-      if (this.isFirstRender && (needsScrollX || needsScrollY)) {
-        // Wait a bit more to ensure scroll has completed
-        setTimeout(() => {
-          this.isFirstRender = false;
-        }, 50);
-      } else if (this.isFirstRender && !needsScrollX && !needsScrollY) {
-        // If we didn't need to scroll (player already centered), mark as complete immediately
-        this.isFirstRender = false;
-      }
-    }, 0); // Use setTimeout(0) to ensure DOM is fully rendered
-  }
-  
   _updateBoard(board, playerPos) {
     const boardEl = document.getElementById('game-board');
     if (!boardEl) return;
     
-    // Use fixed bounds for scroll calculations - never change! This eliminates bounds-change complexity
-    // 20x20 grid is way more than enough (max 39 cards + central chamber = 40 tiles)
+    // Fixed 20x20 grid bounds (10 in each direction from center)
+    // This provides a consistent coordinate system regardless of board state
     const BOARD_SIZE = 10; // 10 in each direction = 20x20 total
-    const scrollMinX = -BOARD_SIZE;
-    const scrollMaxX = BOARD_SIZE;
-    const scrollMinY = -BOARD_SIZE;
-    const scrollMaxY = BOARD_SIZE;
+    const minX = -BOARD_SIZE;
+    const maxX = BOARD_SIZE;
+    const minY = -BOARD_SIZE;
+    const maxY = BOARD_SIZE;
     
-    // But for rendering, only render tiles that actually exist (or are adjacent to player)
-    // Calculate actual bounds from existing tiles
-    let renderMinX = 0, renderMaxX = 0, renderMinY = 0, renderMaxY = 0;
+    // Find all revealed tiles (tiles that exist in the board are all revealed)
+    // Calculate bounds from all tiles in the board
+    let renderMinX = Infinity, renderMaxX = -Infinity;
+    let renderMinY = Infinity, renderMaxY = -Infinity;
     let hasTiles = false;
     
     for (const [key, tile] of board.entries()) {
-      if (!hasTiles) {
-        renderMinX = renderMaxX = tile.x;
-        renderMinY = renderMaxY = tile.y;
-        hasTiles = true;
-      } else {
-        renderMinX = Math.min(renderMinX, tile.x);
-        renderMaxX = Math.max(renderMaxX, tile.x);
-        renderMinY = Math.min(renderMinY, tile.y);
-        renderMaxY = Math.max(renderMaxY, tile.y);
+      if (tile) {
+        const [x, y] = key.split(',').map(Number);
+        if (!hasTiles) {
+          renderMinX = renderMaxX = x;
+          renderMinY = renderMaxY = y;
+          hasTiles = true;
+        } else {
+          renderMinX = Math.min(renderMinX, x);
+          renderMaxX = Math.max(renderMaxX, x);
+          renderMinY = Math.min(renderMinY, y);
+          renderMaxY = Math.max(renderMaxY, y);
+        }
       }
     }
     
-    // Expand render bounds to include player and adjacent tiles
-    if (hasTiles) {
-      renderMinX = Math.min(renderMinX, playerPos.x - 1);
-      renderMaxX = Math.max(renderMaxX, playerPos.x + 1);
-      renderMinY = Math.min(renderMinY, playerPos.y - 1);
-      renderMaxY = Math.max(renderMaxY, playerPos.y + 1);
-    } else {
-      // No tiles yet - use player position
+    // If no tiles yet, start with player position
+    if (!hasTiles) {
       renderMinX = renderMaxX = playerPos.x;
       renderMinY = renderMaxY = playerPos.y;
     }
     
-    // Expand a bit more for visibility
-    renderMinX -= 2;
-    renderMaxX += 2;
-    renderMinY -= 2;
-    renderMaxY += 2;
-    
-    // Use scroll bounds for position calculations, render bounds for actual rendering
-    const minX = scrollMinX;
-    const maxX = scrollMaxX;
-    const minY = scrollMinY;
-    const maxY = scrollMaxY;
-    
-    // Bounds never change now - set this once and forget it
-    const currentBounds = { minX, maxX, minY, maxY };
-    const boundsChanged = false; // Never changes!
-    
-    // Store bounds change info BEFORE updating lastBoardBounds (for debug panel)
-    if (boundsChanged && this.lastBoardBounds) {
-      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
-      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
-      const gap = 2;
-      const totalTileWidth = tileWidth + gap;
-      const totalTileHeight = tileHeight + gap;
-      
-      const deltaMinX = minX - this.lastBoardBounds.minX;
-      const deltaMinY = minY - this.lastBoardBounds.minY;
-      
-      this._lastBoundsChange = {
-        oldBounds: { ...this.lastBoardBounds },
-        newBounds: { ...currentBounds },
-        deltaMinX,
-        deltaMinY,
-        scrollAdjustX: -deltaMinX * totalTileWidth,
-        scrollAdjustY: -deltaMinY * totalTileHeight
-      };
-    } else {
-      this._lastBoundsChange = null;
-    }
-    
-    // Bounds never change now, so no scroll adjustment needed!
-    // Just store the bounds (though we don't really need to track them anymore)
-    this.lastBoardBounds = currentBounds;
+    // Expand render bounds by 2 tiles in all directions for visual buffer
+    // This prevents abrupt drop-off at the edges and shows empty tiles near explored areas
+    renderMinX = Math.max(minX, renderMinX - 2);
+    renderMaxX = Math.min(maxX, renderMaxX + 2);
+    renderMinY = Math.max(minY, renderMinY - 2);
+    renderMaxY = Math.min(maxY, renderMaxY + 2);
     
     // Clear board
     boardEl.innerHTML = '';
@@ -871,18 +322,21 @@ class DOMRenderer extends RendererInterface {
     // Get adjacent tiles for tap-to-move highlighting (mobile)
     const adjacentTiles = this._getAdjacentMoveableTiles(board, playerPos);
     
-    // Calculate row width to ensure content is wide enough for scrolling
+    // Calculate tile dimensions and spacing
     const tileWidth = window.innerWidth <= 480 ? 65 : 70;
-    const gap = 2;
+    const tileHeight = window.innerWidth <= 480 ? 85 : 90;
+    const gap = 2; // Gap between tiles
     const totalTileWidth = tileWidth + gap;
-    const rowWidth = (maxX - minX + 1) * totalTileWidth;
+    const totalTileHeight = tileHeight + gap;
     
-    // Create rows (from top to bottom, y descending) - only render tiles that exist
+    // Calculate row width based on render bounds
+    const rowWidth = (renderMaxX - renderMinX + 1) * totalTileWidth;
+    
+    // Create rows (from top to bottom, y descending)
+    // Render all tiles in the render bounds (revealed tiles + buffer)
     for (let y = renderMaxY; y >= renderMinY; y--) {
       const row = document.createElement('div');
       row.className = 'board-row';
-      // Ensure row is wide enough to make container scrollable
-      row.style.minWidth = `${rowWidth}px`;
       row.style.width = `${rowWidth}px`;
       
       for (let x = renderMinX; x <= renderMaxX; x++) {
@@ -966,7 +420,7 @@ class DOMRenderer extends RendererInterface {
             touchTimer = null;
           }
           
-          // Check if this was a tap (not a scroll) by comparing start/end positions
+          // Check if this was a tap by comparing start/end positions
           let wasTap = false;
           if (touchStartPos && e.changedTouches[0]) {
             const touch = e.changedTouches[0];
@@ -976,7 +430,7 @@ class DOMRenderer extends RendererInterface {
             wasTap = moveX < 10 && moveY < 10;
           }
           
-          // Only handle as normal tap if not a long press and it was actually a tap (not scroll)
+          // Only handle as normal tap if not a long press and it was actually a tap
           if (!isLongPress && touchStartTime && (Date.now() - touchStartTime) < 500 && wasTap) {
             handleTileAction(e);
           }
@@ -1033,7 +487,11 @@ class DOMRenderer extends RendererInterface {
           tileEl.appendChild(marker);
         }
         
-        if (tile) {
+        // Check if this tile exists in the board (all tiles in board are revealed)
+        const isRevealed = tile !== undefined && tile !== null;
+        
+        if (isRevealed) {
+          // This tile has been explored/revealed
           if (tile.isCentralChamber) {
             tileEl.classList.add('central-chamber');
             tileEl.classList.add('revealed');
@@ -1063,13 +521,15 @@ class DOMRenderer extends RendererInterface {
             content.appendChild(suitEl);
             tileEl.appendChild(content);
           } else {
+            // Empty revealed tile
             tileEl.classList.add('empty');
             tileEl.classList.add('revealed');
           }
         } else {
-          // Unexplored tile - still show border so grid is visible
+          // Unexplored tile within render bounds (buffer zone)
+          // Show subtle border so grid is visible but clearly unexplored
           tileEl.style.opacity = '0.3';
-          tileEl.style.border = '1px solid rgba(83, 52, 131, 0.3)'; // Subtle border for grid visibility
+          tileEl.style.border = '1px solid rgba(83, 52, 131, 0.3)';
         }
         
         row.appendChild(tileEl);
@@ -1078,176 +538,6 @@ class DOMRenderer extends RendererInterface {
       boardEl.appendChild(row);
     }
     
-    // Add spacers to ensure board is large enough for scrolling in all directions (mobile only)
-    if (window.innerWidth <= 768) {
-      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
-      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
-      const gap = 2;
-      const totalTileWidth = tileWidth + gap;
-      const totalTileHeight = tileHeight + gap;
-      const computedStyle = window.getComputedStyle(boardEl);
-      const padding = parseInt(computedStyle.paddingTop) || parseInt(computedStyle.paddingLeft) || 8;
-      const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
-      const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      
-      // Calculate player pixel positions
-      const playerXOffset = playerPos.x - minX;
-      const playerYOffset = maxY - playerPos.y;
-      const tileStartX = padding + (playerXOffset * totalTileWidth);
-      const tileStartY = padding + (playerYOffset * totalTileHeight);
-      const playerPixelX = tileStartX + (tileWidth / 2);
-      const playerPixelY = tileStartY + (tileHeight / 2);
-      
-      // Calculate spacer needs for centering
-      // Set spacers ONCE on first render, then keep them fixed
-      // After that, adjust scroll offset to maintain relative position
-      // Spacers should be SYMMETRIC (T=B, L=R) to allow centering in all directions
-      if (!this._spacersInitialized) {
-        // Always add spacers on all sides (viewport/2) to allow scrolling to center
-        // This ensures we can always scroll in any direction to center the queen
-        // Use symmetric spacers: same size on opposite sides
-        const spacerWidth = viewportWidth / 2;
-        const spacerHeight = viewportHeight / 2;
-        
-        // Calculate how much we need to scroll to center (for initial centering)
-        const centerScrollX = playerPixelX - (viewportWidth / 2);
-        const centerScrollY = playerPixelY - (viewportHeight / 2);
-        
-        // Store symmetric spacer sizes (fixed after first render)
-        this._topSpacerNeeded = spacerHeight;
-        this._bottomSpacerNeeded = spacerHeight;
-        this._leftSpacerNeeded = spacerWidth;
-        this._rightSpacerNeeded = spacerWidth;
-        this._centerScrollX = centerScrollX;
-        this._centerScrollY = centerScrollY;
-        
-        // Calculate initial scroll (to center player) - set once, never change
-        this._initialScrollX = centerScrollX + spacerWidth;
-        this._initialScrollY = centerScrollY + spacerHeight;
-        
-        this._spacersInitialized = true;
-      }
-      // After first render: use stored spacer values (don't recalculate)
-      
-      // Get spacer values (from initialization or stored)
-      const topSpacer = this._topSpacerNeeded || 0;
-      const bottomSpacer = this._bottomSpacerNeeded || 0;
-      const leftSpacer = this._leftSpacerNeeded || 0;
-      const rightSpacer = this._rightSpacerNeeded || 0;
-      
-      // Spacers ensure we always have enough space:
-      // - Top spacer = viewportHeight/2
-      // - Bottom spacer = viewportHeight/2  
-      // - Content = expectedBoardHeight
-      // Total scrollHeight = expectedBoardHeight + viewportHeight > viewportHeight
-      // So we always have enough space to scroll - no need to manipulate minHeight
-      
-      // Add top spacer if needed for centering
-      if (topSpacer > 0) {
-        let topSpacerEl = boardEl.querySelector('.scroll-spacer-top');
-        if (!topSpacerEl) {
-          topSpacerEl = document.createElement('div');
-          topSpacerEl.className = 'scroll-spacer-top';
-          topSpacerEl.style.width = '100%';
-          topSpacerEl.style.flexShrink = '0';
-          // Insert at the beginning of the board
-          boardEl.insertBefore(topSpacerEl, boardEl.firstChild);
-        }
-        topSpacerEl.style.height = `${topSpacer}px`;
-      } else {
-        const topSpacerEl = boardEl.querySelector('.scroll-spacer-top');
-        if (topSpacerEl) {
-          topSpacerEl.remove();
-        }
-      }
-      
-      // Add left spacer if needed for centering
-      // Add to each row at the beginning (like right spacer is at the end)
-      if (leftSpacer > 0) {
-        const rows = boardEl.querySelectorAll('.board-row');
-        rows.forEach(row => {
-          let leftSpacerEl = row.querySelector('.scroll-spacer-left');
-          if (!leftSpacerEl) {
-            leftSpacerEl = document.createElement('div');
-            leftSpacerEl.className = 'scroll-spacer-left';
-            leftSpacerEl.style.width = `${leftSpacer}px`;
-            leftSpacerEl.style.height = '100%';
-            leftSpacerEl.style.flexShrink = '0';
-            leftSpacerEl.style.display = 'inline-block';
-            leftSpacerEl.style.verticalAlign = 'top';
-            // Insert at the beginning of the row
-            row.insertBefore(leftSpacerEl, row.firstChild);
-          }
-          leftSpacerEl.style.width = `${leftSpacer}px`;
-        });
-      } else {
-        // Remove left spacers from all rows
-        const leftSpacers = boardEl.querySelectorAll('.scroll-spacer-left');
-        leftSpacers.forEach(spacer => spacer.remove());
-      }
-      
-      // Add bottom spacer (always add for centering)
-      const bottomSpacerNeeded = this._bottomSpacerNeeded || 0;
-      if (bottomSpacerNeeded > 0) {
-        let spacer = boardEl.querySelector('.scroll-spacer-bottom');
-        if (!spacer) {
-          spacer = document.createElement('div');
-          spacer.className = 'scroll-spacer-bottom';
-          spacer.style.width = '100%';
-          spacer.style.flexShrink = '0';
-          boardEl.appendChild(spacer);
-        }
-        spacer.style.height = `${bottomSpacerNeeded}px`;
-      }
-      
-      // Add right spacer (always add for centering)
-      const rightSpacerNeeded = this._rightSpacerNeeded || 0;
-      const rows = boardEl.querySelectorAll('.board-row');
-      
-      if (rightSpacerNeeded > 0) {
-        rows.forEach(row => {
-          let spacer = row.querySelector('.scroll-spacer-right');
-          if (!spacer) {
-            spacer = document.createElement('div');
-            spacer.className = 'scroll-spacer-right';
-            spacer.style.height = '100%';
-            spacer.style.flexShrink = '0';
-            spacer.style.display = 'inline-block';
-            spacer.style.verticalAlign = 'top';
-            row.appendChild(spacer);
-          }
-          spacer.style.width = `${rightSpacerNeeded}px`;
-        });
-      }
-    }
-    
-    // Apply initial scroll ONCE after spacers are added (mobile only)
-    // Since bounds are fixed, we only need to set scroll once
-    if (window.innerWidth <= 768 && this._initialScrollX !== null && this._initialScrollY !== null) {
-      // Use requestAnimationFrame to ensure DOM is fully rendered with spacers
-      requestAnimationFrame(() => {
-        // Force a reflow to ensure scrollHeight is calculated correctly
-        void boardEl.offsetHeight;
-        
-        // Set scroll once - bounds never change so scroll never needs to change
-        boardEl.scrollLeft = this._initialScrollX;
-        boardEl.scrollTop = this._initialScrollY;
-        
-        // Force a second frame to ensure scroll sticks
-        requestAnimationFrame(() => {
-          void boardEl.offsetHeight;
-          boardEl.scrollLeft = this._initialScrollX;
-          boardEl.scrollTop = this._initialScrollY;
-        });
-      });
-    }
-    
-    // Always call _centerBoardOnPlayer to update debug overlays (mobile only)
-    if (window.innerWidth <= 768) {
-      this._centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY);
-    }
   }
   
   /**
@@ -1467,46 +757,6 @@ class DOMRenderer extends RendererInterface {
     // Clear all highlights
   }
   
-  /**
-   * Update debug overlay to show the dead zone (middle 50% of viewport)
-   * @private
-   */
-  _updateCenterGuide(viewportWidth, viewportHeight) {
-    // Draw a box around the center tile to help visualize centering
-    let guide = document.getElementById('center-guide');
-    if (!guide) {
-      guide = document.createElement('div');
-      guide.id = 'center-guide';
-      guide.style.position = 'fixed';
-      guide.style.pointerEvents = 'none';
-      guide.style.zIndex = '9999';
-      guide.style.border = '2px dashed rgba(255, 0, 0, 0.5)';
-      guide.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
-      document.body.appendChild(guide);
-    }
-    
-    // Center tile should be at viewport center
-    const tileWidth = window.innerWidth <= 480 ? 65 : 70;
-    const tileHeight = window.innerWidth <= 480 ? 85 : 90;
-    const centerX = (viewportWidth / 2) - (tileWidth / 2);
-    const centerY = (viewportHeight / 2) - (tileHeight / 2);
-    
-    guide.style.left = `${centerX}px`;
-    guide.style.top = `${centerY}px`;
-    guide.style.width = `${tileWidth}px`;
-    guide.style.height = `${tileHeight}px`;
-  }
-  
-  _updateDeadZoneDebug(left, top, width, height) {
-    const debugOverlay = document.getElementById('debug-deadzone');
-    if (debugOverlay) {
-      debugOverlay.style.display = 'block';
-      debugOverlay.style.left = `${left}px`;
-      debugOverlay.style.top = `${top}px`;
-      debugOverlay.style.width = `${width}px`;
-      debugOverlay.style.height = `${height}px`;
-    }
-  }
 }
 
 // Export for use in other modules
