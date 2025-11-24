@@ -3,24 +3,27 @@
  * Board layout and tile styling
  */
 
-.board-container {
-  width: 100%;
-  max-width: 100%;
+#game-board.board-container,
+.board-container,
+#game-board {
+  width: 100% !important;
+  max-width: 100% !important;
   /* FIXED height - must be smaller than content for scrolling to work */
   height: 500px !important; /* Force a fixed height for testing */
   max-height: 500px !important;
-  overflow-x: scroll;
-  overflow-y: scroll;
-  padding: 0;
-  margin: 0;
-  box-sizing: border-box;
-  position: relative;
+  min-height: 500px !important; /* Prevent shrinking */
+  overflow-x: scroll !important;
+  overflow-y: scroll !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  position: relative !important;
   /* Force scrollbars - use scroll instead of auto */
-  -webkit-overflow-scrolling: touch;
+  -webkit-overflow-scrolling: touch !important;
   /* Ensure container can receive touch events for scrolling */
-  touch-action: pan-x pan-y;
+  touch-action: pan-x pan-y !important;
   /* Prevent pull-to-refresh interference */
-  overscroll-behavior: contain;
+  overscroll-behavior: contain !important;
 }
 
 @media (max-width: 768px) {
