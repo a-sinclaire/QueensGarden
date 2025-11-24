@@ -1180,20 +1180,34 @@ class DOMRenderer extends RendererInterface {
       const playerPixelX = tileStartX + (tileWidth / 2);
       const playerPixelY = tileStartY + (tileHeight / 2);
       
+      // Calculate spacer needs for first render (if centering requires negative scroll)
+      let topSpacer = 0;
+      let leftSpacer = 0;
+      if (this.isFirstRender) {
+        const centerScrollX = playerPixelX - (viewportWidth / 2);
+        const centerScrollY = playerPixelY - (viewportHeight / 2);
+        topSpacer = centerScrollY < 0 ? Math.abs(centerScrollY) : 0;
+        leftSpacer = centerScrollX < 0 ? Math.abs(centerScrollX) : 0;
+        this._topSpacerNeeded = topSpacer;
+        this._leftSpacerNeeded = leftSpacer;
+      } else {
+        this._topSpacerNeeded = 0;
+        this._leftSpacerNeeded = 0;
+      }
+      
       // Calculate minimum dimensions needed for centering in all directions
       const minBoardHeightForScroll = Math.max(
         expectedBoardHeight,
-        playerPixelY + (viewportHeight / 2), // Tall enough to scroll down to center
-        playerPixelY + viewportHeight // Allow scrolling up to center
+        playerPixelY + (viewportHeight / 2) + topSpacer, // Tall enough to scroll down to center
+        playerPixelY + viewportHeight + topSpacer // Allow scrolling up to center
       );
       const minBoardWidthForScroll = Math.max(
         expectedBoardWidth,
-        playerPixelX + (viewportWidth / 2), // Wide enough to scroll right to center
-        playerPixelX + viewportWidth // Allow scrolling left to center
+        playerPixelX + (viewportWidth / 2) + leftSpacer, // Wide enough to scroll right to center
+        playerPixelX + viewportWidth + leftSpacer // Allow scrolling left to center
       );
       
       // Add top spacer if needed for negative scroll (first render centering)
-      const topSpacer = this._topSpacerNeeded || 0;
       if (topSpacer > 0) {
         let topSpacerEl = boardEl.querySelector('.scroll-spacer-top');
         if (!topSpacerEl) {
