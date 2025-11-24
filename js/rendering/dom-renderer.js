@@ -114,6 +114,9 @@ class DOMRenderer extends RendererInterface {
     // Update turn counter
     this._updateTurn(gameState.turn);
     
+    // Update deck size
+    this._updateDeckSize(gameState.deckSize);
+    
     // Update game over state
     if (gameState.gameOver) {
       this._showGameOver(gameState.victory);
@@ -181,6 +184,13 @@ class DOMRenderer extends RendererInterface {
     const turnEl = document.getElementById('turn-display');
     if (turnEl) {
       turnEl.textContent = `Turn: ${turn}`;
+    }
+  }
+  
+  _updateDeckSize(deckSize) {
+    const deckSizeEl = document.getElementById('deck-size');
+    if (deckSizeEl) {
+      deckSizeEl.textContent = `Deck: ${deckSize}`;
     }
   }
   
