@@ -195,7 +195,20 @@ class DOMRenderer extends RendererInterface {
       row.className = 'board-row';
       row.style.width = `${rowWidth}px`;
       row.dataset.y = y.toString();
-      boardEl.appendChild(row);
+      
+      // Insert row in correct Y order (higher Y values first, since we render top to bottom)
+      // Find the first row with a lower Y value to insert before
+      const insertBefore = Array.from(boardEl.children).find(child => {
+        const childY = parseInt(child.dataset.y || '999');
+        return childY < y; // Insert before rows with lower Y
+      });
+      
+      if (insertBefore) {
+        boardEl.insertBefore(row, insertBefore);
+      } else {
+        boardEl.appendChild(row);
+      }
+      
       this.rowElements.set(y, row);
     }
     return row;
@@ -215,11 +228,26 @@ class DOMRenderer extends RendererInterface {
       tileEl.className = 'tile';
       tileEl.dataset.x = x.toString();
       tileEl.dataset.y = y.toString();
+      tileEl.style.width = `${tileWidth}px`;
+      tileEl.style.height = `${tileHeight}px`;
+      tileEl.style.flexShrink = '0'; // Prevent shrinking
       
       // Add event listeners once (only on creation)
       this._attachTileEventListeners(tileEl, x, y);
       
-      row.appendChild(tileEl);
+      // Insert tile in correct X order (left to right)
+      // Find the first tile/spacer with a higher X value to insert before
+      const insertBefore = Array.from(row.children).find(child => {
+        const childX = parseInt(child.dataset.x || '999');
+        return childX > x; // Insert before tiles/spacers with higher X
+      });
+      
+      if (insertBefore) {
+        row.insertBefore(tileEl, insertBefore);
+      } else {
+        row.appendChild(tileEl);
+      }
+      
       this.tileElements.set(key, tileEl);
     }
     
