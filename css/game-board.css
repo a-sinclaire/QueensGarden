@@ -10,22 +10,17 @@
   /* Content determines size - must be larger than container to enable scrolling */
   width: fit-content;
   min-width: 100%;
-  /* Height and overflow handled by ui.css for scrolling */
+  /* Enable scrolling - same for desktop and mobile */
+  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
   box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
   .board-container {
     padding: 0; /* No padding needed with 20x20 grid */
-    justify-content: flex-start;
-    align-items: flex-start;
-    /* Content determines size, container scrolls */
-    width: fit-content;
-    min-width: 100%;
-    /* Don't force min-height - let ui.css control height for scrolling */
-    flex-shrink: 0;
-    /* Critical: ensure content can exceed container height */
-    align-content: flex-start;
+    /* Match desktop exactly - no mobile-specific overrides */
   }
 }
 

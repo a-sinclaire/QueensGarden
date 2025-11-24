@@ -27,15 +27,7 @@
   
   .game-area {
     order: 2; /* Show game area second */
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    overflow: hidden; /* Hide overflow, board-container handles scrolling */
-    padding: 0;
-    position: relative;
-    margin: 0;
-    min-height: 0; /* Allow flex item to shrink */
+    /* EXACTLY match desktop - no mobile-specific overrides */
   }
   
   /* Hide mobile control buttons - using tap-to-move instead */
@@ -44,18 +36,9 @@
   }
   
   .board-container {
-    /* Fixed size container that enables scrolling - match desktop approach */
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    padding: 0;
-    margin: 0;
-    scroll-behavior: auto;
+    /* Mobile-specific: touch scrolling enhancements */
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    position: relative;
     touch-action: pan-x pan-y;
-    box-sizing: border-box;
   }
 }
 

@@ -173,7 +173,7 @@ header h1 {
   .game-layout {
     flex-direction: column;
     gap: 0;
-    height: 100vh; /* Fixed height for mobile */
+    /* Use same flex approach as desktop - don't force height */
   }
 }
 
