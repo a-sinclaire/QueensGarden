@@ -24,6 +24,8 @@ class DOMRenderer extends RendererInterface {
     this.isFirstRender = true;
     // Track previous board bounds to detect bounds changes
     this.lastBoardBounds = null;
+    // Store bounds change info for debug panel
+    this._lastBoundsChange = null;
     // Track spacer sizes (set once on first render, then stay fixed)
     this._spacersInitialized = false;
     // Cache-bust color for debugging (changes with each deployment)
@@ -561,24 +563,16 @@ class DOMRenderer extends RendererInterface {
           debugText += `First Render: ${this.isFirstRender}\n`;
           
           // Add bounds change info (most important for debugging the offset issue)
-          if (this.lastBoardBounds) {
-            const boundsChanged = (
-              this.lastBoardBounds.minX !== minX || this.lastBoardBounds.maxX !== maxX ||
-              this.lastBoardBounds.minY !== minY || this.lastBoardBounds.maxY !== maxY
-            );
-            if (boundsChanged) {
-              const deltaMinX = minX - this.lastBoardBounds.minX;
-              const deltaMinY = minY - this.lastBoardBounds.minY;
-              debugText += `\n=== BOUNDS CHANGE ===\n`;
-              debugText += `Old: X(${this.lastBoardBounds.minX}-${this.lastBoardBounds.maxX}) Y(${this.lastBoardBounds.minY}-${this.lastBoardBounds.maxY})\n`;
-              debugText += `New: X(${minX}-${maxX}) Y(${minY}-${maxY})\n`;
-              debugText += `Delta: X=${deltaMinX} Y=${deltaMinY}\n`;
-              debugText += `Scroll adj: X=${Math.round(-deltaMinX * totalTileWidth)} Y=${Math.round(-deltaMinY * totalTileHeight)}\n`;
-              
-              // Show preserved scroll if available
-              if (preservedScroll) {
-                debugText += `Preserved scroll: X=${Math.round(preservedScroll.x)} Y=${Math.round(preservedScroll.y)}\n`;
-              }
+          if (this._lastBoundsChange) {
+            debugText += `\n=== BOUNDS CHANGE ===\n`;
+            debugText += `Old: X(${this._lastBoundsChange.oldBounds.minX}-${this._lastBoundsChange.oldBounds.maxX}) Y(${this._lastBoundsChange.oldBounds.minY}-${this._lastBoundsChange.oldBounds.maxY})\n`;
+            debugText += `New: X(${this._lastBoundsChange.newBounds.minX}-${this._lastBoundsChange.newBounds.maxX}) Y(${this._lastBoundsChange.newBounds.minY}-${this._lastBoundsChange.newBounds.maxY})\n`;
+            debugText += `Delta: X=${this._lastBoundsChange.deltaMinX} Y=${this._lastBoundsChange.deltaMinY}\n`;
+            debugText += `Scroll adj: X=${Math.round(this._lastBoundsChange.scrollAdjustX)} Y=${Math.round(this._lastBoundsChange.scrollAdjustY)}\n`;
+            
+            // Show preserved scroll if available
+            if (preservedScroll) {
+              debugText += `Preserved scroll: X=${Math.round(preservedScroll.x)} Y=${Math.round(preservedScroll.y)}\n`;
             }
           }
           
@@ -812,6 +806,29 @@ class DOMRenderer extends RendererInterface {
       this.lastBoardBounds.minY !== minY || this.lastBoardBounds.maxY !== maxY
     );
     
+    // Store bounds change info BEFORE updating lastBoardBounds (for debug panel)
+    if (boundsChanged && this.lastBoardBounds) {
+      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
+      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
+      const gap = 2;
+      const totalTileWidth = tileWidth + gap;
+      const totalTileHeight = tileHeight + gap;
+      
+      const deltaMinX = minX - this.lastBoardBounds.minX;
+      const deltaMinY = minY - this.lastBoardBounds.minY;
+      
+      this._lastBoundsChange = {
+        oldBounds: { ...this.lastBoardBounds },
+        newBounds: { ...currentBounds },
+        deltaMinX,
+        deltaMinY,
+        scrollAdjustX: -deltaMinX * totalTileWidth,
+        scrollAdjustY: -deltaMinY * totalTileHeight
+      };
+    } else {
+      this._lastBoundsChange = null;
+    }
+    
     // Preserve scroll position before clearing board (prevents jump when bounds change)
     // CRITICAL: When board bounds change, clearing innerHTML can reset scroll position
     // We need to preserve it and pass it to _centerBoardOnPlayer to use instead of reading it
@@ -823,21 +840,8 @@ class DOMRenderer extends RendererInterface {
     // We need to adjust scroll to compensate and maintain the same visual position
     // This maintains the relative offset from center (not auto-centering)
     if (boundsChanged && this.lastBoardBounds && !this.isFirstRender) {
-      // Calculate tile dimensions for scroll adjustment
-      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
-      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
-      const gap = 2;
-      const totalTileWidth = tileWidth + gap;
-      const totalTileHeight = tileHeight + gap;
-      
-      const deltaMinX = minX - this.lastBoardBounds.minX; // Negative if expanded left
-      const deltaMinY = minY - this.lastBoardBounds.minY; // Negative if expanded up
-      
-      // Adjust scroll: if board expanded left (deltaMinX < 0), we need to scroll right (increase scrollX)
-      // to keep the player in the same visual position
-      // The adjustment is: deltaMinX * totalTileWidth (negative delta = positive scroll adjustment)
-      savedScrollX += -deltaMinX * totalTileWidth;
-      savedScrollY += -deltaMinY * totalTileHeight;
+      savedScrollX += this._lastBoundsChange.scrollAdjustX;
+      savedScrollY += this._lastBoundsChange.scrollAdjustY;
       
       // Clamp to valid range (will be clamped again after board rebuild)
       savedScrollX = Math.max(0, savedScrollX);
