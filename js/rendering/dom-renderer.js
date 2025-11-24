@@ -373,6 +373,7 @@ class DOMRenderer extends RendererInterface {
     tileEl.style.border = '';
     tileEl.style.cursor = '';
     tileEl.title = '';
+    tileEl.style.visibility = 'visible'; // Ensure tile is visible when updating
     
     // Remove player marker if it exists
     const existingMarker = tileEl.querySelector('.tile-player-marker');
@@ -541,6 +542,8 @@ class DOMRenderer extends RendererInterface {
     const rowWidth = (numTilesPerRow * tileWidth) + ((numTilesPerRow - 1) * gap);
     
     // Update rows and tiles in place (no clearing!)
+    // Render ALL tiles in the fixed grid bounds (not just buffer zone)
+    // This ensures the grid structure is always complete for scrolling
     for (let y = renderMaxY; y >= renderMinY; y--) {
       const row = this._getOrCreateRow(boardEl, y, rowWidth);
       
@@ -548,40 +551,22 @@ class DOMRenderer extends RendererInterface {
         const key = `${x},${y}`;
         const tile = board.get(key);
         
-        // Only create DOM element if tile should be populated (revealed or within buffer)
+        // Always create tile element for all positions in the fixed grid
+        // This ensures proper grid structure and scrolling
+        const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
+        
+        // Only populate content if tile should be visible (revealed or within buffer)
         const shouldPopulate = tilesToPopulate.has(key);
         if (!shouldPopulate) {
-          // For non-populated tiles, create invisible spacers to maintain grid structure
-          // Check if spacer already exists
-          const existingSpacer = Array.from(row.children).find(child => 
-            child.dataset.x === x.toString() && child.dataset.y === y.toString() && child.style.visibility === 'hidden'
-          );
-          if (!existingSpacer) {
-            const spacer = document.createElement('div');
-            spacer.style.width = `${tileWidth}px`;
-            spacer.style.height = `${tileHeight}px`;
-            spacer.style.flexShrink = '0';
-            spacer.style.visibility = 'hidden';
-            spacer.dataset.x = x.toString();
-            spacer.dataset.y = y.toString();
-            // Insert spacer at correct position
-            const insertBefore = Array.from(row.children).find(child => {
-              const childX = parseInt(child.dataset.x || '999');
-              return childX > x;
-            });
-            if (insertBefore) {
-              row.insertBefore(spacer, insertBefore);
-            } else {
-              row.appendChild(spacer);
-            }
-          }
+          // Hide tile but keep it in DOM for grid structure
+          tileEl.style.visibility = 'hidden';
+          tileEl.style.opacity = '0';
           continue;
         }
         
-        // Get or create tile element
-        const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
-        
-        // Update tile visual state
+        // Show tile and update visual state
+        tileEl.style.visibility = 'visible';
+        tileEl.style.opacity = '';
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
       }
     }
