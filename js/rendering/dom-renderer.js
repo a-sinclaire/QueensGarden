@@ -663,9 +663,16 @@ class DOMRenderer extends RendererInterface {
           debugText += `\n  Padding: ${padding}`;
           debugText += `\n  Min Board For Scroll: W=${Math.round(minBoardWidthForScroll)} H=${Math.round(minBoardHeightForScroll)}`;
           
+          // Add spacer and offset info
+          const offsetX = playerPixelX - (viewportWidth / 2);
+          const offsetY = playerPixelY - (viewportHeight / 2);
+          debugText += `\n\n=== CENTERING INFO ===`;
+          debugText += `\n  Offset from center: X=${Math.round(offsetX)} Y=${Math.round(offsetY)}`;
+          debugText += `\n  Spacers: Top=${this._topSpacerNeeded || 0} Bottom=${this._bottomSpacerNeeded || 0} Left=${this._leftSpacerNeeded || 0} Right=${this._rightSpacerNeeded || 0}`;
+          
           // Add first render specific info
           if (this.isFirstRender) {
-            debugText += `\n\n=== FIRST RENDER CENTERING ===`;
+            debugText += `\n\n=== FIRST RENDER ===`;
             debugText += `\n  Center Scroll Calc: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}`;
             debugText += `\n  Clamped Scroll: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}`;
             debugText += `\n  Board can scroll X: ${boardEl.scrollWidth > boardEl.clientWidth}`;
