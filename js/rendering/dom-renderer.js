@@ -897,10 +897,7 @@ class DOMRenderer extends RendererInterface {
         tileEl.appendChild(content);
       } else if (tile.card) {
         tileEl.classList.add('revealed');
-        // Add flip animation if newly revealed
-        if (isNewlyRevealed) {
-          tileEl.classList.add('card-flip-animate');
-        }
+        // Flip animation is handled by the queue system in _updateBoard
         const card = tile.card;
         const cardType = card.getType();
         tileEl.classList.add(`card-type-${cardType}`);
