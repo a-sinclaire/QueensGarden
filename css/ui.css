@@ -33,6 +33,9 @@
     padding: 0;
     position: relative;
     margin-top: 0;
+    /* Prevent browser from capturing scroll */
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
   }
   
   /* Hide mobile control buttons - using tap-to-move instead */
@@ -44,7 +47,6 @@
     /* Simple scrollable container - fills parent, scrolls content */
     width: 100%;
     height: 100%;
-    overflow: auto;
     overflow-x: auto;
     overflow-y: auto;
     padding: 0;
@@ -52,6 +54,7 @@
     /* Instant scrolling on mobile (smooth looks bad) */
     scroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
+    /* Prevent browser from capturing scroll - allow element to scroll */
     overscroll-behavior: contain;
     /* Let content determine size */
     display: flex;
@@ -59,8 +62,13 @@
     align-items: flex-start;
     /* Ensure container can scroll */
     position: relative;
-    /* Allow touch scrolling */
+    /* Allow touch scrolling in both directions */
     touch-action: pan-x pan-y;
+    /* Ensure container has proper height for scrolling */
+    min-height: 100%;
+    /* Prevent browser scroll capture */
+    overscroll-behavior-y: contain;
+    overscroll-behavior-x: contain;
   }
 }
 

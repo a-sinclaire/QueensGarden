@@ -289,11 +289,18 @@ class DOMRenderer extends RendererInterface {
     
     // Calculate which tiles should be populated (revealed + 2-tile buffer)
     const tilesToPopulate = new Set();
+    
+    // If no revealed tiles yet, start with player position as the "revealed" area
+    if (revealedTiles.size === 0) {
+      revealedTiles.add(`${playerPos.x},${playerPos.y}`);
+    }
+    
     for (const key of revealedTiles) {
       const [x, y] = key.split(',').map(Number);
       // Add revealed tile
       tilesToPopulate.add(key);
       // Add tiles within 2 tiles in all directions (buffer zone)
+      // This creates a 5x5 area (2 tiles on each side + center)
       for (let dx = -2; dx <= 2; dx++) {
         for (let dy = -2; dy <= 2; dy++) {
           const bufferX = x + dx;
@@ -341,18 +348,22 @@ class DOMRenderer extends RendererInterface {
         const key = `${x},${y}`;
         const tile = board.get(key);
         
-        // Always create DOM element to maintain grid size
-        const tileEl = document.createElement('div');
-        tileEl.className = 'tile';
-        
-        // Only populate content if tile is revealed or within 2 tiles of revealed
+        // Only create DOM element if tile should be populated (revealed or within buffer)
         const shouldPopulate = tilesToPopulate.has(key);
         if (!shouldPopulate) {
-          // Empty div for unexplored tiles beyond buffer zone - maintains grid structure
-          // No styling needed, just empty space
-          row.appendChild(tileEl);
+          // Create invisible spacer to maintain grid structure without rendering content
+          const spacer = document.createElement('div');
+          spacer.style.width = `${tileWidth}px`;
+          spacer.style.height = `${tileHeight}px`;
+          spacer.style.flexShrink = '0';
+          spacer.style.visibility = 'hidden'; // Takes up space but invisible
+          row.appendChild(spacer);
           continue;
         }
+        
+        // Create tile element for revealed tiles or buffer zone tiles
+        const tileEl = document.createElement('div');
+        tileEl.className = 'tile';
         
         // Add click and touch handlers for mobile support
         let touchStartTime = null;
