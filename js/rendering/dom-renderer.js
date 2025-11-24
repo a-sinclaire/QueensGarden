@@ -1163,7 +1163,7 @@ class DOMRenderer extends RendererInterface {
       setTimeout(() => {
         this._animateNextFlip();
       }, 50); // 50ms delay between flips
-    }, 500); // Animation duration (match CSS)
+    }, 600); // Animation duration (match CSS - 0.6s)
   }
   
   /**

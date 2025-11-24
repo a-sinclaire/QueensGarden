@@ -167,21 +167,29 @@
 /* Card flip animation - realistic 3D card flip */
 @keyframes card-flip {
   0% {
-    transform: rotateY(0deg);
+    transform: rotateY(0deg) scaleX(1);
+    opacity: 0;
+  }
+  49% {
+    transform: rotateY(90deg) scaleX(0.1);
     opacity: 0;
   }
   50% {
-    transform: rotateY(90deg);
-    opacity: 0.3;
+    transform: rotateY(90deg) scaleX(0.1);
+    opacity: 0;
+  }
+  51% {
+    transform: rotateY(90deg) scaleX(0.1);
+    opacity: 1;
   }
   100% {
-    transform: rotateY(0deg);
+    transform: rotateY(0deg) scaleX(1);
     opacity: 1;
   }
 }
 
 .tile.card-flip-animate {
-  animation: card-flip 0.5s ease-in-out;
+  animation: card-flip 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   transform-style: preserve-3d;
   backface-visibility: hidden;
   perspective: 1000px;
