@@ -152,7 +152,7 @@ class DOMRenderer extends RendererInterface {
   _updateHealth(health) {
     const healthEl = document.getElementById('health-display');
     if (healthEl) {
-      healthEl.textContent = `Health: ${health}`;
+      healthEl.textContent = `${health}`;
     }
   }
   
@@ -160,11 +160,23 @@ class DOMRenderer extends RendererInterface {
     const partyEl = document.getElementById('party-display');
     if (partyEl) {
       partyEl.innerHTML = '';
-      party.forEach(card => {
-        const cardEl = document.createElement('div');
-        cardEl.textContent = `${card.rank} of ${card.suit}`;
-        partyEl.appendChild(cardEl);
-      });
+      if (party && party.length > 0) {
+        // Get player's starting suit (own suit) if available
+        const ownSuit = this.gameEngine && this.gameEngine.player.startingQueen 
+          ? this.gameEngine.player.startingQueen.suit 
+          : null;
+        
+        party.forEach(queen => {
+          const suitEl = document.createElement('span');
+          suitEl.className = 'party-suit';
+          if (ownSuit && queen.suit === ownSuit) {
+            suitEl.classList.add('own-suit');
+          }
+          suitEl.textContent = this._getSuitSymbol(queen.suit);
+          suitEl.title = `${queen.rank} of ${queen.suit}`;
+          partyEl.appendChild(suitEl);
+        });
+      }
     }
   }
   
@@ -172,11 +184,18 @@ class DOMRenderer extends RendererInterface {
     const kingsEl = document.getElementById('kings-display');
     if (kingsEl) {
       kingsEl.innerHTML = '';
-      kings.forEach(king => {
-        const kingEl = document.createElement('div');
-        kingEl.textContent = `${king.rank} of ${king.suit}`;
-        kingsEl.appendChild(kingEl);
-      });
+      if (kings && kings.length > 0) {
+        kings.forEach(king => {
+          const suitEl = document.createElement('span');
+          suitEl.className = 'kings-suit';
+          suitEl.textContent = this._getSuitSymbol(king.suit);
+          suitEl.title = `${king.rank} of ${king.suit}`;
+          if (this.gameEngine && this.gameEngine.player.hasKingAbilityUsed(king)) {
+            suitEl.style.opacity = '0.5'; // Dim used kings
+          }
+          kingsEl.appendChild(suitEl);
+        });
+      }
     }
   }
   
@@ -396,8 +415,139 @@ class DOMRenderer extends RendererInterface {
       isLongPress = false;
     }, { passive: true });
     
-    // Click handler for desktop
-    tileEl.addEventListener('click', handleTileAction);
+    // Mouse events for desktop tap-and-hold (same as touch)
+    let mouseStartTime = null;
+    let mouseTimer = null;
+    let isMouseLongPress = false;
+    let mouseStartPos = null;
+    let hasMouseMoved = false;
+    let lastClickTime = 0; // Cooldown to prevent double-firing
+    
+    tileEl.addEventListener('mousedown', (e) => {
+      // Only handle left mouse button
+      if (e.button !== 0) return;
+      
+      mouseStartPos = { x: e.clientX, y: e.clientY };
+      mouseStartTime = Date.now();
+      isMouseLongPress = false;
+      hasMouseMoved = false;
+      
+      // Check if this tile is destroyable (adjacent to player)
+      if (this.gameEngine && !this.destroyMode) {
+        const playerPos = this.gameEngine.player.position;
+        const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
+        
+        if (isAdjacent) {
+          // Start long press timer (500ms)
+          mouseTimer = setTimeout(() => {
+            isMouseLongPress = true;
+            
+            // Check if player has available Kings
+            const availableKings = this.gameEngine.player.collectedKings.filter(king => 
+              !this.gameEngine.player.hasKingAbilityUsed(king)
+            );
+            
+            if (availableKings.length > 0) {
+              // Activate destroy mode
+              if (window.toggleDestroyMode) {
+                window.toggleDestroyMode();
+              }
+              
+              // Visual feedback
+              tileEl.style.transform = 'scale(1.1)';
+              tileEl.style.transition = 'transform 0.1s';
+              
+              // After activating, handle the tile click for destroy
+              setTimeout(() => {
+                if (window.handleTileClick) {
+                  window.handleTileClick(x, y);
+                }
+              }, 100);
+            }
+          }, 500); // 500ms hold time
+        }
+      }
+    });
+    
+    tileEl.addEventListener('mousemove', (e) => {
+      if (mouseStartPos) {
+        const moveX = Math.abs(e.clientX - mouseStartPos.x);
+        const moveY = Math.abs(e.clientY - mouseStartPos.y);
+        // If moved more than 10px, user is dragging, not holding
+        if (moveX > 10 || moveY > 10) {
+          hasMouseMoved = true;
+          // Cancel long press timer if dragging
+          if (mouseTimer) {
+            clearTimeout(mouseTimer);
+            mouseTimer = null;
+          }
+        }
+      }
+    });
+    
+    tileEl.addEventListener('mouseup', (e) => {
+      // Only handle left mouse button
+      if (e.button !== 0) return;
+      
+      if (mouseTimer) {
+        clearTimeout(mouseTimer);
+        mouseTimer = null;
+      }
+      
+      // Check if this was a click by comparing start/end positions
+      let wasClick = false;
+      if (mouseStartPos) {
+        const moveX = Math.abs(e.clientX - mouseStartPos.x);
+        const moveY = Math.abs(e.clientY - mouseStartPos.y);
+        // Only treat as click if moved less than 10px
+        wasClick = moveX < 10 && moveY < 10;
+      }
+      
+      // Only handle as normal click if not a long press, not dragging, and it was actually a click
+      if (!isMouseLongPress && !hasMouseMoved && mouseStartTime && (Date.now() - mouseStartTime) < 500 && wasClick) {
+        const now = Date.now();
+        if (now - lastClickTime < 300) { // 300ms cooldown
+          mouseStartTime = null;
+          mouseStartPos = null;
+          hasMouseMoved = false;
+          return;
+        }
+        lastClickTime = now;
+        handleTileAction(e);
+      }
+      
+      mouseStartTime = null;
+      mouseStartPos = null;
+      hasMouseMoved = false;
+    });
+    
+    // Handle mouse leave to cancel long press
+    tileEl.addEventListener('mouseleave', () => {
+      if (mouseTimer) {
+        clearTimeout(mouseTimer);
+        mouseTimer = null;
+      }
+      mouseStartTime = null;
+      mouseStartPos = null;
+      hasMouseMoved = false;
+      isMouseLongPress = false;
+    });
+    
+    // Click handler for desktop (fallback, but tap-and-hold takes precedence)
+    tileEl.addEventListener('click', (e) => {
+      const now = Date.now();
+      if (now - lastClickTime < 300) { // 300ms cooldown
+        return;
+      }
+      lastClickTime = now;
+      
+      // Don't handle if it was a long press
+      if (isMouseLongPress) {
+        isMouseLongPress = false;
+        return;
+      }
+      handleTileAction(e);
+    });
   }
   
   /**
@@ -776,8 +926,7 @@ class DOMRenderer extends RendererInterface {
     // Update mobile health display
     const mobileHealthValueEl = document.getElementById('mobile-health-value');
     if (mobileHealthValueEl) {
-      const maxHealth = typeof GAME_RULES !== 'undefined' ? GAME_RULES.startingHealth : 20;
-      mobileHealthValueEl.textContent = `${player.health}/${maxHealth}`;
+      mobileHealthValueEl.textContent = `${player.health}`;
     }
     
     // Update mobile party suits display
@@ -819,17 +968,7 @@ class DOMRenderer extends RendererInterface {
       }
     }
     
-    // Update mobile Kings count
-    const mobileKingsCountEl = document.getElementById('mobile-kings-count');
-    if (mobileKingsCountEl) {
-      const totalKings = player.collectedKings.length;
-      const usedKings = player.collectedKings.filter(k =>
-        this.gameEngine.player.hasKingAbilityUsed(k)
-      ).length;
-      const availableKings = totalKings - usedKings;
-      mobileKingsCountEl.textContent = `${availableKings}/${totalKings}`;
-      mobileKingsCountEl.title = `${availableKings} destroy ability${availableKings !== 1 ? 'ies' : ''} available. Tap and hold adjacent tiles to destroy.`;
-    }
+    // Kings count removed - shown via suit highlighting instead
     
     // Destroy button is hidden - using tap and hold instead
     const mobileDestroyBtn = document.getElementById('mobile-destroy-btn');

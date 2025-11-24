@@ -75,22 +75,24 @@
 
 #party-display, #kings-display {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
 }
 
-#party-display > div, #kings-display > div {
-  padding: 0.5rem;
-  background-color: var(--surface-color);
-  border-radius: 4px;
-  font-size: 0.9rem;
+#party-display .party-suit, #kings-display .kings-suit {
+  font-size: 1.2rem;
+  line-height: 1;
+  display: inline-block;
 }
 
-#immunities-display {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--party-color);
-  font-style: italic;
+#party-display .party-suit.own-suit {
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+#kings-display .kings-suit {
+  color: #ffd700;
 }
 
 .game-area {

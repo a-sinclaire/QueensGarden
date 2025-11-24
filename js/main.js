@@ -59,6 +59,12 @@ function setupVersion() {
   if (versionEl && typeof GAME_VERSION !== 'undefined') {
     versionEl.textContent = GAME_VERSION.toString();
   }
+  
+  // Also set mobile version number
+  const mobileVersionEl = document.getElementById('mobile-version-number');
+  if (mobileVersionEl && typeof GAME_VERSION !== 'undefined') {
+    mobileVersionEl.textContent = GAME_VERSION.toString();
+  }
 }
 
 /**

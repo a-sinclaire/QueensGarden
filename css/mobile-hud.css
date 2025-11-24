@@ -107,12 +107,44 @@
   color: #ffd700;
 }
 
-.kings-count {
-  font-size: 0.75rem;
+.hud-help-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  background-color: rgba(26, 26, 46, 0.95);
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
   color: var(--text-color);
-  opacity: 0.8;
-  margin-top: 0.25rem;
-  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s ease;
+}
+
+.hud-help-btn:hover,
+.hud-help-btn:active {
+  background-color: var(--accent-color);
+  transform: scale(1.1);
+}
+
+.hud-version {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  font-size: 0.6rem;
+  color: var(--text-color);
+  opacity: 0.4;
+  pointer-events: none;
+  font-family: monospace;
 }
 
 .hud-destroy-btn {

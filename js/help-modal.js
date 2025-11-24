@@ -7,6 +7,7 @@ class HelpModal {
   constructor() {
     this.modal = document.getElementById('help-modal');
     this.helpBtn = document.getElementById('help-btn');
+    this.mobileHelpBtn = document.getElementById('mobile-help-btn');
     this.closeBtn = document.getElementById('help-modal-close');
     this.tabButtons = document.querySelectorAll('.tab-btn');
     this.tabPanes = {
@@ -22,6 +23,11 @@ class HelpModal {
     // Setup event listeners
     if (this.helpBtn) {
       this.helpBtn.addEventListener('click', () => this.open());
+    }
+    
+    // Mobile help button
+    if (this.mobileHelpBtn) {
+      this.mobileHelpBtn.addEventListener('click', () => this.open());
     }
     
     if (this.closeBtn) {
