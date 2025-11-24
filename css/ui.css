@@ -97,6 +97,8 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: hidden; /* Hide overflow, board-container handles scrolling */
+  min-height: 0; /* Allow flex item to shrink below content size */
 }
 
 /* Mobile Controls */

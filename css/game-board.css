@@ -10,6 +10,9 @@
   /* Content determines size - must be larger than container to enable scrolling */
   width: fit-content;
   min-width: 100%;
+  /* CRITICAL: Fixed height to enable scrolling - container must be constrained */
+  height: 100%;
+  max-height: 100%;
   /* Enable scrolling - same for desktop and mobile */
   overflow: auto;
   overflow-x: auto;
