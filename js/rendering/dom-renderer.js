@@ -803,13 +803,23 @@ class DOMRenderer extends RendererInterface {
     // Calculate position - board starts at top-left of first row (no padding)
     // Rows are rendered from maxY down to minY, so top row is at y=maxY
     // The debug rectangle should outline the entire grid area
-    // Position it relative to the container's content, not viewport
+    // Position it at the exact top-left where the first row starts
+    const firstRow = boardEl.querySelector('.board-row');
+    const firstRowRect = firstRow ? firstRow.getBoundingClientRect() : null;
+    const containerRect = boardEl.getBoundingClientRect();
+    
+    // Calculate offset: where does the first row start relative to container?
+    // Since rows start at top:0, left:0 of container, offset should be 0
+    // But we'll use actual measurements to ensure perfect alignment
+    const offsetLeft = firstRowRect ? firstRowRect.left - containerRect.left + boardEl.scrollLeft : 0;
+    const offsetTop = firstRowRect ? firstRowRect.top - containerRect.top + boardEl.scrollTop : 0;
+    
     const debugRect = document.createElement('div');
     debugRect.className = 'board-boundary-debug';
     debugRect.style.cssText = `
       position: absolute;
-      top: 0;
-      left: 0;
+      top: ${offsetTop}px;
+      left: ${offsetLeft}px;
       width: ${boardWidth}px;
       height: ${boardHeight}px;
       border: 3px solid #ff0000;
@@ -817,15 +827,10 @@ class DOMRenderer extends RendererInterface {
       pointer-events: none;
       z-index: 1000;
       background: transparent;
-      /* Ensure it scrolls with content */
-      will-change: transform;
     `;
     
     // Debug info: log container and board dimensions
     const computedStyle = window.getComputedStyle(boardEl);
-    const firstRow = boardEl.querySelector('.board-row');
-    const firstRowRect = firstRow ? firstRow.getBoundingClientRect() : null;
-    const containerRect = boardEl.getBoundingClientRect();
     console.log('Board Debug:', {
       containerWidth: boardEl.offsetWidth,
       containerScrollWidth: boardEl.scrollWidth,
