@@ -67,6 +67,12 @@ class DOMRenderer extends RendererInterface {
     // Clear tile/row element tracking
     this.tileElements.clear();
     this.rowElements.clear();
+    
+    // Clear the board DOM completely for new game
+    const boardEl = document.getElementById('game-board');
+    if (boardEl) {
+      boardEl.innerHTML = '';
+    }
   }
   
   render(gameState) {
