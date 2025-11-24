@@ -139,10 +139,10 @@ class DOMRenderer extends RendererInterface {
       gameArea.appendChild(debugOverlay);
     }
     
-    // Create mobile debug panel
+    // Hide mobile debug panel
     const debugPanel = document.getElementById('mobile-debug');
     if (debugPanel) {
-      debugPanel.style.display = 'block';
+      debugPanel.style.display = 'none';
     }
   }
   
@@ -594,8 +594,8 @@ class DOMRenderer extends RendererInterface {
       }
     }
     
-    // Add debug rectangle showing board boundaries (21x21 grid from -10 to +10)
-    this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, tileWidth, tileHeight, gap, rowWidth);
+    // Debug rectangle disabled - uncomment to enable
+    // this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, tileWidth, tileHeight, gap, rowWidth);
     
     // No need to restore scroll position - we never cleared the DOM!
   }
