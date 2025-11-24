@@ -615,6 +615,11 @@ class DOMRenderer extends RendererInterface {
         this.lastScrollX = boardEl.scrollLeft;
         this.lastScrollY = boardEl.scrollTop;
       }
+      
+      // Mark first render as complete after we've processed everything
+      if (this.isFirstRender) {
+        this.isFirstRender = false;
+      }
     }, 0); // Use setTimeout(0) to ensure DOM is fully rendered
   }
   
