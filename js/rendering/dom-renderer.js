@@ -514,16 +514,9 @@ class DOMRenderer extends RendererInterface {
       const maxScrollY = Math.max(0, boardHeight - viewportHeight);
       
       // Clamp scroll values to valid range
-      // BUT: If we added top/left spacers for negative scroll, adjust the scroll calculation
-      const topSpacer = this._topSpacerNeeded || 0;
-      const leftSpacer = this._leftSpacerNeeded || 0;
-      
-      // Adjust scroll for spacers: if we added a top spacer, the scroll position shifts
-      const adjustedScrollX = scrollX + leftSpacer;
-      const adjustedScrollY = scrollY + topSpacer;
-      
-      const finalScrollX = Math.max(0, Math.min(adjustedScrollX, maxScrollX));
-      const finalScrollY = Math.max(0, Math.min(adjustedScrollY, maxScrollY));
+      // scrollX/Y already account for spacers (if first render), so use them directly
+      const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
+      const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
       
       // Determine if we need to scroll
       // CRITICAL: Only scroll on first render (centering), disable auto-scroll on movement
