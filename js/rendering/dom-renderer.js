@@ -17,9 +17,9 @@ class DOMRenderer extends RendererInterface {
     this.lastPlayerPixelY = null;
     this.lastScrollX = null;
     this.lastScrollY = null;
-    // Dead zone configuration: 1.5 = 1.5 tile widths/heights from each edge
+    // Dead zone configuration: 1.0 = 1 tile width/height from each edge
     // This ensures consistent deadzone size regardless of screen size
-    this.deadZoneTiles = 1.5;
+    this.deadZoneTiles = 1.0;
     // Track if this is the very first render (game initialization)
     this.isFirstRender = true;
     // Cache-bust color for debugging (changes with each deployment)
@@ -351,12 +351,31 @@ class DOMRenderer extends RendererInterface {
       const playerScreenX = playerPixelX - currentScrollX;
       const playerScreenY = playerPixelY - currentScrollY;
       
-      // Dead zone: tile-based (1.5 tiles from each edge)
+      // Dead zone: tile-based (1 tile from each edge)
       // This ensures consistent deadzone size regardless of screen size
       const deadZoneLeft = this.deadZoneTiles * totalTileWidth;
       const deadZoneRight = viewportWidth - (this.deadZoneTiles * totalTileWidth);
       const deadZoneTop = this.deadZoneTiles * totalTileHeight;
       const deadZoneBottom = viewportHeight - (this.deadZoneTiles * totalTileHeight);
+      
+      // Debug: Log deadzone calculation to verify it's correct
+      if (window.innerWidth <= 768 && window._debugPlayerMoved) {
+        console.log('Deadzone calculation:', {
+          deadZoneTiles: this.deadZoneTiles,
+          totalTileWidth,
+          totalTileHeight,
+          viewportWidth,
+          viewportHeight,
+          deadZoneLeft,
+          deadZoneRight,
+          deadZoneTop,
+          deadZoneBottom,
+          playerScreenX,
+          playerScreenY,
+          isInDeadzoneX: playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight,
+          isInDeadzoneY: playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom
+        });
+      }
       
       // Update debug overlay to show dead zone
       this._updateDeadZoneDebug(deadZoneLeft, deadZoneTop, deadZoneRight - deadZoneLeft, deadZoneBottom - deadZoneTop);
