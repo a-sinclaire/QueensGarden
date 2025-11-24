@@ -32,8 +32,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start; /* Changed from center to flex-start to prevent right offset */
+    justify-content: flex-start; /* Changed from center to flex-start */
     overflow: visible; /* Allow overflow for scrolling */
     padding: 0;
     position: relative;

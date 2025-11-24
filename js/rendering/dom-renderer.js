@@ -799,15 +799,20 @@ class DOMRenderer extends RendererInterface {
     const boardWidth = (maxX - minX + 1) * totalTileWidth;
     const boardHeight = (maxY - minY + 1) * totalTileHeight;
     
-    // Calculate position - board starts at top-left of first row
+    // Get container padding to account for it in positioning
+    const computedStyle = window.getComputedStyle(boardEl);
+    const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+    const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+    
+    // Calculate position - board starts at top-left of first row, accounting for padding
     // Rows are rendered from maxY down to minY, so top row is at y=maxY
     // The debug rectangle should outline the entire grid area
     const debugRect = document.createElement('div');
     debugRect.className = 'board-boundary-debug';
     debugRect.style.cssText = `
       position: absolute;
-      top: 0;
-      left: 0;
+      top: ${paddingTop}px;
+      left: ${paddingLeft}px;
       width: ${boardWidth}px;
       height: ${boardHeight}px;
       border: 3px solid #ff0000;
