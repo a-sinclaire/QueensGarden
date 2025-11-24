@@ -813,6 +813,22 @@ class DOMRenderer extends RendererInterface {
     // Clear board
     boardEl.innerHTML = '';
     
+    // Apply scroll adjustment after board is rebuilt (mobile only)
+    if (window.innerWidth <= 768) {
+      // Apply the current scroll adjustment
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        boardEl.scrollLeft = this._currentScrollX;
+        boardEl.scrollTop = this._currentScrollY;
+        
+        // Force a second frame to ensure scroll sticks
+        requestAnimationFrame(() => {
+          boardEl.scrollLeft = this._currentScrollX;
+          boardEl.scrollTop = this._currentScrollY;
+        });
+      });
+    }
+    
     // Get destroyable tiles if in destroy mode
     const destroyableTiles = this.destroyMode && this.selectedKing && this.gameEngine
       ? this._getDestroyableTiles(board, playerPos)
