@@ -50,7 +50,8 @@
   .board-container {
     /* Match desktop behavior - use min-height instead of fixed height */
     /* This allows container to grow naturally, enabling scrolling */
-    width: fit-content;
+    /* Use max-content to ensure container is wide enough for all rows */
+    width: max-content;
     min-width: 100%;
     min-height: 100%;
     overflow-x: auto;

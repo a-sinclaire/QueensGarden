@@ -38,6 +38,8 @@
   gap: 2px;
   /* Ensure rows can exceed container height for scrolling */
   flex-shrink: 0;
+  /* Ensure rows maintain their width and don't shrink */
+  min-width: max-content;
 }
 
 .tile {
