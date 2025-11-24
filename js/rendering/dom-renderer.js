@@ -461,15 +461,25 @@ class DOMRenderer extends RendererInterface {
       );
       
       // CRITICAL: Ensure container stays at viewport height for scrolling to work
-      // Container must have: clientHeight = viewport (710px), scrollHeight > clientHeight
-      // If container has grown (clientHeight > viewport), force it back to viewport height
+      // Container must have: clientHeight = viewport, scrollHeight > clientHeight
+      // BUT: Don't force height if we need more space for scrolling (spacer will handle it)
+      // Only constrain if container has grown beyond what's needed
       const currentClientHeight = boardEl.clientHeight;
-      if (currentClientHeight > viewportHeight) {
-        // Container grew - force it back to viewport height
+      // Only force height if it's way too tall (more than viewport + some margin)
+      // This allows the spacer to make it tall enough for scrolling
+      if (currentClientHeight > viewportHeight * 1.1) {
+        // Container grew too much - force it back to viewport height
         boardEl.style.height = `${viewportHeight}px`;
         boardEl.style.maxHeight = `${viewportHeight}px`;
         // Force reflow
         void boardEl.offsetHeight;
+      } else {
+        // Ensure we have a max-height constraint but allow min-height to grow
+        boardEl.style.maxHeight = `${viewportHeight}px`;
+        // Don't set height - let content determine it, but ensure min-height allows scrolling
+        if (minBoardHeightForScroll > viewportHeight) {
+          boardEl.style.minHeight = `${minBoardHeightForScroll}px`;
+        }
       }
       
       // Force reflow to ensure browser has calculated scrollHeight correctly
