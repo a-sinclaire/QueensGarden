@@ -504,14 +504,23 @@ class DOMRenderer extends RendererInterface {
       
       // Calculate where player is NOW (after move) on screen with current scroll
       // This is used for the final deadzone check
-      const playerScreenX = playerPixelX - currentScrollX;
-      const playerScreenY = playerPixelY - currentScrollY;
+      // Note: playerScreenX/Y are already calculated above in the else block, but we need them here too
+      let finalPlayerScreenX, finalPlayerScreenY;
+      if (this.isFirstRender) {
+        // On first render, calculate as if centered (for deadzone check, but we'll scroll anyway)
+        finalPlayerScreenX = viewportWidth / 2;
+        finalPlayerScreenY = viewportHeight / 2;
+      } else {
+        // After move, calculate based on current scroll
+        finalPlayerScreenX = playerPixelX - currentScrollX;
+        finalPlayerScreenY = playerPixelY - currentScrollY;
+      }
       
       // Only scroll if position changed significantly (more than 1px)
       // AND: Only scroll if player is outside deadzone AFTER move (or first render)
       const scrollThreshold = 1;
-      const isInDeadzoneX = playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight;
-      const isInDeadzoneY = playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom;
+      const isInDeadzoneX = finalPlayerScreenX >= deadZoneLeft && finalPlayerScreenX <= deadZoneRight;
+      const isInDeadzoneY = finalPlayerScreenY >= deadZoneTop && finalPlayerScreenY <= deadZoneBottom;
       
       // Check if this is a centering scroll (first render only)
       const isCenteringScroll = this.isFirstRender;
