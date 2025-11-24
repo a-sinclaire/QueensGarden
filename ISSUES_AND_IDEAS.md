@@ -44,6 +44,8 @@ This file tracks current bugs, issues, and ideas for future improvements.
 
 7. parity between desktop and mobile
 
+8. tutorial?
+
 ## AI Ideas
 
 *Note: These ideas need human approval before implementation*
