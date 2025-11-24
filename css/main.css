@@ -156,8 +156,11 @@ header h1 {
   flex-direction: column;
   padding: 1rem;
   overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scroll on screen */
   width: 100%;
   max-width: 100%; /* Constrain width */
+  max-height: 100%; /* Constrain height to prevent expansion */
+  height: 100%; /* Fixed height - parent must constrain this */
 }
 
 .game-layout {
@@ -165,9 +168,10 @@ header h1 {
   gap: 1rem;
   flex: 1;
   min-height: 0;
+  max-height: 100%; /* Constrain height to prevent expansion */
   width: 100%;
   max-width: 100%; /* Constrain width */
-  height: 100%;
+  height: 100%; /* Fixed height - parent must constrain this */
   margin: 0;
   padding: 0;
 }

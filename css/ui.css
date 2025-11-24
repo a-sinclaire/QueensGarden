@@ -102,9 +102,10 @@
   position: relative;
   overflow: hidden;
   min-height: 0;
+  max-height: 100%; /* Constrain height to prevent expansion */
   width: 100%;
   max-width: 100%; /* Constrain width to prevent expansion */
-  /* Remove height: 100% - let flex: 1 handle height constraint */
+  height: 100%; /* Fixed height - parent must constrain this */
 }
 
 /* Mobile Controls */

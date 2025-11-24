@@ -6,8 +6,8 @@
 .board-container {
   width: 100%;
   max-width: 100%;
-  flex: 1;
-  min-height: 0; /* Critical: allows flex child to shrink below content size */
+  height: 100%; /* Use 100% of parent */
+  max-height: 100%; /* Constrain to parent height */
   overflow-x: scroll;
   overflow-y: scroll;
   padding: 0;
