@@ -1202,17 +1202,17 @@ class DOMRenderer extends RendererInterface {
       // Calculate minimum dimensions needed for centering in all directions
       const minBoardHeightForScroll = Math.max(
         expectedBoardHeight,
-        playerPixelY + (viewportHeight / 2) + totalTopSpacer, // Tall enough to scroll down to center
-        playerPixelY + viewportHeight + totalTopSpacer // Allow scrolling up to center
+        playerPixelY + (viewportHeight / 2) + topSpacer, // Tall enough to scroll down to center
+        playerPixelY + viewportHeight + topSpacer // Allow scrolling up to center
       );
       const minBoardWidthForScroll = Math.max(
         expectedBoardWidth,
-        playerPixelX + (viewportWidth / 2) + totalLeftSpacer, // Wide enough to scroll right to center
-        playerPixelX + viewportWidth + totalLeftSpacer // Allow scrolling left to center
+        playerPixelX + (viewportWidth / 2) + leftSpacer, // Wide enough to scroll right to center
+        playerPixelX + viewportWidth + leftSpacer // Allow scrolling left to center
       );
       
       // Add top spacer if needed for centering
-      if (totalTopSpacer > 0) {
+      if (topSpacer > 0) {
         let topSpacerEl = boardEl.querySelector('.scroll-spacer-top');
         if (!topSpacerEl) {
           topSpacerEl = document.createElement('div');
@@ -1222,7 +1222,7 @@ class DOMRenderer extends RendererInterface {
           // Insert at the beginning of the board
           boardEl.insertBefore(topSpacerEl, boardEl.firstChild);
         }
-        topSpacerEl.style.height = `${totalTopSpacer}px`;
+        topSpacerEl.style.height = `${topSpacer}px`;
       } else {
         const topSpacerEl = boardEl.querySelector('.scroll-spacer-top');
         if (topSpacerEl) {
@@ -1232,7 +1232,7 @@ class DOMRenderer extends RendererInterface {
       
       // Add left spacer if needed for centering
       // Add to each row at the beginning (like right spacer is at the end)
-      if (totalLeftSpacer > 0) {
+      if (leftSpacer > 0) {
         const rows = boardEl.querySelectorAll('.board-row');
         rows.forEach(row => {
           let leftSpacerEl = row.querySelector('.scroll-spacer-left');
