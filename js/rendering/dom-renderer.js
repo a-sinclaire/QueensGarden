@@ -341,9 +341,10 @@ class DOMRenderer extends RendererInterface {
       const playerPixelY = tileStartY + (tileHeight / 2);
       
       // Use the actual scroll position from the board element
-      // Note: If board was just rebuilt, the preserved scroll is handled in the setTimeout closure
-      const currentScrollX = boardEl.scrollLeft;
-      const currentScrollY = boardEl.scrollTop;
+      // CRITICAL: Use actualScrollX/Y which accounts for preserved scroll (if board was just rebuilt)
+      // This ensures we use the correct scroll position for calculations
+      const currentScrollX = actualScrollX;
+      const currentScrollY = actualScrollY;
       
       // Calculate desired scroll position
       // Logic: Don't auto-scroll if player is within dead zone (configurable % of viewport)
@@ -474,10 +475,13 @@ class DOMRenderer extends RendererInterface {
       const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
       const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
       
-      // Determine if we need to scroll (only if scroll position actually changed)
+      // Determine if we need to scroll
+      // CRITICAL: Always scroll on first render (centering), otherwise only if position changed
       const scrollThreshold = 1;
-      const needsScrollX = Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
-      const needsScrollY = Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
+      const needsScrollX = this.isFirstRender ? Math.abs(finalScrollX - currentScrollX) > 0.1 : 
+        Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
+      const needsScrollY = this.isFirstRender ? Math.abs(finalScrollY - currentScrollY) > 0.1 : 
+        Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
       
       // Debug: Update debug panel with scroll decision
       // Always show debug on mobile, not just when player moved
