@@ -428,9 +428,12 @@ class DOMRenderer extends RendererInterface {
       // Calculate minimum board height needed to allow scrolling to player position
       // Need: playerPixelY + (viewportHeight / 2) to allow scrolling down
       // And: playerPixelY - (viewportHeight / 2) >= 0 to allow scrolling up
+      // Also ensure we can scroll up enough to center the player (for manual scrolling)
+      // If player is at position Y, we need at least Y + viewportHeight/2 above to center
       const minBoardHeightForScroll = Math.max(
         expectedBoardHeight, // At least as tall as content
-        playerPixelY + (viewportHeight / 2) // Tall enough to scroll down to center player
+        playerPixelY + (viewportHeight / 2), // Tall enough to scroll down to center player
+        playerPixelY + viewportHeight // Allow scrolling up to center (extra space above)
       );
       
       // CRITICAL: Ensure container stays at viewport height for scrolling to work
@@ -481,14 +484,12 @@ class DOMRenderer extends RendererInterface {
       const isInDeadzoneX = playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight;
       const isInDeadzoneY = playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom;
       
-      // Check if this is a centering scroll (first render or bounds change compensation)
-      const isCenteringScroll = this.isFirstRender || 
-        (this.lastBoardBounds && (
-          this.lastBoardBounds.minX !== minX || this.lastBoardBounds.maxX !== maxX ||
-          this.lastBoardBounds.minY !== minY || this.lastBoardBounds.maxY !== maxY
-        ));
+      // Check if this is a centering scroll (first render only)
+      // Bounds changes don't automatically trigger centering - only if player is outside deadzone
+      const isCenteringScroll = this.isFirstRender;
       
-      // Allow scrolling if: outside deadzone OR centering scroll
+      // Allow scrolling if: outside deadzone OR first render centering
+      // Don't auto-scroll on bounds changes unless player is actually outside deadzone
       const needsScrollX = (isCenteringScroll || !isInDeadzoneX) && Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
       const needsScrollY = (isCenteringScroll || !isInDeadzoneY) && Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
       
