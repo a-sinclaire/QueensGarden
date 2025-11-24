@@ -743,13 +743,13 @@ class DOMRenderer extends RendererInterface {
       return [];
     }
     
-    // Find all Aces and central chamber
+    // Find all Aces and central chamber (excluding the Ace we're standing on)
     const destinations = [];
     for (const [key, tile] of board.entries()) {
       if (tile) {
         const [x, y] = key.split(',').map(Number);
         
-        // Skip current position
+        // Skip current position (the Ace we're standing on)
         if (x === playerPos.x && y === playerPos.y) {
           continue;
         }
@@ -758,7 +758,7 @@ class DOMRenderer extends RendererInterface {
         if (tile.isCentralChamber) {
           destinations.push({ x, y });
         }
-        // Add other Aces
+        // Add other Aces (but not the one we're standing on, already skipped above)
         else if (tile.card && tile.card.getType() === 'ace') {
           destinations.push({ x, y });
         }

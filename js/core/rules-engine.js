@@ -12,6 +12,11 @@ class RulesEngine {
    * Check if a move is valid
    */
   canMove(from, to, board, player) {
+    // Cannot move to the same position you're already on
+    if (from.x === to.x && from.y === to.y) {
+      return { valid: false, reason: 'Cannot move to the same position' };
+    }
+    
     // Check if destination exists
     const targetTile = board.get(`${to.x},${to.y}`);
     if (!targetTile) {
