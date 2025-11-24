@@ -197,9 +197,9 @@
     display: block;
   }
   
-  /* Debug panel visible for debugging */
+  /* Debug panel hidden */
   .hud-debug {
-    display: block !important;
+    display: none !important;
   }
   
   /* HUD is fixed position, doesn't need padding */
@@ -212,7 +212,7 @@
     }
     
     .hud-debug {
-      display: block !important; /* Show for debugging */
+      display: none !important; /* Keep hidden */
       max-height: 100px;
       font-size: 0.6rem;
     }
