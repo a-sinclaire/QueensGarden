@@ -8,7 +8,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  padding: 1rem;
+  padding: 0; /* No padding needed with 20x20 grid */
   margin: 0;
   /* Content determines size - must be larger than container to enable scrolling */
   width: fit-content;
@@ -20,7 +20,7 @@
 
 @media (max-width: 768px) {
   .board-container {
-    padding: 0.5rem;
+    padding: 0; /* No padding needed with 20x20 grid */
     justify-content: flex-start;
     align-items: flex-start;
     /* Content determines size, container scrolls */

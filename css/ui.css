@@ -50,13 +50,13 @@
   .board-container {
     /* Match desktop behavior - use min-height instead of fixed height */
     /* This allows container to grow naturally, enabling scrolling */
-    /* Width is set via min-width in JavaScript to match row width */
+    /* Width is set via JavaScript to match row width */
     /* Don't set fixed width - let it grow vertically naturally */
     min-width: 100%;
     min-height: 100%;
     overflow-x: auto;
     overflow-y: auto;
-    padding: 0.5rem;
+    padding: 0; /* No padding needed with 20x20 grid */
     margin: 0;
     /* Instant scrolling on mobile (smooth looks bad) */
     scroll-behavior: auto;

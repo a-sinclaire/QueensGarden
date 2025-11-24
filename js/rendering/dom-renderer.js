@@ -337,16 +337,10 @@ class DOMRenderer extends RendererInterface {
     // Calculate row width based on render bounds
     const rowWidth = (renderMaxX - renderMinX + 1) * totalTileWidth;
     
-    // Get container padding to calculate total width needed
-    const computedStyle = window.getComputedStyle(boardEl);
-    const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
-    const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
-    
-    // Set container width to row width + padding to ensure it's wide enough for horizontal scrolling
+    // Set container width to row width (no padding needed with 20x20 grid)
     // This ensures the container is exactly as wide as needed, enabling left/right scrolling
-    const totalContainerWidth = rowWidth + paddingLeft + paddingRight;
-    boardEl.style.width = `${totalContainerWidth}px`;
-    boardEl.style.minWidth = `${totalContainerWidth}px`;
+    boardEl.style.width = `${rowWidth}px`;
+    boardEl.style.minWidth = `${rowWidth}px`;
     
     // Create rows (from top to bottom, y descending)
     // Render all tiles in the render bounds (revealed tiles + buffer)
@@ -570,7 +564,7 @@ class DOMRenderer extends RendererInterface {
     }
     
     // Add debug rectangle showing board boundaries (21x21 grid from -10 to +10)
-    this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, totalTileWidth, totalTileHeight);
+    this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, totalTileWidth, totalTileHeight, rowWidth);
     
   }
   
@@ -795,7 +789,7 @@ class DOMRenderer extends RendererInterface {
    * Add debug rectangle showing board boundaries
    * @private
    */
-  _addBoardBoundaryDebug(boardEl, minX, maxX, minY, maxY, totalTileWidth, totalTileHeight) {
+  _addBoardBoundaryDebug(boardEl, minX, maxX, minY, maxY, totalTileWidth, totalTileHeight, rowWidth) {
     // Remove existing debug rectangle if present
     const existingDebug = boardEl.querySelector('.board-boundary-debug');
     if (existingDebug) {
@@ -806,23 +800,15 @@ class DOMRenderer extends RendererInterface {
     const boardWidth = (maxX - minX + 1) * totalTileWidth;
     const boardHeight = (maxY - minY + 1) * totalTileHeight;
     
-    // Get container padding to account for it in positioning
-    const computedStyle = window.getComputedStyle(boardEl);
-    const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
-    const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
-    const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
-    const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
-    
-    // Calculate position - board starts at top-left of first row, accounting for padding
+    // Calculate position - board starts at top-left of first row (no padding)
     // Rows are rendered from maxY down to minY, so top row is at y=maxY
     // The debug rectangle should outline the entire grid area
-    // Position it exactly where the rows start (after padding)
     const debugRect = document.createElement('div');
     debugRect.className = 'board-boundary-debug';
     debugRect.style.cssText = `
       position: absolute;
-      top: ${paddingTop}px;
-      left: ${paddingLeft}px;
+      top: 0;
+      left: 0;
       width: ${boardWidth}px;
       height: ${boardHeight}px;
       border: 3px solid #ff0000;
@@ -833,13 +819,15 @@ class DOMRenderer extends RendererInterface {
     `;
     
     // Debug info: log container and board dimensions
+    const computedStyle = window.getComputedStyle(boardEl);
     console.log('Board Debug:', {
       containerWidth: boardEl.offsetWidth,
       containerScrollWidth: boardEl.scrollWidth,
       rowWidth: rowWidth,
       boardWidth: boardWidth,
-      padding: { top: paddingTop, left: paddingLeft, right: paddingRight, bottom: paddingBottom },
-      viewportWidth: window.innerWidth
+      viewportWidth: window.innerWidth,
+      scrollLeft: boardEl.scrollLeft,
+      scrollTop: boardEl.scrollTop
     });
     
     // Add corner markers for easier visualization
