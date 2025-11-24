@@ -1294,11 +1294,28 @@ class DOMRenderer extends RendererInterface {
     // The preserved scroll is passed to _centerBoardOnPlayer via _savedScrollBeforeRebuild
     // and it will use it if needed. Restoring here would interfere with the deadzone logic.
     
-    // Update debug overlays and panel (mobile only)
-    // Spacers handle centering, but we still need to update debug displays
+    // Scroll to center the queen after spacers are added (mobile only)
     if (window.innerWidth <= 768) {
+      if (this.isFirstRender) {
+        // After spacers are added, scroll to center position
+        const centerScrollX = this._centerScrollX || 0;
+        const centerScrollY = this._centerScrollY || 0;
+        const leftSpacer = this._leftSpacerNeeded || 0;
+        const topSpacer = this._topSpacerNeeded || 0;
+        
+        // Adjust scroll for spacers: spacers push content, so scroll position = centerScroll + spacer
+        const finalScrollX = Math.max(0, centerScrollX + leftSpacer);
+        const finalScrollY = Math.max(0, centerScrollY + topSpacer);
+        
+        // Scroll to center position
+        boardEl.scrollLeft = finalScrollX;
+        boardEl.scrollTop = finalScrollY;
+        
+        // Mark first render as complete
+        this.isFirstRender = false;
+      }
+      
       // Always call _centerBoardOnPlayer to update debug overlays
-      // It won't scroll (needsScrollX/Y are false), but will update debug panel
       this._centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY);
     }
   }
