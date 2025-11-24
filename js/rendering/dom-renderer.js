@@ -1168,17 +1168,24 @@ class DOMRenderer extends RendererInterface {
       const playerPixelX = tileStartX + (tileWidth / 2);
       const playerPixelY = tileStartY + (tileHeight / 2);
       
-      // Calculate spacer needs for centering (needed for manual scrolling to work)
-      // These spacers allow scrolling to negative positions (above/left of content)
-      // Calculate once and keep them permanently (not just on first render)
+      // Calculate spacer needs for centering
+      // Add spacers on the side that will center the player
+      // If player is too far left/up (negative scroll needed), add spacer on left/top
+      // If player is too far right/down (positive scroll needed), add spacer on right/bottom
       const centerScrollX = playerPixelX - (viewportWidth / 2);
       const centerScrollY = playerPixelY - (viewportHeight / 2);
-      const topSpacer = centerScrollY < 0 ? Math.abs(centerScrollY) : 0;
-      const leftSpacer = centerScrollX < 0 ? Math.abs(centerScrollX) : 0;
       
-      // Store for use in scroll calculation
+      // Determine which side needs spacers to center the player
+      const topSpacer = centerScrollY < 0 ? Math.abs(centerScrollY) : 0;  // Player too high, add top spacer
+      const bottomSpacer = centerScrollY > 0 ? centerScrollY : 0;  // Player too low, add bottom spacer
+      const leftSpacer = centerScrollX < 0 ? Math.abs(centerScrollX) : 0;  // Player too left, add left spacer
+      const rightSpacer = centerScrollX > 0 ? centerScrollX : 0;  // Player too right, add right spacer
+      
+      // Store for reference
       this._topSpacerNeeded = topSpacer;
       this._leftSpacerNeeded = leftSpacer;
+      this._bottomSpacerNeeded = bottomSpacer;
+      this._rightSpacerNeeded = rightSpacer;
       
       // Calculate minimum dimensions needed for centering in all directions
       const minBoardHeightForScroll = Math.max(
@@ -1236,8 +1243,9 @@ class DOMRenderer extends RendererInterface {
         leftSpacers.forEach(spacer => spacer.remove());
       }
       
-      // Add bottom spacer for vertical scrolling
-      if (minBoardHeightForScroll > viewportHeight) {
+      // Add bottom spacer for centering (if player is too far down)
+      const bottomSpacerNeeded = this._bottomSpacerNeeded || 0;
+      if (bottomSpacerNeeded > 0) {
         let spacer = boardEl.querySelector('.scroll-spacer-bottom');
         if (!spacer) {
           spacer = document.createElement('div');
@@ -1246,14 +1254,27 @@ class DOMRenderer extends RendererInterface {
           spacer.style.flexShrink = '0';
           boardEl.appendChild(spacer);
         }
-        void boardEl.offsetHeight; // Force reflow
-        const currentScrollHeight = boardEl.scrollHeight;
-        const spacerHeight = Math.max(0, minBoardHeightForScroll - currentScrollHeight);
-        spacer.style.height = `${spacerHeight}px`;
+        spacer.style.height = `${bottomSpacerNeeded}px`;
       } else {
-        const spacer = boardEl.querySelector('.scroll-spacer-bottom');
-        if (spacer) {
-          spacer.remove();
+        // Also add bottom spacer for scrolling if needed (even if not for centering)
+        if (minBoardHeightForScroll > viewportHeight) {
+          let spacer = boardEl.querySelector('.scroll-spacer-bottom');
+          if (!spacer) {
+            spacer = document.createElement('div');
+            spacer.className = 'scroll-spacer-bottom';
+            spacer.style.width = '100%';
+            spacer.style.flexShrink = '0';
+            boardEl.appendChild(spacer);
+          }
+          void boardEl.offsetHeight; // Force reflow
+          const currentScrollHeight = boardEl.scrollHeight;
+          const spacerHeight = Math.max(0, minBoardHeightForScroll - currentScrollHeight);
+          spacer.style.height = `${spacerHeight}px`;
+        } else {
+          const spacer = boardEl.querySelector('.scroll-spacer-bottom');
+          if (spacer && !bottomSpacerNeeded) {
+            spacer.remove();
+          }
         }
       }
       
@@ -1288,7 +1309,29 @@ class DOMRenderer extends RendererInterface {
     // and it will use it if needed. Restoring here would interfere with the deadzone logic.
     
     // Center camera on player AFTER board is rendered (mobile only)
-    if (window.innerWidth <= 768) {
+    // But with spacers, we can just scroll to center position once
+    if (window.innerWidth <= 768 && this.isFirstRender) {
+      // After spacers are added, scroll to center the player
+      // Use the center scroll values we calculated
+      const centerScrollX = this._centerScrollX || 0;
+      const centerScrollY = this._centerScrollY || 0;
+      
+      // Adjust for spacers: if we added left spacer, scroll position shifts
+      const leftSpacer = this._leftSpacerNeeded || 0;
+      const topSpacer = this._topSpacerNeeded || 0;
+      
+      // Final scroll position: center scroll + spacer offset
+      const finalScrollX = Math.max(0, centerScrollX + leftSpacer);
+      const finalScrollY = Math.max(0, centerScrollY + topSpacer);
+      
+      // Scroll to center position
+      boardEl.scrollLeft = finalScrollX;
+      boardEl.scrollTop = finalScrollY;
+      
+      // Mark first render as complete
+      this.isFirstRender = false;
+    } else if (window.innerWidth <= 768) {
+      // After first render, just update camera (no auto-scroll)
       this._centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY);
     }
   }
