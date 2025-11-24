@@ -28,6 +28,9 @@ class DOMRenderer extends RendererInterface {
     this._lastBoundsChange = null;
     // Track spacer sizes (set once on first render, then stay fixed)
     this._spacersInitialized = false;
+    // Track current scroll adjustment (updated when bounds change)
+    this._currentScrollX = 0;
+    this._currentScrollY = 0;
     // Cache-bust color for debugging (changes with each deployment)
     this.cacheBustColor = this._getCacheBustColor();
   }
@@ -324,20 +327,9 @@ class DOMRenderer extends RendererInterface {
         });
       }
       
-      // Always update stored scroll position from actual scroll (handles manual scrolling)
-      // This ensures relative scrolling works even if user manually scrolled
-      // BUT: If we have preserved scroll (board was just rebuilt), use that instead
-      const actualScrollX = preservedScroll ? preservedScroll.x : boardEl.scrollLeft;
-      const actualScrollY = preservedScroll ? preservedScroll.y : boardEl.scrollTop;
-      
-      // Debug: Log preserved scroll info
-      if (preservedScroll && window.innerWidth <= 768) {
-        console.log('Using preserved scroll:', {
-          preserved: preservedScroll,
-          actual: { x: boardEl.scrollLeft, y: boardEl.scrollTop },
-          using: { x: actualScrollX, y: actualScrollY }
-        });
-      }
+      // Read current scroll from DOM
+      const actualScrollX = boardEl.scrollLeft;
+      const actualScrollY = boardEl.scrollTop;
       
       // After first render, we maintain relative offset - scroll is preserved and adjusted when board expands
       // Calculate tile size (including gap) - match CSS values
@@ -1167,6 +1159,11 @@ class DOMRenderer extends RendererInterface {
         this._rightSpacerNeeded = spacerWidth;
         this._centerScrollX = centerScrollX;
         this._centerScrollY = centerScrollY;
+        
+        // Calculate initial scroll adjustment (to center player)
+        this._currentScrollX = centerScrollX + spacerWidth;
+        this._currentScrollY = centerScrollY + spacerHeight;
+        
         this._spacersInitialized = true;
       }
       // After first render: use stored spacer values (don't recalculate)
