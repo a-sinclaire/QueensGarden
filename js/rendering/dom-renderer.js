@@ -576,12 +576,19 @@ class DOMRenderer extends RendererInterface {
       this.lastPlayerPos = { x: playerPos.x, y: playerPos.y };
       this.lastPlayerPixelX = playerPixelX;
       this.lastPlayerPixelY = playerPixelY;
-      // Use actual scroll position from DOM (handles manual scrolling and programmatic scrolling)
-      // Read AFTER any scrolling has happened, but use preserved scroll if board was just rebuilt
-      const finalActualScrollX = preservedScroll ? preservedScroll.x : boardEl.scrollLeft;
-      const finalActualScrollY = preservedScroll ? preservedScroll.y : boardEl.scrollTop;
-      this.lastScrollX = finalActualScrollX;
-      this.lastScrollY = finalActualScrollY;
+      
+      // Update stored scroll position AFTER scrolling has happened
+      // Read from DOM to get actual scroll (handles both manual and programmatic scrolling)
+      // Use preserved scroll only if board was just rebuilt and we didn't scroll
+      if (preservedScroll && !needsScrollX && !needsScrollY) {
+        // Board was rebuilt but we didn't scroll - use preserved scroll
+        this.lastScrollX = preservedScroll.x;
+        this.lastScrollY = preservedScroll.y;
+      } else {
+        // Use actual DOM scroll position (after any scrolling we just did)
+        this.lastScrollX = boardEl.scrollLeft;
+        this.lastScrollY = boardEl.scrollTop;
+      }
       
       // Clear preserved scroll after using it
       if (preservedScroll) {
@@ -592,21 +599,9 @@ class DOMRenderer extends RendererInterface {
       if (window.innerWidth <= 768 && window._debugPlayerMoved) {
         const debugEl = document.getElementById('debug-content');
         if (debugEl) {
-          debugEl.textContent += `\n\nAfter scroll: X=${Math.round(finalActualScrollX)} Y=${Math.round(finalActualScrollY)}`;
-          if (preservedScroll) {
-            debugEl.textContent += ` (preserved)`;
-          }
+          debugEl.textContent += `\n\nAfter scroll: X=${Math.round(this.lastScrollX)} Y=${Math.round(this.lastScrollY)}`;
           debugEl.textContent += `\nDOM scroll: X=${Math.round(boardEl.scrollLeft)} Y=${Math.round(boardEl.scrollTop)}`;
         }
-      }
-      
-      // If user manually scrolled, make sure stored positions reflect the manual scroll
-      // This ensures next movement maintains relative position from manual scroll
-      if (detectedManualScroll && !needsScrollX && !needsScrollY) {
-        // User manually scrolled but we didn't programmatically scroll
-        // Update stored scroll to match manual scroll (already done above, but ensure it's correct)
-        this.lastScrollX = boardEl.scrollLeft;
-        this.lastScrollY = boardEl.scrollTop;
       }
       
       // Mark first render as complete ONLY after we've actually scrolled
