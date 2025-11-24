@@ -313,11 +313,7 @@ class DOMRenderer extends RendererInterface {
     // Simple approach: Let CSS handle the container, we just scroll to center the player
     // Use setTimeout to ensure DOM is fully rendered and browser has recalculated layout
     
-    // Capture preserved scroll BEFORE setTimeout (in case board was just rebuilt)
-    const preservedScroll = this._savedScrollBeforeRebuild 
-      ? { x: this._savedScrollBeforeRebuild.x, y: this._savedScrollBeforeRebuild.y }
-      : null;
-    
+    // Scroll is handled in _updateBoard - this function is mainly for debug overlays
     setTimeout(() => {
       // Debug: Verify setTimeout callback is executing
       if (window.innerWidth <= 768) {
@@ -404,22 +400,8 @@ class DOMRenderer extends RendererInterface {
       let scrollX = currentScrollX;
       let scrollY = currentScrollY;
       
-      if (this.isFirstRender) {
-        // Use the center scroll values calculated in _updateBoard
-        const centerScrollX = this._centerScrollX || (playerPixelX - (viewportWidth / 2));
-        const centerScrollY = this._centerScrollY || (playerPixelY - (viewportHeight / 2));
-        const leftSpacer = this._leftSpacerNeeded || 0;
-        const topSpacer = this._topSpacerNeeded || 0;
-        
-        // Spacers push content, so scroll = centerScroll + spacer
-        scrollX = centerScrollX + leftSpacer;
-        scrollY = centerScrollY + topSpacer;
-      } else if (preservedScroll) {
-        // Board was rebuilt with adjusted scroll - use the preserved/adjusted scroll
-        scrollX = preservedScroll.x;
-        scrollY = preservedScroll.y;
-      }
-      // Otherwise: keep current scroll (no auto-centering)
+      // Scroll is handled in _updateBoard - just use current scroll for calculations
+      // This function is mainly for debug overlays now
       
       // Calculate minimum board dimensions needed to allow scrolling to center player in all directions
       // For first render centering: need enough space to scroll to center position
@@ -514,12 +496,9 @@ class DOMRenderer extends RendererInterface {
       const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
       const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
       
-      // Determine if we need to scroll
-      // Scroll on first render (centering) OR if we have preserved scroll (board was rebuilt with adjusted scroll)
-      const scrollThreshold = 1;
-      const hasPreservedScroll = preservedScroll !== null;
-      const needsScrollX = this.isFirstRender || hasPreservedScroll ? Math.abs(finalScrollX - currentScrollX) > 0.1 : false;
-      const needsScrollY = this.isFirstRender || hasPreservedScroll ? Math.abs(finalScrollY - currentScrollY) > 0.1 : false;
+      // Scroll is handled in _updateBoard - no need to scroll here
+      const needsScrollX = false;
+      const needsScrollY = false;
       
       // Debug: Update debug panel with scroll decision
       // Always show debug on mobile, not just when player moved
@@ -572,12 +551,11 @@ class DOMRenderer extends RendererInterface {
             debugText += `Scroll adj: X=${Math.round(this._lastBoundsChange.scrollAdjustX)} Y=${Math.round(this._lastBoundsChange.scrollAdjustY)}\n`;
           }
           
-          // Show preserved scroll info
-          if (preservedScroll) {
-            debugText += `\n=== PRESERVED SCROLL ===\n`;
-            debugText += `Preserved: X=${Math.round(preservedScroll.x)} Y=${Math.round(preservedScroll.y)}\n`;
-            debugText += `Using preserved: ${preservedScroll ? 'YES' : 'NO'}\n`;
-          }
+          // Show current scroll adjustment
+          debugText += `\n=== SCROLL ADJUSTMENT ===\n`;
+          debugText += `Tracked: X=${Math.round(this._currentScrollX)} Y=${Math.round(this._currentScrollY)}\n`;
+          debugText += `DOM Scroll: X=${Math.round(actualScrollX)} Y=${Math.round(actualScrollY)}\n`;
+          debugText += `Match: X=${Math.abs(actualScrollX - this._currentScrollX) < 1} Y=${Math.abs(actualScrollY - this._currentScrollY) < 1}\n`;
           
           // Add spacer info
           debugText += `\nSpacers: T=${Math.round(this._topSpacerNeeded || 0)} B=${Math.round(this._bottomSpacerNeeded || 0)} L=${Math.round(this._leftSpacerNeeded || 0)} R=${Math.round(this._rightSpacerNeeded || 0)}\n`;
@@ -708,23 +686,9 @@ class DOMRenderer extends RendererInterface {
       this.lastPlayerPixelX = playerPixelX;
       this.lastPlayerPixelY = playerPixelY;
       
-      // Update stored scroll position AFTER scrolling has happened
-      // Read from DOM to get actual scroll (handles both manual and programmatic scrolling)
-      // Use preserved scroll only if board was just rebuilt and we didn't scroll
-      if (preservedScroll && !needsScrollX && !needsScrollY) {
-        // Board was rebuilt but we didn't scroll - use preserved scroll
-        this.lastScrollX = preservedScroll.x;
-        this.lastScrollY = preservedScroll.y;
-      } else {
-        // Use actual DOM scroll position (after any scrolling we just did)
-        this.lastScrollX = boardEl.scrollLeft;
-        this.lastScrollY = boardEl.scrollTop;
-      }
-      
-      // Clear preserved scroll after using it
-      if (preservedScroll) {
-        this._savedScrollBeforeRebuild = null;
-      }
+      // Update stored scroll position from DOM
+      this.lastScrollX = boardEl.scrollLeft;
+      this.lastScrollY = boardEl.scrollTop;
       
       // Update debug panel with final scroll values AFTER scrolling
       if (isMobile) {
