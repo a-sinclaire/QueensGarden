@@ -3,32 +3,55 @@
  * Board layout and tile styling
  */
 
-.board-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 1rem;
-  /* Center the board */
-  margin: 0 auto;
-  width: fit-content;
+#game-board.board-container,
+.board-container,
+#game-board {
+  width: 100% !important;
+  max-width: 100% !important;
+  /* Full viewport height - HUD overlays on top with position: fixed */
+  height: calc(100vh - 80px) !important; /* 80px for header */
+  max-height: calc(100vh - 80px) !important;
+  min-height: calc(100vh - 80px) !important; /* Prevent shrinking */
+  overflow-x: scroll !important;
+  overflow-y: scroll !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  /* Force scrollbars - use scroll instead of auto */
+  -webkit-overflow-scrolling: touch !important;
+  /* Ensure container can receive touch events for scrolling */
+  touch-action: pan-x pan-y !important;
+  /* Prevent pull-to-refresh interference */
+  overscroll-behavior: contain !important;
+}
+
+@media (max-width: 768px) {
+  #game-board.board-container,
+  .board-container,
+  #game-board {
+    /* On mobile, header is hidden, so use full viewport */
+    height: 100vh !important;
+    max-height: 100vh !important;
+    min-height: 100vh !important;
+  }
 }
 
 @media (max-width: 768px) {
   .board-container {
-    padding: 0.5rem;
-    /* Ensure board is centered and scrollable */
-    justify-content: center;
-    align-items: center;
-    width: fit-content;
-    min-width: 100%;
-    overflow-x: auto;
+    padding: 0; /* No padding needed with 20x20 grid */
+    /* Match desktop exactly - no mobile-specific overrides */
   }
 }
 
 .board-row {
   display: flex;
   gap: 2px;
+  /* Ensure rows can exceed container height for scrolling */
+  flex-shrink: 0;
+  /* Ensure rows maintain their width and don't shrink - this makes them wider than container */
+  min-width: max-content;
+  width: max-content;
 }
 
 .tile {
@@ -43,7 +66,7 @@
   position: relative;
   cursor: pointer;
   transition: all 0.2s ease;
-  /* Touch-friendly sizing on mobile */
+  /* Don't interfere with container scrolling - let touch events bubble up */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   /* Ensure tiles are always visible */

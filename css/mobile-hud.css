@@ -1,0 +1,221 @@
+/**
+ * Mobile HUD CSS
+ * Compact, always-visible UI elements for mobile
+ */
+
+.mobile-hud {
+  display: none; /* Hidden on desktop */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  pointer-events: none; /* Allow clicks to pass through */
+}
+
+.hud-health {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(26, 26, 46, 0.95);
+  border: 2px solid var(--health-color);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: auto; /* Make it clickable for tooltips */
+}
+
+.hud-label {
+  font-size: 0.75rem;
+  color: var(--text-color);
+  opacity: 0.7;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.hud-value {
+  font-size: 1rem;
+  color: var(--health-color);
+  font-weight: bold;
+}
+
+.hud-party {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(26, 26, 46, 0.95);
+  border: 2px solid var(--party-color);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  min-width: 80px;
+}
+
+.party-suits {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.party-suit {
+  font-size: 1.2rem;
+  line-height: 1;
+  display: inline-block;
+}
+
+.party-suit.own-suit {
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+.hud-kings {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  margin-top: 60px; /* Below health */
+  background-color: rgba(26, 26, 46, 0.95);
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  min-width: 80px;
+}
+
+.kings-suits {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.kings-suit {
+  font-size: 1.2rem;
+  line-height: 1;
+  display: inline-block;
+  color: #ffd700;
+}
+
+.kings-count {
+  font-size: 0.75rem;
+  color: var(--text-color);
+  opacity: 0.8;
+  margin-top: 0.25rem;
+  text-align: center;
+}
+
+.hud-destroy-btn {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background-color: var(--health-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  font-weight: bold;
+  display: none; /* Hidden - using tap and hold instead */
+}
+
+.hud-destroy-btn:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.hud-destroy-btn.active {
+  background-color: #ff6b6b;
+  box-shadow: 0 0 10px #ff6b6b;
+}
+
+/* Visual feedback for long press on destroyable tiles */
+.tile.long-press-active {
+  transform: scale(1.1);
+  border-color: var(--health-color) !important;
+  box-shadow: 0 0 15px var(--health-color) !important;
+  animation: pulse-destroy 0.5s ease-in-out infinite;
+}
+
+.hud-debug {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.95);
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  padding: 0.5rem;
+  font-size: 0.65rem;
+  color: #fff;
+  max-height: 200px;
+  overflow-y: auto;
+  pointer-events: auto;
+  z-index: 300;
+  /* Hide debug panel */
+  display: none !important;
+}
+
+.debug-content {
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.debug-console {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 215, 0, 0.3);
+  font-family: monospace;
+  font-size: 0.6rem;
+  color: #ffd700;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.debug-console .console-warn {
+  color: #ffaa00;
+}
+
+.debug-console .console-error {
+  color: #ff4444;
+}
+
+@media (max-width: 768px) {
+  .mobile-hud {
+    display: block;
+  }
+  
+  /* Debug panel hidden */
+  .hud-debug {
+    display: none !important;
+  }
+  
+  /* HUD is fixed position, doesn't need padding */
+  
+  /* Adjust kings position for smaller screens */
+  @media (max-height: 600px) {
+    .hud-kings {
+      margin-top: 50px;
+      padding: 0.4rem 0.6rem;
+    }
+    
+    .hud-debug {
+      display: none !important; /* Keep hidden */
+      max-height: 100px;
+      font-size: 0.6rem;
+    }
+  }
+}
+

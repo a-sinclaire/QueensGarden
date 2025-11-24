@@ -25,26 +25,40 @@ body {
   background-color: var(--bg-color);
   color: var(--text-color);
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw; /* Constrain to viewport width */
   /* Prevent text selection and touch callouts on mobile */
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  /* Prevent pull-to-refresh on mobile */
+  /* Prevent pull-to-refresh on mobile, but allow scrolling within elements */
   overscroll-behavior-y: contain;
+  /* Ensure body doesn't prevent scrolling */
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
 }
 
 #game-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100vw; /* Constrain to viewport width */
 }
 
 header {
   background-color: var(--surface-color);
   padding: 1rem 2rem;
   border-bottom: 2px solid var(--border-color);
+}
+
+@media (max-width: 768px) {
+  header {
+    display: none; /* Hide header on mobile to make room for HUD */
+  }
 }
 
 .header-content {
@@ -142,6 +156,11 @@ header h1 {
   flex-direction: column;
   padding: 1rem;
   overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scroll on screen */
+  width: 100%;
+  max-width: 100%; /* Constrain width */
+  max-height: 100%; /* Constrain height to prevent expansion */
+  height: 100%; /* Fixed height - parent must constrain this */
 }
 
 .game-layout {
@@ -149,16 +168,24 @@ header h1 {
   gap: 1rem;
   flex: 1;
   min-height: 0;
+  max-height: 100%; /* Constrain height to prevent expansion */
+  width: 100%;
+  max-width: 100%; /* Constrain width */
+  height: 100%; /* Fixed height - parent must constrain this */
+  margin: 0;
+  padding: 0;
 }
 
 @media (max-width: 768px) {
   .game-screen {
-    padding: 0.5rem;
+    padding: 0;
+    overflow: hidden; /* Prevent body scrolling, let board-container scroll */
   }
   
   .game-layout {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0;
+    /* Use same flex approach as desktop - don't force height */
   }
 }
 

@@ -1,0 +1,193 @@
+#!/bin/bash
+# Pre-commit hook: Update cache-busting and run checks
+
+set -e  # Exit on error
+
+echo "Running pre-commit checks..."
+
+# Get the project root directory
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+cd "$PROJECT_ROOT"
+
+# 1. Update cache-busting to current commit hash
+echo "Updating cache-busting..."
+if [ -f "update-cache-bust.sh" ]; then
+  bash update-cache-bust.sh
+  # Stage the updated index.html
+  git add index.html
+else
+  echo "Warning: update-cache-bust.sh not found, skipping cache-bust update"
+fi
+
+# 2. Check for syntax errors in JavaScript files
+echo "Checking JavaScript syntax..."
+JS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.js$' || true)
+if [ -n "$JS_FILES" ]; then
+  JS_ERRORS=0
+  for file in $JS_FILES; do
+    if [ -f "$file" ]; then
+      echo "  Checking $file..."
+      # Use node to check syntax - capture output and exit code
+      # Note: node -c only checks syntax, not runtime errors like TDZ (Temporal Dead Zone) errors
+      # For full static analysis, consider using ESLint or similar linter
+      SYNTAX_OUTPUT=$(node -c "$file" 2>&1)
+      SYNTAX_EXIT=$?
+      if [ $SYNTAX_EXIT -ne 0 ]; then
+        echo "Error: Syntax error in $file"
+        echo "$SYNTAX_OUTPUT"
+        JS_ERRORS=$((JS_ERRORS + 1))
+      fi
+    fi
+  done
+  if [ $JS_ERRORS -gt 0 ]; then
+    echo ""
+    echo "❌ Commit failed: $JS_ERRORS JavaScript syntax error(s) found"
+    echo "   Please fix the errors above before committing"
+    exit 1
+  fi
+fi
+
+# 3. Check HTML syntax (basic validation)
+echo "Checking HTML syntax..."
+HTML_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.html$' || true)
+if [ -n "$HTML_FILES" ]; then
+  HTML_ERRORS=0
+  for file in $HTML_FILES; do
+    if [ -f "$file" ]; then
+      echo "  Checking $file..."
+      # Basic check: ensure file is not empty
+      if [ ! -s "$file" ]; then
+        echo "Error: $file is empty"
+        HTML_ERRORS=$((HTML_ERRORS + 1))
+      # Check for basic HTML structure (warn but don't fail for missing DOCTYPE)
+      elif ! grep -q "<!DOCTYPE html>" "$file" 2>/dev/null; then
+        echo "Warning: $file may not be valid HTML (missing DOCTYPE) - continuing anyway"
+      fi
+    fi
+  done
+  if [ $HTML_ERRORS -gt 0 ]; then
+    echo ""
+    echo "❌ Commit failed: $HTML_ERRORS HTML error(s) found"
+    echo "   Please fix the errors above before committing"
+    exit 1
+  fi
+fi
+
+# 4. Documentation checks - warn about changes that might need documentation updates
+echo ""
+echo "Checking for documentation updates needed..."
+
+DOC_WARNINGS=0
+
+# Get list of changed files (exclude hook files and cache-busting-only changes)
+CHANGED_FILES=$(git diff --cached --name-only | grep -vE "(hooks/|\.git/)" || true)
+
+# Filter out cache-busting-only changes in index.html
+# If index.html only has ?cb= or ?v= changes, don't flag it
+if echo "$CHANGED_FILES" | grep -q "index.html"; then
+  INDEX_DIFF=$(git diff --cached index.html)
+  # Check if diff only contains cache-busting changes (cb= for JS, ?v= for CSS)
+  if echo "$INDEX_DIFF" | grep -qE "^[+-].*(cb=|\\?v=)" && \
+     ! echo "$INDEX_DIFF" | grep -qvE "(cb=|\\?v=|cache-bust|Cache-bust)"; then
+    # Only cache-busting changes, remove from check list
+    CHANGED_FILES=$(echo "$CHANGED_FILES" | grep -v "index.html" || true)
+  fi
+fi
+
+# Skip documentation checks if only hook files changed
+if [ -z "$CHANGED_FILES" ] || [ "$CHANGED_FILES" = "" ]; then
+  echo "  ✓ Only hook/cache-busting changes, skipping documentation checks"
+  echo ""
+  echo "Pre-commit checks passed! ✓"
+  exit 0
+fi
+
+# Check for game rules changes
+if echo "$CHANGED_FILES" | grep -qE "(js/config/game-rules\.js|js/core/rules-engine\.js|js/core/game-engine\.js)"; then
+  echo "  ⚠️  Game rules/logic files modified!"
+  echo "     → Check if 'game rules' file needs updating"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for control/input changes (exclude cache-busting)
+if echo "$CHANGED_FILES" | grep -qE "(js/main\.js|index\.html)" && \
+   git diff --cached -- "$CHANGED_FILES" | grep -vE "(cb=|cache-bust)" | grep -qE "(addEventListener|keydown|keypress|keyup|touchstart|touchend|click|Arrow|WASD|controls)"; then
+  echo "  ⚠️  Input/control handling modified!"
+  echo "     → Check if CONTROLS.md needs updating"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for UI/feature additions (exclude cache-busting, script src lines, and HTML comments)
+if echo "$CHANGED_FILES" | grep -qE "(js/rendering/dom-renderer\.js|index\.html|css/)" && \
+   git diff --cached -- "$CHANGED_FILES" | grep -vE "(cb=|\\?v=|cache-bust|script src|\.js\?cb|\.css\\?v=|<!--|-->)" | grep -qE "^\+.*(class=|id=|data-|<button|<div|<span|<h[1-6]|modal|hud)"; then
+  echo "  ⚠️  UI elements or features modified!"
+  echo "     → Check if README.md 'How to Play' or feature descriptions need updating"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for help modal content changes
+if echo "$CHANGED_FILES" | grep -qE "(js/help-modal\.js|CONTROLS\.md|CREDITS\.md|game rules)"; then
+  echo "  ⚠️  Help modal content files modified!"
+  echo "     → Verify help modal displays correctly (test in browser)"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for configuration changes
+if echo "$CHANGED_FILES" | grep -qE "(js/config/.*\.js)"; then
+  echo "  ⚠️  Configuration files modified!"
+  echo "     → Check if README.md 'Development' or 'Configuration' sections need updating"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for version.js changes (should always update changelog)
+if echo "$CHANGED_FILES" | grep -q "js/config/version.js"; then
+  echo ""
+  echo "  ⚠️  WARNING: You're committing changes to version.js"
+  if ! echo "$CHANGED_FILES" | grep -q "CHANGELOG.md"; then
+    echo "     → CHANGELOG.md is NOT in this commit!"
+    echo "     → You MUST update CHANGELOG.md when bumping version numbers"
+    DOC_WARNINGS=$((DOC_WARNINGS + 1))
+  else
+    echo "     → Good! CHANGELOG.md is included in this commit"
+  fi
+  echo ""
+fi
+
+# Check for new files that might need documentation or cache-busting
+NEW_FILES=$(git diff --cached --name-only --diff-filter=A | grep -E "\.(js|html|css)$" || true)
+if [ -n "$NEW_FILES" ]; then
+  echo "  ⚠️  New files added:"
+  echo "$NEW_FILES" | sed 's/^/     → /'
+  echo "     → Consider updating README.md project structure if adding major components"
+  
+  # Check if new JS/CSS files need cache-busting in index.html
+  NEW_JS_CSS=$(echo "$NEW_FILES" | grep -E "\.(js|css)$" || true)
+  if [ -n "$NEW_JS_CSS" ]; then
+    echo "     → New JS/CSS files detected - ensure they're added to index.html with cache-busting (?cb= or ?v=)"
+  fi
+  
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Check for mobile-specific changes (exclude cache-busting and hook files)
+if git diff --cached -- "$CHANGED_FILES" | grep -vE "(cb=|\\?v=|cache-bust|hooks/)" | grep -qE "(mobile|touch|@media|responsive|viewport)"; then
+  echo "  ⚠️  Mobile/responsive code modified!"
+  echo "     → Test on actual mobile device if possible"
+  echo "     → Check if README.md 'Browser Compatibility' or mobile features need updating"
+  DOC_WARNINGS=$((DOC_WARNINGS + 1))
+fi
+
+# Summary
+if [ $DOC_WARNINGS -gt 0 ]; then
+  echo ""
+  echo "📝 Documentation reminders: $DOC_WARNINGS potential update(s) needed"
+  echo "   Please review the warnings above and update documentation as needed."
+  echo ""
+else
+  echo "  ✓ No obvious documentation updates needed"
+fi
+
+echo ""
+echo "Pre-commit checks passed! ✓"
+exit 0
+

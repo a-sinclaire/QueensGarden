@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Queen's Garden</title>
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/game-board.css">
-    <link rel="stylesheet" href="css/cards.css">
-    <link rel="stylesheet" href="css/ui.css">
+    <!-- Cache-busting: auto-updated by update-cache-bust.sh script -->
+    <link rel="stylesheet" href="css/main.css?v=bcd6902">
+    <link rel="stylesheet" href="css/game-board.css?v=bcd6902">
+    <link rel="stylesheet" href="css/cards.css?v=bcd6902">
+    <link rel="stylesheet" href="css/ui.css?v=bcd6902">
+    <link rel="stylesheet" href="css/mobile-hud.css?v=bcd6902">
 </head>
 <body>
     <div id="game-container">
@@ -84,6 +86,29 @@
                 </aside>
                 
                 <main class="game-area">
+                    <!-- Mobile HUD -->
+                    <div id="mobile-hud" class="mobile-hud">
+                        <div id="mobile-health" class="hud-health">
+                            <span class="hud-label">HP</span>
+                            <span id="mobile-health-value" class="hud-value">20/20</span>
+                        </div>
+                        <div id="mobile-party" class="hud-party">
+                            <span class="hud-label">Party</span>
+                            <div id="mobile-party-suits" class="party-suits"></div>
+                        </div>
+                        <div id="mobile-kings" class="hud-kings">
+                            <span class="hud-label">Kings</span>
+                            <div id="mobile-kings-suits" class="kings-suits"></div>
+                            <div id="mobile-kings-count" class="kings-count">0/4</div>
+                            <button id="mobile-destroy-btn" class="hud-destroy-btn" style="display: none;">💣 Destroy</button>
+                        </div>
+                        <!-- Debug display - hidden -->
+                        <div id="mobile-debug" class="hud-debug" style="display: none !important;">
+                            <div class="debug-content" id="debug-content">Waiting for camera update...</div>
+                            <div id="mobile-console" class="debug-console" style="display: none;"></div>
+                        </div>
+                    </div>
+                    
                     <div id="game-board" class="board-container">
                         <!-- Board will be rendered here -->
                     </div>
@@ -113,30 +138,31 @@
     </div>
     
     <!-- Load game configuration and rules -->
-    <script src="js/config/version.js"></script>
-    <script src="js/config/game-rules.js"></script>
-    <script src="js/config/assets-config.js"></script>
+    <!-- Cache-busting: auto-updated by update-cache-bust.sh script (or manually increment cb value) -->
+    <script src="js/config/version.js?cb=bcd6902"></script>
+    <script src="js/config/game-rules.js?cb=bcd6902"></script>
+    <script src="js/config/assets-config.js?cb=bcd6902"></script>
     
     <!-- Load models -->
-    <script src="js/models/card.js"></script>
-    <script src="js/models/tile.js"></script>
-    <script src="js/models/player.js"></script>
+    <script src="js/models/card.js?cb=bcd6902"></script>
+    <script src="js/models/tile.js?cb=bcd6902"></script>
+    <script src="js/models/player.js?cb=bcd6902"></script>
     
     <!-- Load core engine -->
-    <script src="js/core/deck-manager.js"></script>
-    <script src="js/core/rules-engine.js"></script>
-    <script src="js/core/game-engine.js"></script>
+    <script src="js/core/deck-manager.js?cb=bcd6902"></script>
+    <script src="js/core/rules-engine.js?cb=bcd6902"></script>
+    <script src="js/core/game-engine.js?cb=bcd6902"></script>
     
     <!-- Load renderers -->
-    <script src="js/rendering/renderer-interface.js"></script>
-    <script src="js/rendering/console-renderer.js"></script>
-    <script src="js/rendering/dom-renderer.js"></script>
+    <script src="js/rendering/renderer-interface.js?cb=bcd6902"></script>
+    <script src="js/rendering/console-renderer.js?cb=bcd6902"></script>
+    <script src="js/rendering/dom-renderer.js?cb=bcd6902"></script>
     
     <!-- Load help modal -->
-    <script src="js/help-modal.js"></script>
+    <script src="js/help-modal.js?cb=bcd6902"></script>
     
     <!-- Load main game logic -->
-    <script src="js/main.js"></script>
+    <script src="js/main.js?cb=bcd6902"></script>
 </body>
 </html>
 

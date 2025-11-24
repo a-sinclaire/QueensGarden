@@ -20,6 +20,9 @@ class GameEngine {
    * Initialize a new game
    */
   initialize(startingQueen) {
+    // Store starting queen for reference
+    this.startingQueen = startingQueen;
+    
     // Create starting Queen card
     const queenCard = new Card(startingQueen.suit, 'queen');
     
@@ -177,6 +180,8 @@ class GameEngine {
   
   /**
    * Check for Jack adjacent damage
+   * CRITICAL: This must check ALL adjacent tiles, even if they're not revealed yet
+   * (though unrevealed tiles won't have cards, so they'll be skipped)
    */
   _checkJackAdjacentDamage(position) {
     const adjacentPositions = [
@@ -187,9 +192,32 @@ class GameEngine {
     ];
     
     for (const pos of adjacentPositions) {
-      const tile = this.board.get(`${pos.x},${pos.y}`);
+      const key = `${pos.x},${pos.y}`;
+      const tile = this.board.get(key);
+      
+      // Debug: Log what we're checking
+      if (window.DEBUG_JACK_DAMAGE) {
+        console.log(`Checking adjacent position (${pos.x}, ${pos.y}):`, {
+          tileExists: !!tile,
+          hasCard: !!(tile && tile.card),
+          cardType: tile && tile.card ? tile.card.getType() : 'none',
+          isJack: tile && tile.card && tile.card.getType() === 'jack'
+        });
+      }
+      
       if (tile && tile.card && tile.card.getType() === 'jack') {
         const damage = this.rulesEngine.calculateJackAdjacentDamage(tile.card, this.player);
+        
+        // Debug: Log damage calculation
+        if (window.DEBUG_JACK_DAMAGE) {
+          console.log(`Jack found at (${pos.x}, ${pos.y}):`, {
+            jackSuit: tile.card.suit,
+            playerImmunities: this.player.getImmunities(),
+            isImmune: this.player.isImmuneTo(tile.card.suit),
+            calculatedDamage: damage
+          });
+        }
+        
         if (damage > 0) {
           this.player.takeDamage(damage);
           this.renderer.onDamage(damage, this.player.health, 'Jack trap');
@@ -275,8 +303,9 @@ class GameEngine {
     
     // Calculate damage if teleporting TO an Ace of a suit you're not immune to
     // No damage when teleporting to central chamber
+    let damage = 0;
     if (targetIsAce && !this.player.isImmuneTo(targetTile.card.suit)) {
-      const damage = targetTile.card.value; // Aces are worth 1
+      damage = targetTile.card.value; // Aces are worth 1
       this.player.takeDamage(damage);
       this.renderer.onDamage(damage, this.player.health, 'Teleport');
     }
