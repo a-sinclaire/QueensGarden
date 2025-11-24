@@ -6,20 +6,7 @@ This file tracks current bugs, issues, and ideas for future improvements.
 
 ### Critical Bugs
 
-1. **Buffer zone not expanding**
-   - **Issue**: When approaching the edge of the barrier that shows 2 tiles away from revealed tiles, the barrier does not expand
-   - **Impact**: Cannot leave the original zone of active tiles
-   - **Status**: Needs investigation
-
-2. **Game over screen missing text / skipped**
-   - **Issue**: Game over screen seems to have lost its text. Sometimes when dying, it seems like the game over screen is skipped entirely
-   - **Impact**: Players can't see game over message
-   - **Status**: Needs investigation
-
-3. **Game should end on final king collection**
-   - **Issue**: Game should end immediately when you collect the final king, even if there is a jack next to the final king that would kill you
-   - **Impact**: Player can die after winning, which is confusing
-   - **Status**: Needs fix
+*No critical bugs currently known*
 
 ## Planned Features / Improvements
 
