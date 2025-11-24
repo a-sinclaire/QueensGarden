@@ -23,31 +23,49 @@ fi
 echo "Checking JavaScript syntax..."
 JS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.js$' || true)
 if [ -n "$JS_FILES" ]; then
+  JS_ERRORS=0
   for file in $JS_FILES; do
     if [ -f "$file" ]; then
       echo "  Checking $file..."
-      # Use node to check syntax
-      node -c "$file" || {
+      # Use node to check syntax - capture output and exit code
+      if ! node -c "$file" 2>&1; then
         echo "Error: Syntax error in $file"
-        exit 1
-      }
+        JS_ERRORS=$((JS_ERRORS + 1))
+      fi
     fi
   done
+  if [ $JS_ERRORS -gt 0 ]; then
+    echo ""
+    echo "❌ Commit failed: $JS_ERRORS JavaScript syntax error(s) found"
+    echo "   Please fix the errors above before committing"
+    exit 1
+  fi
 fi
 
 # 3. Check HTML syntax (basic validation)
 echo "Checking HTML syntax..."
 HTML_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.html$' || true)
 if [ -n "$HTML_FILES" ]; then
+  HTML_ERRORS=0
   for file in $HTML_FILES; do
     if [ -f "$file" ]; then
       echo "  Checking $file..."
-      # Basic check: ensure file is not empty and has basic HTML structure
-      if ! grep -q "<!DOCTYPE html>" "$file" 2>/dev/null; then
-        echo "Warning: $file may not be valid HTML (missing DOCTYPE)"
+      # Basic check: ensure file is not empty
+      if [ ! -s "$file" ]; then
+        echo "Error: $file is empty"
+        HTML_ERRORS=$((HTML_ERRORS + 1))
+      # Check for basic HTML structure (warn but don't fail for missing DOCTYPE)
+      elif ! grep -q "<!DOCTYPE html>" "$file" 2>/dev/null; then
+        echo "Warning: $file may not be valid HTML (missing DOCTYPE) - continuing anyway"
       fi
     fi
   done
+  if [ $HTML_ERRORS -gt 0 ]; then
+    echo ""
+    echo "❌ Commit failed: $HTML_ERRORS HTML error(s) found"
+    echo "   Please fix the errors above before committing"
+    exit 1
+  fi
 fi
 
 # 4. Documentation checks - warn about changes that might need documentation updates

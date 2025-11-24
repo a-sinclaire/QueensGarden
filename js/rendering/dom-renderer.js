@@ -350,8 +350,21 @@ class DOMRenderer extends RendererInterface {
       // If player goes outside that area, scroll by exactly how much the queen moves (tile + gap)
       
       // Calculate where player would be on screen with current scroll
-      const playerScreenX = playerPixelX - currentScrollX;
-      const playerScreenY = playerPixelY - currentScrollY;
+      // BUT: On first render, calculate based on centered position, not current scroll
+      // This ensures we always center on first render, even if player appears "in deadzone"
+      let playerScreenX, playerScreenY;
+      if (this.isFirstRender) {
+        // On first render, calculate screen position as if we're centered
+        // This ensures we always scroll to center, regardless of deadzone
+        const centeredScrollX = playerPixelX - (viewportWidth / 2);
+        const centeredScrollY = playerPixelY - (viewportHeight / 2);
+        playerScreenX = playerPixelX - centeredScrollX;
+        playerScreenY = playerPixelY - centeredScrollY;
+      } else {
+        // After first render, use actual current scroll
+        playerScreenX = playerPixelX - currentScrollX;
+        playerScreenY = playerPixelY - currentScrollY;
+      }
       
       // Dead zone: tile-based (1 tile from each edge)
       // This ensures consistent deadzone size regardless of screen size
@@ -489,21 +502,24 @@ class DOMRenderer extends RendererInterface {
       const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
       const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
       
+      // Calculate where player is NOW (after move) on screen with current scroll
+      // This is used for the final deadzone check
+      const playerScreenX = playerPixelX - currentScrollX;
+      const playerScreenY = playerPixelY - currentScrollY;
+      
       // Only scroll if position changed significantly (more than 1px)
-      // BUT: Don't scroll if we're within the deadzone (player should stay put)
-      // EXCEPT: Always allow first render to center, and allow centering scrolls
+      // AND: Only scroll if player is outside deadzone AFTER move (or first render)
       const scrollThreshold = 1;
       const isInDeadzoneX = playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight;
       const isInDeadzoneY = playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom;
       
       // Check if this is a centering scroll (first render only)
-      // Bounds changes don't automatically trigger centering - only if player is outside deadzone
       const isCenteringScroll = this.isFirstRender;
       
-      // Allow scrolling if: outside deadzone OR first render centering
-      // Don't auto-scroll on bounds changes unless player is actually outside deadzone
-      const needsScrollX = (isCenteringScroll || !isInDeadzoneX) && Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
-      const needsScrollY = (isCenteringScroll || !isInDeadzoneY) && Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
+      // Allow scrolling if: first render centering OR (player moved AND is outside deadzone)
+      // Don't scroll if player is in deadzone after move (unless first render)
+      const needsScrollX = (isCenteringScroll || (!isInDeadzoneX && playerMoved)) && Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
+      const needsScrollY = (isCenteringScroll || (!isInDeadzoneY && playerMoved)) && Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
       
       // Debug: Update debug panel with scroll decision
       const playerMoved = window._debugPlayerMoved || false;
