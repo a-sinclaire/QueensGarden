@@ -163,27 +163,69 @@ class DOMRenderer extends RendererInterface {
     }
   }
   
-  _updateParty(party) {
+  _updateParty(party, highlightMissingSuit = null) {
+    // Get player's starting suit (own suit) if available
+    const ownSuit = this.gameEngine && this.gameEngine.player.startingQueen 
+      ? this.gameEngine.player.startingQueen.suit 
+      : null;
+    
+    // Get all suits in order: own suit first, then others
+    const allSuits = ['hearts', 'diamonds', 'clubs', 'spades'];
+    const orderedSuits = ownSuit 
+      ? [ownSuit, ...allSuits.filter(s => s !== ownSuit)]
+      : allSuits;
+    
+    // Create a set of owned suits for quick lookup
+    const ownedSuits = new Set();
+    if (party && party.length > 0) {
+      party.forEach(queen => {
+        ownedSuits.add(queen.suit);
+      });
+    }
+    
+    // Helper function to create suit element
+    const createSuitElement = (suit) => {
+      const suitEl = document.createElement('span');
+      suitEl.className = 'party-suit';
+      suitEl.dataset.suit = suit;
+      
+      if (ownedSuits.has(suit)) {
+        suitEl.classList.add('owned');
+        if (ownSuit && suit === ownSuit) {
+          suitEl.classList.add('own-suit');
+        }
+      } else {
+        suitEl.classList.add('not-owned');
+        suitEl.style.opacity = '0.3';
+      }
+      
+      if (highlightMissingSuit && suit === highlightMissingSuit) {
+        suitEl.classList.add('error-glow');
+      }
+      
+      suitEl.textContent = this._getSuitSymbol(suit);
+      suitEl.title = ownedSuits.has(suit) 
+        ? `Queen of ${suit} (owned)`
+        : `Queen of ${suit} (not owned)`;
+      return suitEl;
+    };
+    
+    // Update desktop party display
     const partyEl = document.getElementById('party-display');
     if (partyEl) {
       partyEl.innerHTML = '';
-      if (party && party.length > 0) {
-        // Get player's starting suit (own suit) if available
-        const ownSuit = this.gameEngine && this.gameEngine.player.startingQueen 
-          ? this.gameEngine.player.startingQueen.suit 
-          : null;
-        
-        party.forEach(queen => {
-          const suitEl = document.createElement('span');
-          suitEl.className = 'party-suit';
-          if (ownSuit && queen.suit === ownSuit) {
-            suitEl.classList.add('own-suit');
-          }
-          suitEl.textContent = this._getSuitSymbol(queen.suit);
-          suitEl.title = `${queen.rank} of ${queen.suit}`;
-          partyEl.appendChild(suitEl);
-        });
-      }
+      orderedSuits.forEach(suit => {
+        partyEl.appendChild(createSuitElement(suit));
+      });
+    }
+    
+    // Update mobile party display
+    const mobilePartySuitsEl = document.getElementById('mobile-party-suits');
+    if (mobilePartySuitsEl) {
+      mobilePartySuitsEl.innerHTML = '';
+      orderedSuits.forEach(suit => {
+        mobilePartySuitsEl.appendChild(createSuitElement(suit));
+      });
     }
   }
   
@@ -343,7 +385,7 @@ class DOMRenderer extends RendererInterface {
       resetTextEl.textContent = 'Reset?';
       resetTextEl.style.cssText = `
         position: fixed;
-        top: 50%;
+        top: 30%;
         left: 50%;
         transform: translate(-50%, -50%);
         font-size: 2rem;
@@ -366,8 +408,32 @@ class DOMRenderer extends RendererInterface {
       hasMoved = false;
       cleanupHold();
       
-      // Check if this tile is destroyable (adjacent to player) - priority over reset
-      let destroyTimerStarted = false;
+      // Check if this is central chamber - reset takes priority over destroy
+      const isCentralChamber = x === 0 && y === 0;
+      
+      if (isCentralChamber && this.gameEngine) {
+        // Start restart timer (1000ms) for central chamber
+        touchTimer = setTimeout(() => {
+          isRestartHolding = true;
+          tileEl.classList.add('destroy-holding');
+          showResetText();
+          
+          // Disable scrolling on board container
+          const boardEl = document.getElementById('game-board');
+          if (boardEl) {
+            boardEl.style.overflow = 'hidden';
+            boardEl.style.touchAction = 'none';
+          }
+          
+          // Provide haptic feedback if available
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+        }, 1000); // 1000ms hold time for reset
+        return; // Don't start destroy timer for central chamber
+      }
+      
+      // Check if this tile is destroyable (adjacent to player)
       if (this.gameEngine && !this.destroyMode) {
         const playerPos = this.gameEngine.player.position;
         const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
@@ -399,31 +465,7 @@ class DOMRenderer extends RendererInterface {
               }
             }
           }, 500); // 500ms hold time
-          destroyTimerStarted = true;
         }
-      }
-      
-      // Allow reset only when holding central chamber tile (not any space)
-      // Only start if destroy timer didn't start and this is central chamber
-      if (this.gameEngine && !destroyTimerStarted && x === 0 && y === 0) {
-        // Start restart timer (1000ms - longer than destroy to avoid conflicts)
-        touchTimer = setTimeout(() => {
-          isRestartHolding = true;
-          tileEl.classList.add('destroy-holding');
-          showResetText();
-          
-          // Disable scrolling on board container
-          const boardEl = document.getElementById('game-board');
-          if (boardEl) {
-            boardEl.style.overflow = 'hidden';
-            boardEl.style.touchAction = 'none';
-          }
-          
-          // Provide haptic feedback if available
-          if (navigator.vibrate) {
-            navigator.vibrate(50);
-          }
-        }, 1000); // 1000ms hold time for reset
       }
     }, { passive: true });
     
@@ -569,7 +611,7 @@ class DOMRenderer extends RendererInterface {
       mouseResetTextEl.textContent = 'Reset?';
       mouseResetTextEl.style.cssText = `
         position: fixed;
-        top: 50%;
+        top: 30%;
         left: 50%;
         transform: translate(-50%, -50%);
         font-size: 2rem;
@@ -593,8 +635,26 @@ class DOMRenderer extends RendererInterface {
       hasMouseMoved = false;
       cleanupMouseHold();
       
-      // Check if this tile is destroyable (adjacent to player) - priority over reset
-      let mouseDestroyTimerStarted = false;
+      // Check if this is central chamber - reset takes priority over destroy
+      const isCentralChamber = x === 0 && y === 0;
+      
+      if (isCentralChamber && this.gameEngine) {
+        // Start restart timer (1000ms) for central chamber
+        mouseTimer = setTimeout(() => {
+          isMouseRestartHolding = true;
+          tileEl.classList.add('destroy-holding');
+          showMouseResetText();
+          
+          // Disable scrolling on board container
+          const boardEl = document.getElementById('game-board');
+          if (boardEl) {
+            boardEl.style.overflow = 'hidden';
+          }
+        }, 1000); // 1000ms hold time for reset
+        return; // Don't start destroy timer for central chamber
+      }
+      
+      // Check if this tile is destroyable (adjacent to player)
       if (this.gameEngine && !this.destroyMode) {
         const playerPos = this.gameEngine.player.position;
         const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
@@ -620,25 +680,7 @@ class DOMRenderer extends RendererInterface {
               }
             }
           }, 500); // 500ms hold time
-          mouseDestroyTimerStarted = true;
         }
-      }
-      
-      // Allow reset only when holding central chamber tile (not any space)
-      // Only start if destroy timer didn't start and this is central chamber
-      if (this.gameEngine && !mouseDestroyTimerStarted && x === 0 && y === 0) {
-        // Start restart timer (1000ms - longer than destroy to avoid conflicts)
-        mouseTimer = setTimeout(() => {
-          isMouseRestartHolding = true;
-          tileEl.classList.add('destroy-holding');
-          showMouseResetText();
-          
-          // Disable scrolling on board container
-          const boardEl = document.getElementById('game-board');
-          if (boardEl) {
-            boardEl.style.overflow = 'hidden';
-          }
-        }, 1000); // 1000ms hold time for reset
       }
     });
     
@@ -1171,26 +1213,8 @@ class DOMRenderer extends RendererInterface {
       mobileHealthValueEl.textContent = `${player.health}`;
     }
     
-    // Update mobile party suits display
-    const mobilePartySuitsEl = document.getElementById('mobile-party-suits');
-    if (mobilePartySuitsEl) {
-      mobilePartySuitsEl.innerHTML = '';
-      if (player.party && player.party.length > 0) {
-        // Get player's starting suit (own suit) if available
-        const ownSuit = player.startingQueen ? player.startingQueen.suit : null;
-        
-        player.party.forEach(queen => {
-          const suitEl = document.createElement('span');
-          suitEl.className = 'party-suit';
-          if (ownSuit && queen.suit === ownSuit) {
-            suitEl.classList.add('own-suit');
-          }
-          suitEl.textContent = this._getSuitSymbol(queen.suit);
-          suitEl.title = `${queen.rank} of ${queen.suit}`;
-          mobilePartySuitsEl.appendChild(suitEl);
-        });
-      }
-    }
+    // Mobile party display is now handled by _updateParty method
+    // (kept for backwards compatibility, but _updateParty handles both)
     
     // Update mobile Kings suits display
     const mobileKingsSuitsEl = document.getElementById('mobile-kings-suits');

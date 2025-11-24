@@ -388,8 +388,60 @@ function showErrorFeedback(x, y, errorMessage) {
     }, 500);
   }
   
+  // Check if this is a king collection error
+  if (errorMessage && errorMessage.includes('Queen')) {
+    // Try to extract the missing suit from the error or target tile
+    let missingSuit = null;
+    
+    // Get the target tile to see what king we're trying to collect
+    if (gameEngine) {
+      const targetTile = gameEngine.board.get(`${x},${y}`);
+      if (targetTile && targetTile.card && targetTile.card.getType() === 'king') {
+        const kingCard = targetTile.card;
+        const kingColor = kingCard.getColor();
+        const kingSuit = kingCard.suit;
+        
+        // Find which queen is missing (same color, different suit)
+        const allSuits = ['hearts', 'diamonds', 'clubs', 'spades'];
+        const sameColorSuits = allSuits.filter(suit => {
+          const suitColor = GAME_RULES.suitColors[suit];
+          return suitColor === kingColor && suit !== kingSuit;
+        });
+        
+        // Check which one is missing from party
+        if (gameEngine.player.party) {
+          const ownedSuits = new Set(gameEngine.player.party.map(q => q.suit));
+          missingSuit = sameColorSuits.find(suit => !ownedSuits.has(suit));
+        }
+      }
+    }
+    
+    // Update party display with highlight
+    if (renderer && missingSuit) {
+      renderer._updateParty(gameEngine.player.party, missingSuit);
+      // Remove highlight after animation
+      setTimeout(() => {
+        if (renderer) {
+          renderer._updateParty(gameEngine.player.party, null);
+        }
+      }, 2000);
+    } else {
+      // Just highlight party display
+      const partyDisplay = document.getElementById('party-display');
+      const mobileParty = document.getElementById('mobile-party');
+      if (partyDisplay) {
+        partyDisplay.classList.add('error-glow');
+        setTimeout(() => partyDisplay.classList.remove('error-glow'), 1000);
+      }
+      if (mobileParty) {
+        mobileParty.classList.add('error-glow');
+        setTimeout(() => mobileParty.classList.remove('error-glow'), 1000);
+      }
+    }
+  }
+  
   // Highlight relevant UI based on error message
-  if (errorMessage.includes('King') || errorMessage.includes('ability')) {
+  if (errorMessage && (errorMessage.includes('King') || errorMessage.includes('ability'))) {
     // Highlight kings display
     const kingsDisplay = document.getElementById('kings-display');
     const mobileKings = document.getElementById('mobile-kings');
