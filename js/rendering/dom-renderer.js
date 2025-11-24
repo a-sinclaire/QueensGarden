@@ -617,6 +617,17 @@ class DOMRenderer extends RendererInterface {
           continue;
         }
         
+        // Tile should be populated - remove spacer if it exists
+        const existingSpacer = Array.from(row.children).find(child => 
+          child.dataset.x === x.toString() && child.dataset.y === y.toString() && child.style.visibility === 'hidden'
+        );
+        if (existingSpacer) {
+          existingSpacer.remove();
+        }
+        
+        // Get or create tile element (will create if it doesn't exist)
+        tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
+        
         // Show tile and update visual state
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
       }
