@@ -378,6 +378,11 @@ function resetGame() {
     keyboardHandler = null;
   }
   
+  // Reset renderer's render tracking so it centers on next game start
+  if (renderer) {
+    renderer._hasRendered = false;
+  }
+  
   gameEngine = null;
   renderer = null;
   destroyMode = false;

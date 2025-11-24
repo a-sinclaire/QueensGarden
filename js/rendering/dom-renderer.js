@@ -59,10 +59,16 @@ class DOMRenderer extends RendererInterface {
     }
     // Initialize DOM structure
     this._createDOMStructure();
+    // Reset render tracking for centering on new game
+    this._hasRendered = false;
   }
   
   render(gameState) {
     if (!this.container) return;
+    
+    // Track if this is the first render (for centering on central chamber)
+    const isFirstRender = !this._hasRendered;
+    this._hasRendered = true;
     
     // Sync destroy mode state from global variables (if available)
     if (typeof window !== 'undefined' && window.destroyMode !== undefined) {
@@ -81,6 +87,14 @@ class DOMRenderer extends RendererInterface {
     
     // Update board first (needed for destroy mode state)
     this._updateBoard(gameState.board, gameState.player.position);
+    
+    // Center board on central chamber on first render (game start/reset/refresh)
+    if (isFirstRender) {
+      // Use setTimeout to ensure DOM is fully rendered
+      setTimeout(() => {
+        this._centerBoardOnCentralChamber();
+      }, 0);
+    }
     
     // Update mobile HUD (after board to sync destroy mode state)
     this._updateMobileHUD(gameState.player);
@@ -568,6 +582,47 @@ class DOMRenderer extends RendererInterface {
     // Add debug rectangle showing board boundaries (21x21 grid from -10 to +10)
     this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, tileWidth, tileHeight, gap, rowWidth);
     
+  }
+  
+  /**
+   * Center the board viewport on the central chamber (0,0)
+   * Called on game start, reset, and page refresh
+   * @private
+   */
+  _centerBoardOnCentralChamber() {
+    const boardEl = document.getElementById('game-board');
+    if (!boardEl) return;
+    
+    // Find the central chamber tile (at 0,0)
+    const centralChamberTile = boardEl.querySelector('.tile.central-chamber');
+    if (!centralChamberTile) {
+      // If central chamber doesn't exist yet, try again after a short delay
+      setTimeout(() => this._centerBoardOnCentralChamber(), 100);
+      return;
+    }
+    
+    // Get the tile's position relative to the board container
+    const tileRect = centralChamberTile.getBoundingClientRect();
+    const containerRect = boardEl.getBoundingClientRect();
+    
+    // Calculate the center of the tile
+    const tileCenterX = tileRect.left - containerRect.left + (tileRect.width / 2);
+    const tileCenterY = tileRect.top - containerRect.top + (tileRect.height / 2);
+    
+    // Calculate the center of the container viewport
+    const containerCenterX = boardEl.clientWidth / 2;
+    const containerCenterY = boardEl.clientHeight / 2;
+    
+    // Calculate scroll offset needed to center the tile
+    const scrollLeft = tileCenterX - containerCenterX + boardEl.scrollLeft;
+    const scrollTop = tileCenterY - containerCenterY + boardEl.scrollTop;
+    
+    // Scroll to center the central chamber
+    boardEl.scrollTo({
+      left: scrollLeft,
+      top: scrollTop,
+      behavior: 'auto' // Instant scroll, no animation
+    });
   }
   
   /**
