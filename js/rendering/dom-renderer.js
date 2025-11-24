@@ -389,8 +389,8 @@ class DOMRenderer extends RendererInterface {
         // Very first render - always center the player completely
         scrollX = playerPixelX - (viewportWidth / 2);
         scrollY = playerPixelY - (viewportHeight / 2);
-        // Mark that we've done the first render
-        this.isFirstRender = false;
+        // Don't mark first render as complete yet - wait until after scrolling completes
+        // (We'll set it to false in the setTimeout callback after scrolling)
       } else {
         // After first render - always use deadzone rules
         // If player is outside dead zone, scroll by exactly one tile spacing
@@ -914,17 +914,9 @@ class DOMRenderer extends RendererInterface {
       }
     }
     
-    // Ensure scroll position is maintained after board rebuild
-    // The board rebuild might have reset scroll, so restore it again after rendering
-    if (this._savedScrollBeforeRebuild) {
-      // Wait for board to be fully rendered, then restore scroll
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          boardEl.scrollLeft = this._savedScrollBeforeRebuild.x;
-          boardEl.scrollTop = this._savedScrollBeforeRebuild.y;
-        });
-      });
-    }
+    // Note: We don't restore scroll here because _centerBoardOnPlayer will handle it
+    // The preserved scroll is passed to _centerBoardOnPlayer via _savedScrollBeforeRebuild
+    // and it will use it if needed. Restoring here would interfere with the deadzone logic.
     
     // Center camera on player AFTER board is rendered (mobile only)
     if (window.innerWidth <= 768) {
