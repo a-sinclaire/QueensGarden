@@ -17,8 +17,9 @@ class DOMRenderer extends RendererInterface {
     this.lastPlayerPixelY = null;
     this.lastScrollX = null;
     this.lastScrollY = null;
-    // Dead zone configuration: 0.7 = 70% of viewport (15% margin on each side)
-    this.deadZoneSize = 0.7;
+    // Dead zone configuration: 1.5 = 1.5 tile widths/heights from each edge
+    // This ensures consistent deadzone size regardless of screen size
+    this.deadZoneTiles = 1.5;
     // Track if this is the very first render (game initialization)
     this.isFirstRender = true;
     // Cache-bust color for debugging (changes with each deployment)
@@ -350,12 +351,12 @@ class DOMRenderer extends RendererInterface {
       const playerScreenX = playerPixelX - currentScrollX;
       const playerScreenY = playerPixelY - currentScrollY;
       
-      // Dead zone: configurable size (default 70% = 15% margin on each side)
-      const deadZoneMargin = (1 - this.deadZoneSize) / 2; // e.g., 0.15 for 70% dead zone
-      const deadZoneLeft = viewportWidth * deadZoneMargin;
-      const deadZoneRight = viewportWidth * (1 - deadZoneMargin);
-      const deadZoneTop = viewportHeight * deadZoneMargin;
-      const deadZoneBottom = viewportHeight * (1 - deadZoneMargin);
+      // Dead zone: tile-based (1.5 tiles from each edge)
+      // This ensures consistent deadzone size regardless of screen size
+      const deadZoneLeft = this.deadZoneTiles * totalTileWidth;
+      const deadZoneRight = viewportWidth - (this.deadZoneTiles * totalTileWidth);
+      const deadZoneTop = this.deadZoneTiles * totalTileHeight;
+      const deadZoneBottom = viewportHeight - (this.deadZoneTiles * totalTileHeight);
       
       // Update debug overlay to show dead zone
       this._updateDeadZoneDebug(deadZoneLeft, deadZoneTop, deadZoneRight - deadZoneLeft, deadZoneBottom - deadZoneTop);
