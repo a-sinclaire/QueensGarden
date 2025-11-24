@@ -406,7 +406,9 @@ class DOMRenderer extends RendererInterface {
       const playerScreenY = playerPixelY - currentScrollY;
       
       // Calculate scroll position needed
-      // ONLY center on first render - after that, maintain relative offset
+      // On first render: center the player
+      // If preserved scroll exists (board was rebuilt with adjusted scroll): use preserved scroll
+      // Otherwise: maintain current scroll (no auto-centering)
       let scrollX = currentScrollX;
       let scrollY = currentScrollY;
       
@@ -420,8 +422,12 @@ class DOMRenderer extends RendererInterface {
         // Spacers push content, so scroll = centerScroll + spacer
         scrollX = centerScrollX + leftSpacer;
         scrollY = centerScrollY + topSpacer;
+      } else if (preservedScroll) {
+        // Board was rebuilt with adjusted scroll - use the preserved/adjusted scroll
+        scrollX = preservedScroll.x;
+        scrollY = preservedScroll.y;
       }
-      // After first render: keep current scroll (no auto-centering)
+      // Otherwise: keep current scroll (no auto-centering)
       
       // Calculate minimum board dimensions needed to allow scrolling to center player in all directions
       // For first render centering: need enough space to scroll to center position
@@ -517,10 +523,11 @@ class DOMRenderer extends RendererInterface {
       const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
       
       // Determine if we need to scroll
-      // ONLY scroll on first render (centering) - after that, maintain relative offset
+      // Scroll on first render (centering) OR if we have preserved scroll (board was rebuilt with adjusted scroll)
       const scrollThreshold = 1;
-      const needsScrollX = this.isFirstRender ? Math.abs(finalScrollX - currentScrollX) > 0.1 : false;
-      const needsScrollY = this.isFirstRender ? Math.abs(finalScrollY - currentScrollY) > 0.1 : false;
+      const hasPreservedScroll = preservedScroll !== null;
+      const needsScrollX = this.isFirstRender || hasPreservedScroll ? Math.abs(finalScrollX - currentScrollX) > 0.1 : false;
+      const needsScrollY = this.isFirstRender || hasPreservedScroll ? Math.abs(finalScrollY - currentScrollY) > 0.1 : false;
       
       // Debug: Update debug panel with scroll decision
       // Always show debug on mobile, not just when player moved
@@ -550,11 +557,19 @@ class DOMRenderer extends RendererInterface {
         
         if (debugEl) {
           let debugText = `Player Pos: (${playerPos.x}, ${playerPos.y})\n`;
+          debugText += `Player Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}\n`;
           debugText += `Player Screen: X=${Math.round(playerScreenX)} Y=${Math.round(playerScreenY)}\n`;
           debugText += `Current Scroll: X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}\n`;
+          debugText += `Calculated Scroll: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}\n`;
           debugText += `Final Scroll: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}\n`;
           debugText += `Will scroll: X=${needsScrollX} Y=${needsScrollY}\n`;
           debugText += `First Render: ${this.isFirstRender}\n`;
+          
+          // Show previous pixel position for comparison
+          if (this.lastPlayerPixelX !== null) {
+            debugText += `\nLast Pixel: X=${Math.round(this.lastPlayerPixelX)} Y=${Math.round(this.lastPlayerPixelY)}\n`;
+            debugText += `Pixel Delta: X=${Math.round(playerPixelX - this.lastPlayerPixelX)} Y=${Math.round(playerPixelY - this.lastPlayerPixelY)}\n`;
+          }
           
           // Add bounds change info (most important for debugging the offset issue)
           if (this._lastBoundsChange) {
@@ -563,11 +578,13 @@ class DOMRenderer extends RendererInterface {
             debugText += `New: X(${this._lastBoundsChange.newBounds.minX}-${this._lastBoundsChange.newBounds.maxX}) Y(${this._lastBoundsChange.newBounds.minY}-${this._lastBoundsChange.newBounds.maxY})\n`;
             debugText += `Delta: X=${this._lastBoundsChange.deltaMinX} Y=${this._lastBoundsChange.deltaMinY}\n`;
             debugText += `Scroll adj: X=${Math.round(this._lastBoundsChange.scrollAdjustX)} Y=${Math.round(this._lastBoundsChange.scrollAdjustY)}\n`;
-            
-            // Show preserved scroll if available
-            if (preservedScroll) {
-              debugText += `Preserved scroll: X=${Math.round(preservedScroll.x)} Y=${Math.round(preservedScroll.y)}\n`;
-            }
+          }
+          
+          // Show preserved scroll info
+          if (preservedScroll) {
+            debugText += `\n=== PRESERVED SCROLL ===\n`;
+            debugText += `Preserved: X=${Math.round(preservedScroll.x)} Y=${Math.round(preservedScroll.y)}\n`;
+            debugText += `Using preserved: ${preservedScroll ? 'YES' : 'NO'}\n`;
           }
           
           // Add spacer info
@@ -829,13 +846,35 @@ class DOMRenderer extends RendererInterface {
     let savedScrollX = boardEl.scrollLeft;
     let savedScrollY = boardEl.scrollTop;
     
+    // Debug: Log scroll before adjustment
+    if (boundsChanged && window.innerWidth <= 768) {
+      console.log('Before scroll adjustment:', {
+        savedScrollX,
+        savedScrollY,
+        boundsChanged,
+        deltaMinX: this._lastBoundsChange?.deltaMinX,
+        deltaMinY: this._lastBoundsChange?.deltaMinY,
+        scrollAdjustX: this._lastBoundsChange?.scrollAdjustX,
+        scrollAdjustY: this._lastBoundsChange?.scrollAdjustY
+      });
+    }
+    
     // Adjust scroll position when bounds change to maintain relative offset
     // When board expands, the player's pixel position relative to board changes
     // We need to adjust scroll to compensate and maintain the same visual position
     // This maintains the relative offset from center (not auto-centering)
-    if (boundsChanged && this.lastBoardBounds && !this.isFirstRender) {
+    if (boundsChanged && this.lastBoardBounds && !this.isFirstRender && this._lastBoundsChange) {
       savedScrollX += this._lastBoundsChange.scrollAdjustX;
       savedScrollY += this._lastBoundsChange.scrollAdjustY;
+      
+      // Debug: Log scroll after adjustment
+      if (window.innerWidth <= 768) {
+        console.log('After scroll adjustment:', {
+          savedScrollX,
+          savedScrollY,
+          adjustmentApplied: true
+        });
+      }
       
       // Clamp to valid range (will be clamped again after board rebuild)
       savedScrollX = Math.max(0, savedScrollX);
