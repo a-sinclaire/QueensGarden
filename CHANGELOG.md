@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-01-XX
+
+### Fixed
+- **CRITICAL**: Fixed vertical and horizontal scrolling on mobile and desktop
+  - Container now properly constrained to viewport height
+  - Board content scrolls correctly in both directions
+  - Fixed container expansion issues that prevented scrolling
+- Fixed board reset on new game/refresh
+- Fixed buffer zone updates - tiles now reveal correctly outside buffer
+- Fixed display of rank "10" (was showing "ten")
+- Fixed mobile HUD party display - queens now show with suit symbols
+- Fixed cache-busting system for CSS files
+- Fixed debug panel visibility (now properly hidden)
+
+### Changed
+- Refactored board rendering to update tiles in place instead of clearing DOM
+  - Improves performance and preserves scroll position
+  - All 21x21 tiles created initially, visibility managed dynamically
+- Improved mobile HUD display
+  - Party suits (queens) now display with symbols (♥♦♣♠)
+  - Kings display with used/available indicators
+  - Health display fixed
+- Improved board centering on game start/reset/refresh
+- Container height now uses viewport-based calculation for proper scrolling
+
+### Added
+- Mobile HUD with health, party suits, and kings display
+- Auto-centering board on central chamber at game start/reset/refresh
+- Improved touch event handling for mobile scrolling
+- Better scroll position management during board updates
+
+### Removed
+- Debug panel and debug border (hidden for production)
+- Zoom functionality (removed after testing)
+
+## [Unreleased]
+
 ### Changed
 - Increased dead zone size from 50% to 70% for camera scrolling
 - Fixed camera scroll direction (now scrolls correctly when player leaves dead zone)
