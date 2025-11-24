@@ -337,10 +337,10 @@ class DOMRenderer extends RendererInterface {
     // Calculate row width based on render bounds
     const rowWidth = (renderMaxX - renderMinX + 1) * totalTileWidth;
     
-    // CRITICAL: Do NOT set fixed width here - it breaks vertical scrolling!
-    // Only set min-width to ensure container is wide enough for horizontal scrolling
-    // The container must be able to grow vertically, so we use min-width, not width
-    boardEl.style.minWidth = `${rowWidth}px`;
+    // CRITICAL: Do NOT set minWidth or width here - it prevents scrolling!
+    // Container must stay constrained to parent width for scrolling to work.
+    // Rows inside have width: max-content which makes them wider than container.
+    // This creates overflow which enables horizontal scrolling.
     
     // Create rows (from top to bottom, y descending)
     // Render all tiles in the render bounds (revealed tiles + buffer)
