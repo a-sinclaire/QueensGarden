@@ -337,9 +337,16 @@ class DOMRenderer extends RendererInterface {
     // Calculate row width based on render bounds
     const rowWidth = (renderMaxX - renderMinX + 1) * totalTileWidth;
     
-    // Set container min-width to ensure it's wide enough for horizontal scrolling
-    // Don't set fixed width - let it grow vertically naturally
-    boardEl.style.minWidth = `${rowWidth}px`;
+    // Get container padding to calculate total width needed
+    const computedStyle = window.getComputedStyle(boardEl);
+    const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+    const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+    
+    // Set container width to row width + padding to ensure it's wide enough for horizontal scrolling
+    // This ensures the container is exactly as wide as needed, enabling left/right scrolling
+    const totalContainerWidth = rowWidth + paddingLeft + paddingRight;
+    boardEl.style.width = `${totalContainerWidth}px`;
+    boardEl.style.minWidth = `${totalContainerWidth}px`;
     
     // Create rows (from top to bottom, y descending)
     // Render all tiles in the render bounds (revealed tiles + buffer)
@@ -803,10 +810,13 @@ class DOMRenderer extends RendererInterface {
     const computedStyle = window.getComputedStyle(boardEl);
     const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
     const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+    const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+    const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
     
     // Calculate position - board starts at top-left of first row, accounting for padding
     // Rows are rendered from maxY down to minY, so top row is at y=maxY
     // The debug rectangle should outline the entire grid area
+    // Position it exactly where the rows start (after padding)
     const debugRect = document.createElement('div');
     debugRect.className = 'board-boundary-debug';
     debugRect.style.cssText = `
@@ -821,6 +831,16 @@ class DOMRenderer extends RendererInterface {
       z-index: 1000;
       background: transparent;
     `;
+    
+    // Debug info: log container and board dimensions
+    console.log('Board Debug:', {
+      containerWidth: boardEl.offsetWidth,
+      containerScrollWidth: boardEl.scrollWidth,
+      rowWidth: rowWidth,
+      boardWidth: boardWidth,
+      padding: { top: paddingTop, left: paddingLeft, right: paddingRight, bottom: paddingBottom },
+      viewportWidth: window.innerWidth
+    });
     
     // Add corner markers for easier visualization
     const corners = [
