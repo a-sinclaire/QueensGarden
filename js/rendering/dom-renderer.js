@@ -913,7 +913,8 @@ class DOMRenderer extends RendererInterface {
       const playerPixelY = tileStartY + (tileHeight / 2);
       const minBoardHeightForScroll = Math.max(
         expectedBoardHeight,
-        playerPixelY + (viewportHeight / 2)
+        playerPixelY + (viewportHeight / 2), // Tall enough to scroll down to center player
+        playerPixelY + viewportHeight // Allow scrolling up to center (extra space above)
       );
       
       if (minBoardHeightForScroll > viewportHeight) {
