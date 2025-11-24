@@ -476,8 +476,9 @@ class DOMRenderer extends RendererInterface {
       // Calculate expected board width from bounds (height already calculated above)
       const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
       
-      // Use the larger of actual scroll height or minimum needed height
-      const boardWidth = actualScrollWidth > 0 ? actualScrollWidth : expectedBoardWidth;
+      // Use the larger of actual scroll dimensions or minimum needed dimensions
+      // (minBoardWidthForScroll and minBoardHeightForScroll already calculated above)
+      const boardWidth = Math.max(actualScrollWidth, expectedBoardWidth, minBoardWidthForScroll);
       const boardHeight = Math.max(actualScrollHeight, minBoardHeightForScroll);
       
       // Calculate max scroll positions
@@ -909,46 +910,84 @@ class DOMRenderer extends RendererInterface {
       boardEl.appendChild(row);
     }
     
-    // Add spacer at bottom to ensure board is tall enough for scrolling (mobile only)
+    // Add spacers to ensure board is large enough for scrolling in all directions (mobile only)
     if (window.innerWidth <= 768) {
+      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
       const tileHeight = window.innerWidth <= 480 ? 85 : 90;
       const gap = 2;
+      const totalTileWidth = tileWidth + gap;
       const totalTileHeight = tileHeight + gap;
       const computedStyle = window.getComputedStyle(boardEl);
       const padding = parseInt(computedStyle.paddingTop) || parseInt(computedStyle.paddingLeft) || 8;
       const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
-      // Use window.innerHeight, not clientHeight (container may have grown)
+      const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
+      const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
+      
+      // Calculate player pixel positions
+      const playerXOffset = playerPos.x - minX;
       const playerYOffset = maxY - playerPos.y;
+      const tileStartX = padding + (playerXOffset * totalTileWidth);
       const tileStartY = padding + (playerYOffset * totalTileHeight);
+      const playerPixelX = tileStartX + (tileWidth / 2);
       const playerPixelY = tileStartY + (tileHeight / 2);
+      
+      // Calculate minimum dimensions needed for centering in all directions
       const minBoardHeightForScroll = Math.max(
         expectedBoardHeight,
-        playerPixelY + (viewportHeight / 2), // Tall enough to scroll down to center player
-        playerPixelY + viewportHeight // Allow scrolling up to center (extra space above)
+        playerPixelY + (viewportHeight / 2), // Tall enough to scroll down to center
+        playerPixelY + viewportHeight // Allow scrolling up to center
+      );
+      const minBoardWidthForScroll = Math.max(
+        expectedBoardWidth,
+        playerPixelX + (viewportWidth / 2), // Wide enough to scroll right to center
+        playerPixelX + viewportWidth // Allow scrolling left to center
       );
       
+      // Add bottom spacer for vertical scrolling
       if (minBoardHeightForScroll > viewportHeight) {
-        // Add spacer to make content tall enough
-        let spacer = boardEl.querySelector('.scroll-spacer');
+        let spacer = boardEl.querySelector('.scroll-spacer-bottom');
         if (!spacer) {
           spacer = document.createElement('div');
-          spacer.className = 'scroll-spacer';
+          spacer.className = 'scroll-spacer-bottom';
           spacer.style.width = '100%';
           spacer.style.flexShrink = '0';
           boardEl.appendChild(spacer);
         }
-        // Calculate spacer height needed
         void boardEl.offsetHeight; // Force reflow
         const currentScrollHeight = boardEl.scrollHeight;
         const spacerHeight = Math.max(0, minBoardHeightForScroll - currentScrollHeight);
         spacer.style.height = `${spacerHeight}px`;
       } else {
-        // Remove spacer if not needed
-        const spacer = boardEl.querySelector('.scroll-spacer');
+        const spacer = boardEl.querySelector('.scroll-spacer-bottom');
         if (spacer) {
           spacer.remove();
         }
+      }
+      
+      // Add right spacer for horizontal scrolling (add to each row)
+      if (minBoardWidthForScroll > viewportWidth) {
+        const rows = boardEl.querySelectorAll('.board-row');
+        rows.forEach(row => {
+          let spacer = row.querySelector('.scroll-spacer-right');
+          if (!spacer) {
+            spacer = document.createElement('div');
+            spacer.className = 'scroll-spacer-right';
+            spacer.style.height = '100%';
+            spacer.style.flexShrink = '0';
+            spacer.style.display = 'inline-block';
+            spacer.style.verticalAlign = 'top';
+            row.appendChild(spacer);
+          }
+          void row.offsetWidth; // Force reflow
+          const currentRowWidth = row.scrollWidth;
+          const spacerWidth = Math.max(0, minBoardWidthForScroll - currentRowWidth);
+          spacer.style.width = `${spacerWidth}px`;
+        });
+      } else {
+        // Remove spacers from all rows
+        const spacers = boardEl.querySelectorAll('.scroll-spacer-right');
+        spacers.forEach(spacer => spacer.remove());
       }
     }
     
