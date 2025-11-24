@@ -24,6 +24,8 @@ class DOMRenderer extends RendererInterface {
     this.isFirstRender = true;
     // Track previous board bounds to detect bounds changes
     this.lastBoardBounds = null;
+    // Track if user has manually scrolled (if true, don't auto-center)
+    this.hasManuallyScrolled = false;
     // Cache-bust color for debugging (changes with each deployment)
     this.cacheBustColor = this._getCacheBustColor();
   }
@@ -326,14 +328,16 @@ class DOMRenderer extends RendererInterface {
       const actualScrollX = preservedScroll ? preservedScroll.x : boardEl.scrollLeft;
       const actualScrollY = preservedScroll ? preservedScroll.y : boardEl.scrollTop;
       
-      // If scroll position changed significantly from what we stored, user manually scrolled
-      // We'll update stored positions after calculating current player pixel position
-      let detectedManualScroll = false;
-      if (this.lastScrollX !== null && this.lastScrollY !== null) {
+      // Detect manual scrolling: if scroll changed and we didn't cause it, user scrolled manually
+      if (this.lastScrollX !== null && this.lastScrollY !== null && !this.isFirstRender) {
         const scrollThreshold = 5; // 5px threshold to detect manual scrolling
         if (Math.abs(actualScrollX - this.lastScrollX) > scrollThreshold ||
             Math.abs(actualScrollY - this.lastScrollY) > scrollThreshold) {
-          detectedManualScroll = true;
+          // Check if this change was from board expansion adjustment
+          // If preserved scroll exists, it was from board rebuild, not manual scroll
+          if (!preservedScroll) {
+            this.hasManuallyScrolled = true;
+          }
         }
       }
       // Calculate tile size (including gap) - match CSS values
@@ -401,8 +405,8 @@ class DOMRenderer extends RendererInterface {
       const playerScreenX = playerPixelX - currentScrollX;
       const playerScreenY = playerPixelY - currentScrollY;
       
-      // Calculate scroll position needed to center the queen
-      // On first render, use spacers that were added in _updateBoard
+      // Calculate scroll position needed
+      // ONLY center on first render - after that, maintain relative offset
       let scrollX = currentScrollX;
       let scrollY = currentScrollY;
       
@@ -417,7 +421,7 @@ class DOMRenderer extends RendererInterface {
         scrollX = centerScrollX + leftSpacer;
         scrollY = centerScrollY + topSpacer;
       }
-      // After first render: no auto-scrolling, keep current scroll
+      // After first render: keep current scroll (no auto-centering)
       
       // Calculate minimum board dimensions needed to allow scrolling to center player in all directions
       // For first render centering: need enough space to scroll to center position
@@ -519,7 +523,7 @@ class DOMRenderer extends RendererInterface {
       const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
       
       // Determine if we need to scroll
-      // CRITICAL: Only scroll on first render (centering), disable auto-scroll on movement
+      // ONLY scroll on first render (centering) - after that, maintain relative offset
       const scrollThreshold = 1;
       const needsScrollX = this.isFirstRender ? Math.abs(finalScrollX - currentScrollX) > 0.1 : false;
       const needsScrollY = this.isFirstRender ? Math.abs(finalScrollY - currentScrollY) > 0.1 : false;
