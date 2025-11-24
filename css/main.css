@@ -25,6 +25,8 @@ body {
   background-color: var(--bg-color);
   color: var(--text-color);
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw; /* Constrain to viewport width */
   /* Prevent text selection and touch callouts on mobile */
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -43,6 +45,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100vw; /* Constrain to viewport width */
 }
 
 header {
@@ -152,6 +156,8 @@ header h1 {
   flex-direction: column;
   padding: 1rem;
   overflow-y: auto;
+  width: 100%;
+  max-width: 100%; /* Constrain width */
 }
 
 .game-layout {
@@ -160,6 +166,7 @@ header h1 {
   flex: 1;
   min-height: 0;
   width: 100%;
+  max-width: 100%; /* Constrain width */
   height: 100%;
   margin: 0;
   padding: 0;
