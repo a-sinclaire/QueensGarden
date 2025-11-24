@@ -562,6 +562,9 @@ class DOMRenderer extends RendererInterface {
       boardEl.appendChild(row);
     }
     
+    // Add debug rectangle showing board boundaries (21x21 grid from -10 to +10)
+    this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, totalTileWidth, totalTileHeight);
+    
   }
   
   /**
@@ -781,6 +784,99 @@ class DOMRenderer extends RendererInterface {
     // Clear all highlights
   }
   
+  /**
+   * Add debug rectangle showing board boundaries
+   * @private
+   */
+  _addBoardBoundaryDebug(boardEl, minX, maxX, minY, maxY, totalTileWidth, totalTileHeight) {
+    // Remove existing debug rectangle if present
+    const existingDebug = boardEl.querySelector('.board-boundary-debug');
+    if (existingDebug) {
+      existingDebug.remove();
+    }
+    
+    // Calculate board dimensions (21x21 tiles from -10 to +10)
+    const boardWidth = (maxX - minX + 1) * totalTileWidth;
+    const boardHeight = (maxY - minY + 1) * totalTileHeight;
+    
+    // Calculate position - board starts at top-left of first row
+    // Rows are rendered from maxY down to minY, so top row is at y=maxY
+    // The debug rectangle should outline the entire grid area
+    const debugRect = document.createElement('div');
+    debugRect.className = 'board-boundary-debug';
+    debugRect.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: ${boardWidth}px;
+      height: ${boardHeight}px;
+      border: 3px solid #ff0000;
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 1000;
+      background: transparent;
+    `;
+    
+    // Add corner markers for easier visualization
+    const corners = [
+      { top: '0', left: '0', label: `(${minX},${maxY})` },
+      { top: '0', right: '0', left: 'auto', label: `(${maxX},${maxY})` },
+      { bottom: '0', left: '0', top: 'auto', label: `(${minX},${minY})` },
+      { bottom: '0', right: '0', top: 'auto', left: 'auto', label: `(${maxX},${minY})` }
+    ];
+    
+    corners.forEach((corner, index) => {
+      const marker = document.createElement('div');
+      marker.style.cssText = `
+        position: absolute;
+        ${corner.top !== undefined ? `top: ${corner.top};` : ''}
+        ${corner.bottom !== undefined ? `bottom: ${corner.bottom};` : ''}
+        ${corner.left !== undefined ? `left: ${corner.left};` : ''}
+        ${corner.right !== undefined ? `right: ${corner.right};` : ''}
+        width: 20px;
+        height: 20px;
+        background: rgba(255, 0, 0, 0.5);
+        border: 2px solid #ff0000;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 1001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        color: #fff;
+        font-weight: bold;
+      `;
+      marker.textContent = corner.label;
+      debugRect.appendChild(marker);
+    });
+    
+    // Add center marker (0,0)
+    const centerMarker = document.createElement('div');
+    centerMarker.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 30px;
+      height: 30px;
+      background: rgba(0, 255, 0, 0.5);
+      border: 2px solid #00ff00;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #fff;
+      font-weight: bold;
+    `;
+    centerMarker.textContent = '(0,0)';
+    debugRect.appendChild(centerMarker);
+    
+    boardEl.appendChild(debugRect);
+  }
 }
 
 // Export for use in other modules
