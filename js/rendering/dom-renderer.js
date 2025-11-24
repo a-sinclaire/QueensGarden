@@ -373,7 +373,6 @@ class DOMRenderer extends RendererInterface {
     tileEl.style.border = '';
     tileEl.style.cursor = '';
     tileEl.title = '';
-    tileEl.style.visibility = 'visible'; // Ensure tile is visible when updating
     
     // Remove player marker if it exists
     const existingMarker = tileEl.querySelector('.tile-player-marker');
@@ -558,15 +557,39 @@ class DOMRenderer extends RendererInterface {
         // Only populate content if tile should be visible (revealed or within buffer)
         const shouldPopulate = tilesToPopulate.has(key);
         if (!shouldPopulate) {
-          // Hide tile but keep it in DOM for grid structure
-          tileEl.style.visibility = 'hidden';
-          tileEl.style.opacity = '0';
+          // Create invisible spacer to maintain grid structure without rendering content
+          // Remove tile if it exists and replace with spacer
+          if (this.tileElements.has(key)) {
+            tileEl.remove();
+            this.tileElements.delete(key);
+          }
+          // Check if spacer already exists
+          const existingSpacer = Array.from(row.children).find(child => 
+            child.dataset.x === x.toString() && child.dataset.y === y.toString() && child.style.visibility === 'hidden'
+          );
+          if (!existingSpacer) {
+            const spacer = document.createElement('div');
+            spacer.style.width = `${tileWidth}px`;
+            spacer.style.height = `${tileHeight}px`;
+            spacer.style.flexShrink = '0';
+            spacer.style.visibility = 'hidden';
+            spacer.dataset.x = x.toString();
+            spacer.dataset.y = y.toString();
+            // Insert spacer at correct position
+            const insertBefore = Array.from(row.children).find(child => {
+              const childX = parseInt(child.dataset.x || '999');
+              return childX > x;
+            });
+            if (insertBefore) {
+              row.insertBefore(spacer, insertBefore);
+            } else {
+              row.appendChild(spacer);
+            }
+          }
           continue;
         }
         
         // Show tile and update visual state
-        tileEl.style.visibility = 'visible';
-        tileEl.style.opacity = '';
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
       }
     }
