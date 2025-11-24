@@ -28,9 +28,9 @@ class DOMRenderer extends RendererInterface {
     this._lastBoundsChange = null;
     // Track spacer sizes (set once on first render, then stay fixed)
     this._spacersInitialized = false;
-    // Track current scroll adjustment (updated when bounds change)
-    this._currentScrollX = 0;
-    this._currentScrollY = 0;
+    // Track initial scroll (calculated once, never changes since bounds are fixed)
+    this._initialScrollX = null;
+    this._initialScrollY = null;
     // Cache-bust color for debugging (changes with each deployment)
     this.cacheBustColor = this._getCacheBustColor();
   }
@@ -137,9 +137,10 @@ class DOMRenderer extends RendererInterface {
           clearTimeout(scrollTimeout);
         }
         scrollTimeout = setTimeout(() => {
-          // Update tracked scroll to match manual scroll
-          this._currentScrollX = boardContainer.scrollLeft;
-          this._currentScrollY = boardContainer.scrollTop;
+          // User manually scrolled - update initial scroll to match
+          // This allows manual scrolling to work, but we don't auto-update scroll on every render
+          this._initialScrollX = boardContainer.scrollLeft;
+          this._initialScrollY = boardContainer.scrollTop;
         }, 50);
       }, { passive: true });
     }
@@ -724,8 +725,10 @@ class DOMRenderer extends RendererInterface {
           debugEl.textContent += `\n  Tracked Scroll: X=${Math.round(this._currentScrollX)} Y=${Math.round(this._currentScrollY)}`;
           debugEl.textContent += `\n  Actual DOM Scroll: X=${Math.round(actualScrollAfter)} Y=${Math.round(actualScrollYAfter)}`;
           debugEl.textContent += `\n  Stored Scroll: X=${Math.round(this.lastScrollX)} Y=${Math.round(this.lastScrollY)}`;
-          debugEl.textContent += `\n  Scroll Match X: ${Math.abs(actualScrollAfter - this._currentScrollX) < 1}`;
-          debugEl.textContent += `\n  Scroll Match Y: ${Math.abs(actualScrollYAfter - this._currentScrollY) < 1}`;
+          if (this._initialScrollX !== null && this._initialScrollY !== null) {
+            debugEl.textContent += `\n  Scroll Match X: ${Math.abs(actualScrollAfter - this._initialScrollX) < 1}`;
+            debugEl.textContent += `\n  Scroll Match Y: ${Math.abs(actualScrollYAfter - this._initialScrollY) < 1}`;
+          }
           
           // Check if scroll actually happened
           if (needsScrollX || needsScrollY) {
@@ -1118,9 +1121,9 @@ class DOMRenderer extends RendererInterface {
         this._centerScrollX = centerScrollX;
         this._centerScrollY = centerScrollY;
         
-        // Calculate initial scroll adjustment (to center player)
-        this._currentScrollX = centerScrollX + spacerWidth;
-        this._currentScrollY = centerScrollY + spacerHeight;
+        // Calculate initial scroll (to center player) - set once, never change
+        this._initialScrollX = centerScrollX + spacerWidth;
+        this._initialScrollY = centerScrollY + spacerHeight;
         
         this._spacersInitialized = true;
       }
@@ -1218,43 +1221,23 @@ class DOMRenderer extends RendererInterface {
       }
     }
     
-    // Apply scroll adjustment AFTER spacers are added (mobile only)
-    // This ensures the board is tall/wide enough to actually scroll
-    if (window.innerWidth <= 768) {
+    // Apply initial scroll ONCE after spacers are added (mobile only)
+    // Since bounds are fixed, we only need to set scroll once
+    if (window.innerWidth <= 768 && this._initialScrollX !== null && this._initialScrollY !== null) {
       // Use requestAnimationFrame to ensure DOM is fully rendered with spacers
       requestAnimationFrame(() => {
         // Force a reflow to ensure scrollHeight is calculated correctly
         void boardEl.offsetHeight;
         
-        // Ensure board has enough height/width to scroll
-        const currentScrollHeight = boardEl.scrollHeight;
-        const currentScrollWidth = boardEl.scrollWidth;
-        const clientHeight = boardEl.clientHeight;
-        const clientWidth = boardEl.clientWidth;
-        
-        // Always try to set scroll - browser will clamp if needed
-        boardEl.scrollLeft = this._currentScrollX;
-        boardEl.scrollTop = this._currentScrollY;
+        // Set scroll once - bounds never change so scroll never needs to change
+        boardEl.scrollLeft = this._initialScrollX;
+        boardEl.scrollTop = this._initialScrollY;
         
         // Force a second frame to ensure scroll sticks
         requestAnimationFrame(() => {
-          // Force another reflow
           void boardEl.offsetHeight;
-          
-          boardEl.scrollLeft = this._currentScrollX;
-          boardEl.scrollTop = this._currentScrollY;
-          
-          // Debug logging
-          console.log('Scroll applied:', {
-            tracked: { x: this._currentScrollX, y: this._currentScrollY },
-            actual: { x: boardEl.scrollLeft, y: boardEl.scrollTop },
-            scrollSize: { w: boardEl.scrollWidth, h: boardEl.scrollHeight },
-            clientSize: { w: boardEl.clientWidth, h: boardEl.clientHeight },
-            canScrollY: boardEl.scrollHeight > boardEl.clientHeight,
-            canScrollX: boardEl.scrollWidth > boardEl.clientWidth,
-            maxScrollY: Math.max(0, boardEl.scrollHeight - boardEl.clientHeight),
-            maxScrollX: Math.max(0, boardEl.scrollWidth - boardEl.clientWidth)
-          });
+          boardEl.scrollLeft = this._initialScrollX;
+          boardEl.scrollTop = this._initialScrollY;
         });
       });
     }
