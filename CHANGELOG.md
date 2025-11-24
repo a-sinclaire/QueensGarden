@@ -7,7 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] - 2025-01-XX
+## [1.3.0] - 2025-11-24
+
+### Fixed
+- Fixed game over screen text display (was looking for wrong element ID)
+- Fixed final king victory timing - game now ends immediately when collecting final king, before Jack damage
+- Fixed Ace damage calculation - now correctly deals 1 damage (was sometimes dealing 2)
+- Fixed double damage from double-firing tile clicks (touch + click events)
+- Fixed desktop deck counter display (was stuck at 0)
+- Prevented moving to the same position (prevents teleporting to yourself)
+- Fixed row and tile ordering - tiles now render in correct X/Y order
+- Fixed buffer zone expansion - tiles now reveal correctly as you explore
+- Fixed duplicate tileEl declaration error
+
+### Changed
+- Consolidated teleport logic into move logic - all movement now uses `moveToPosition()`
+  - Removed separate `teleport()` method
+  - Aces are now just valid move destinations, not a separate action
+  - Simplified click handler to use single code path
+- Reordered action sequence for moves/teleports:
+  1. Card collection and victory check (FIRST)
+  2. Damage from tile you're standing on
+  3. Reveal adjacent tiles
+  4. Check Jack adjacent damage
+  5. Check game over conditions (death)
+- Made card values read from `GAME_RULES` config instead of hard-coded
+- Made board size configurable via `GAME_RULES.board.size`
+- Made buffer zone size configurable via `GAME_RULES.board.bufferZoneSize`
+- Made tile dimensions configurable via `GAME_RULES.rendering` section
+- Health display now uses `GAME_RULES.startingHealth` instead of hard-coded 20
+- Victory condition check now uses `totalKingsToWin - 1` instead of hard-coded 3
+- Teleport destinations now exclude the Ace you're standing on
+
+### Added
+- `moveToPosition(x, y)` method that handles both adjacent moves and teleports
+- Cooldown mechanism (300ms) to prevent duplicate tile clicks from touch+click events
+- Configurable rendering settings in `game-rules.js`:
+  - `board.size` - board size in each direction (default: 10)
+  - `board.bufferZoneSize` - tiles to show around revealed tiles (default: 2)
+  - `rendering.tileWidth` - mobile/desktop tile widths
+  - `rendering.tileHeight` - mobile/desktop tile heights
+  - `rendering.tileGap` - gap between tiles
+  - `rendering.mobileBreakpoint` - viewport width threshold
+
+## [1.2.0] - 2025-11-24
 
 ### Fixed
 - **CRITICAL**: Fixed vertical and horizontal scrolling on mobile and desktop
