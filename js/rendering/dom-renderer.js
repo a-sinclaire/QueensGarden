@@ -602,25 +602,28 @@ class DOMRenderer extends RendererInterface {
     }
     
     // Get the tile's position relative to the board container
+    // getBoundingClientRect() gives viewport-relative positions
     const tileRect = centralChamberTile.getBoundingClientRect();
     const containerRect = boardEl.getBoundingClientRect();
     
-    // Calculate the center of the tile
-    const tileCenterX = tileRect.left - containerRect.left + (tileRect.width / 2);
-    const tileCenterY = tileRect.top - containerRect.top + (tileRect.height / 2);
+    // Calculate the tile's position relative to the container's scrollable content
+    // Need to account for current scroll position
+    const tileCenterX = (tileRect.left - containerRect.left) + (tileRect.width / 2) + boardEl.scrollLeft;
+    const tileCenterY = (tileRect.top - containerRect.top) + (tileRect.height / 2) + boardEl.scrollTop;
     
     // Calculate the center of the container viewport
     const containerCenterX = boardEl.clientWidth / 2;
     const containerCenterY = boardEl.clientHeight / 2;
     
     // Calculate scroll offset needed to center the tile
-    const scrollLeft = tileCenterX - containerCenterX + boardEl.scrollLeft;
-    const scrollTop = tileCenterY - containerCenterY + boardEl.scrollTop;
+    // Subtract container center to get the scroll position that centers the tile
+    const scrollLeft = tileCenterX - containerCenterX;
+    const scrollTop = tileCenterY - containerCenterY;
     
     // Scroll to center the central chamber
     boardEl.scrollTo({
-      left: scrollLeft,
-      top: scrollTop,
+      left: Math.max(0, scrollLeft), // Ensure non-negative
+      top: Math.max(0, scrollTop),  // Ensure non-negative
       behavior: 'auto' // Instant scroll, no animation
     });
   }
