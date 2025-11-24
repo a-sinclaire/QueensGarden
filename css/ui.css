@@ -39,6 +39,9 @@
     /* Mobile-specific: touch scrolling enhancements */
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
+    /* Ensure scrolling is enabled */
+    overflow-x: auto !important;
+    overflow-y: auto !important;
   }
 }
 
@@ -100,6 +103,7 @@
   overflow: hidden;
   min-height: 0;
   width: 100%;
+  max-width: 100%; /* Constrain width to prevent expansion */
   height: 100%;
 }
 
