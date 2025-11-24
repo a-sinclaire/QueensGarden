@@ -122,9 +122,6 @@ class GameEngine {
    * Move player to a specific position (handles both adjacent moves and teleports)
    */
   moveToPosition(x, y) {
-    // Debug: Log all moveToPosition calls
-    console.log('moveToPosition called:', { x, y, currentPos: this.player.position });
-    
     if (this.gameOver) {
       return { success: false, message: 'Game is over' };
     }
@@ -135,7 +132,6 @@ class GameEngine {
     // Validate move (this now handles both adjacent moves and teleports)
     const validation = this.rulesEngine.canMove(currentPos, newPos, this.board, this.player);
     if (!validation.valid) {
-      console.log('Move validation failed:', validation.reason);
       return { success: false, message: validation.reason };
     }
     
@@ -164,28 +160,8 @@ class GameEngine {
     // STEP 2: Calculate and apply damage from stepping on tile
     // Use calculateDamage for all moves (including teleports) - Aces deal 1 damage
     const damage = this.rulesEngine.calculateDamage(targetTile, this.player);
-    // Debug: Log damage calculation for Aces
-    if (targetTile.card && targetTile.card.getType() === 'ace' && damage > 0) {
-      console.log('Ace damage calculation:', {
-        cardValue: targetTile.card.value,
-        calculatedDamage: damage,
-        isImmune: this.player.isImmuneTo(targetTile.card.suit),
-        card: targetTile.card
-      });
-    }
     if (damage > 0) {
-      const healthBefore = this.player.health;
       this.player.takeDamage(damage);
-      const healthAfter = this.player.health;
-      // Debug: Check if damage was applied correctly
-      if (targetTile.card && targetTile.card.getType() === 'ace') {
-        console.log('Damage application:', {
-          damageAmount: damage,
-          healthBefore,
-          healthAfter,
-          healthDifference: healthBefore - healthAfter
-        });
-      }
       this.renderer.onDamage(damage, this.player.health);
     }
     

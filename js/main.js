@@ -284,6 +284,10 @@ function toggleDestroyMode() {
   }
 }
 
+// Track last tile click to prevent double-firing from touch + click events
+let lastTileClick = { x: null, y: null, time: 0 };
+const TILE_CLICK_COOLDOWN = 300; // ms - prevent same tile click within 300ms
+
 /**
  * Handle tile click for movement, destroy mode, and teleportation
  */
@@ -291,6 +295,13 @@ function handleTileClick(x, y) {
   if (!gameEngine) {
     return;
   }
+  
+  // Prevent double-firing from both touch and click events
+  const now = Date.now();
+  if (lastTileClick.x === x && lastTileClick.y === y && (now - lastTileClick.time) < TILE_CLICK_COOLDOWN) {
+    return; // Ignore duplicate click within cooldown period
+  }
+  lastTileClick = { x, y, time: now };
   
   // Handle destroy mode
   if (destroyMode && selectedKing) {
@@ -319,11 +330,9 @@ function handleTileClick(x, y) {
   
   // Handle all moves (both adjacent and teleport) using moveToPosition
   // This consolidates move and teleport logic into one place
-  console.log('handleTileClick called:', { x, y, playerPos });
   const result = gameEngine.moveToPosition(x, y);
   if (!result.success) {
     // Visual feedback for invalid move
-    console.log('Cannot move:', result.message);
     // Don't alert for same position - just silently ignore
     if (result.message !== 'Cannot move to the same position') {
       alert(result.message);
