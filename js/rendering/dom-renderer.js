@@ -620,12 +620,30 @@ class DOMRenderer extends RendererInterface {
     const scrollLeft = tileCenterX - containerCenterX;
     const scrollTop = tileCenterY - containerCenterY;
     
+    // Debug info
+    console.log('Center Board Debug:', {
+      tileRect: { left: tileRect.left, top: tileRect.top, width: tileRect.width, height: tileRect.height },
+      containerRect: { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height },
+      currentScroll: { left: boardEl.scrollLeft, top: boardEl.scrollTop },
+      containerSize: { width: boardEl.clientWidth, height: boardEl.clientHeight },
+      containerScrollSize: { width: boardEl.scrollWidth, height: boardEl.scrollHeight },
+      tileCenter: { x: tileCenterX, y: tileCenterY },
+      containerCenter: { x: containerCenterX, y: containerCenterY },
+      calculatedScroll: { left: scrollLeft, top: scrollTop },
+      finalScroll: { left: Math.max(0, scrollLeft), top: Math.max(0, scrollTop) }
+    });
+    
     // Scroll to center the central chamber
     boardEl.scrollTo({
       left: Math.max(0, scrollLeft), // Ensure non-negative
       top: Math.max(0, scrollTop),  // Ensure non-negative
       behavior: 'auto' // Instant scroll, no animation
     });
+    
+    // Verify scroll happened
+    setTimeout(() => {
+      console.log('After scroll:', { left: boardEl.scrollLeft, top: boardEl.scrollTop });
+    }, 10);
   }
   
   /**
