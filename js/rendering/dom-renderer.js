@@ -328,6 +328,15 @@ class DOMRenderer extends RendererInterface {
       const actualScrollX = preservedScroll ? preservedScroll.x : boardEl.scrollLeft;
       const actualScrollY = preservedScroll ? preservedScroll.y : boardEl.scrollTop;
       
+      // Debug: Log preserved scroll info
+      if (preservedScroll && window.innerWidth <= 768) {
+        console.log('Using preserved scroll:', {
+          preserved: preservedScroll,
+          actual: { x: boardEl.scrollLeft, y: boardEl.scrollTop },
+          using: { x: actualScrollX, y: actualScrollY }
+        });
+      }
+      
       // After first render, we maintain relative offset - scroll is preserved and adjusted when board expands
       // Calculate tile size (including gap) - match CSS values
       // Store these for use in scroll calculation
@@ -609,6 +618,23 @@ class DOMRenderer extends RendererInterface {
           debugText += `\n\n=== CENTERING INFO ===`;
           debugText += `\n  Offset from center: X=${Math.round(offsetX)} Y=${Math.round(offsetY)}`;
           debugText += `\n  Spacers: Top=${this._topSpacerNeeded || 0} Bottom=${this._bottomSpacerNeeded || 0} Left=${this._leftSpacerNeeded || 0} Right=${this._rightSpacerNeeded || 0}`;
+          
+          // Add bounds change info
+          if (this.lastBoardBounds) {
+            const boundsChanged = (
+              this.lastBoardBounds.minX !== minX || this.lastBoardBounds.maxX !== maxX ||
+              this.lastBoardBounds.minY !== minY || this.lastBoardBounds.maxY !== maxY
+            );
+            if (boundsChanged) {
+              const deltaMinX = minX - this.lastBoardBounds.minX;
+              const deltaMinY = minY - this.lastBoardBounds.minY;
+              debugText += `\n\n=== BOUNDS CHANGE ===`;
+              debugText += `\n  Old bounds: X(${this.lastBoardBounds.minX}-${this.lastBoardBounds.maxX}) Y(${this.lastBoardBounds.minY}-${this.lastBoardBounds.maxY})`;
+              debugText += `\n  New bounds: X(${minX}-${maxX}) Y(${minY}-${maxY})`;
+              debugText += `\n  Delta: X=${deltaMinX} Y=${deltaMinY}`;
+              debugText += `\n  Scroll adjustment: X=${-deltaMinX * totalTileWidth} Y=${-deltaMinY * totalTileHeight}`;
+            }
+          }
           
           // Add first render specific info
           if (this.isFirstRender) {
