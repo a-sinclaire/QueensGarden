@@ -574,6 +574,9 @@ class DOMRenderer extends RendererInterface {
           debugText += `Tracked: X=${Math.round(this._currentScrollX)} Y=${Math.round(this._currentScrollY)}\n`;
           debugText += `DOM Scroll: X=${Math.round(actualScrollX)} Y=${Math.round(actualScrollY)}\n`;
           debugText += `Match: X=${Math.abs(actualScrollX - this._currentScrollX) < 1} Y=${Math.abs(actualScrollY - this._currentScrollY) < 1}\n`;
+          debugText += `Board Size: scrollWidth=${Math.round(boardEl.scrollWidth)} scrollHeight=${Math.round(boardEl.scrollHeight)}\n`;
+          debugText += `Viewport: clientWidth=${Math.round(boardEl.clientWidth)} clientHeight=${Math.round(boardEl.clientHeight)}\n`;
+          debugText += `Can Scroll: X=${boardEl.scrollWidth > boardEl.clientWidth} Y=${boardEl.scrollHeight > boardEl.clientHeight}\n`;
           
           // Add spacer info
           debugText += `\nSpacers: T=${Math.round(this._topSpacerNeeded || 0)} B=${Math.round(this._bottomSpacerNeeded || 0)} L=${Math.round(this._leftSpacerNeeded || 0)} R=${Math.round(this._rightSpacerNeeded || 0)}\n`;
@@ -1199,36 +1202,38 @@ class DOMRenderer extends RendererInterface {
     if (window.innerWidth <= 768) {
       // Use requestAnimationFrame to ensure DOM is fully rendered with spacers
       requestAnimationFrame(() => {
+        // Force a reflow to ensure scrollHeight is calculated correctly
+        void boardEl.offsetHeight;
+        
         // Ensure board has enough height/width to scroll
         const currentScrollHeight = boardEl.scrollHeight;
         const currentScrollWidth = boardEl.scrollWidth;
         const clientHeight = boardEl.clientHeight;
         const clientWidth = boardEl.clientWidth;
         
-        // Only set scroll if board is actually scrollable
-        if (currentScrollHeight > clientHeight || this._currentScrollY === 0) {
-          boardEl.scrollTop = this._currentScrollY;
-        }
-        if (currentScrollWidth > clientWidth || this._currentScrollX === 0) {
-          boardEl.scrollLeft = this._currentScrollX;
-        }
+        // Always try to set scroll - browser will clamp if needed
+        boardEl.scrollLeft = this._currentScrollX;
+        boardEl.scrollTop = this._currentScrollY;
         
         // Force a second frame to ensure scroll sticks
         requestAnimationFrame(() => {
+          // Force another reflow
+          void boardEl.offsetHeight;
+          
           boardEl.scrollLeft = this._currentScrollX;
           boardEl.scrollTop = this._currentScrollY;
           
           // Debug logging
-          if (window.DEBUG_SCROLL) {
-            console.log('Scroll applied:', {
-              tracked: { x: this._currentScrollX, y: this._currentScrollY },
-              actual: { x: boardEl.scrollLeft, y: boardEl.scrollTop },
-              scrollSize: { w: boardEl.scrollWidth, h: boardEl.scrollHeight },
-              clientSize: { w: boardEl.clientWidth, h: boardEl.clientHeight },
-              canScrollY: boardEl.scrollHeight > boardEl.clientHeight,
-              canScrollX: boardEl.scrollWidth > boardEl.clientWidth
-            });
-          }
+          console.log('Scroll applied:', {
+            tracked: { x: this._currentScrollX, y: this._currentScrollY },
+            actual: { x: boardEl.scrollLeft, y: boardEl.scrollTop },
+            scrollSize: { w: boardEl.scrollWidth, h: boardEl.scrollHeight },
+            clientSize: { w: boardEl.clientWidth, h: boardEl.clientHeight },
+            canScrollY: boardEl.scrollHeight > boardEl.clientHeight,
+            canScrollX: boardEl.scrollWidth > boardEl.clientWidth,
+            maxScrollY: Math.max(0, boardEl.scrollHeight - boardEl.clientHeight),
+            maxScrollX: Math.max(0, boardEl.scrollWidth - boardEl.clientWidth)
+          });
         });
       });
     }
