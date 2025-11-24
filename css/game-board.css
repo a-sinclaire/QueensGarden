@@ -8,10 +8,10 @@
 #game-board {
   width: 100% !important;
   max-width: 100% !important;
-  /* FIXED height - must be smaller than content for scrolling to work */
-  height: 500px !important; /* Force a fixed height for testing */
-  max-height: 500px !important;
-  min-height: 500px !important; /* Prevent shrinking */
+  /* Full viewport height - HUD overlays on top with position: fixed */
+  height: calc(100vh - 80px) !important; /* 80px for header */
+  max-height: calc(100vh - 80px) !important;
+  min-height: calc(100vh - 80px) !important; /* Prevent shrinking */
   overflow-x: scroll !important;
   overflow-y: scroll !important;
   padding: 0 !important;
@@ -27,9 +27,13 @@
 }
 
 @media (max-width: 768px) {
-  .board-container {
-    height: 400px !important; /* Fixed height for mobile */
-    max-height: 400px !important;
+  #game-board.board-container,
+  .board-container,
+  #game-board {
+    /* On mobile, header is hidden, so use full viewport */
+    height: 100vh !important;
+    max-height: 100vh !important;
+    min-height: 100vh !important;
   }
 }
 
