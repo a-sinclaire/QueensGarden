@@ -820,6 +820,9 @@ class DOMRenderer extends RendererInterface {
     
     // Debug info: log container and board dimensions
     const computedStyle = window.getComputedStyle(boardEl);
+    const firstRow = boardEl.querySelector('.board-row');
+    const firstRowRect = firstRow ? firstRow.getBoundingClientRect() : null;
+    const containerRect = boardEl.getBoundingClientRect();
     console.log('Board Debug:', {
       containerWidth: boardEl.offsetWidth,
       containerScrollWidth: boardEl.scrollWidth,
@@ -827,7 +830,11 @@ class DOMRenderer extends RendererInterface {
       boardWidth: boardWidth,
       viewportWidth: window.innerWidth,
       scrollLeft: boardEl.scrollLeft,
-      scrollTop: boardEl.scrollTop
+      scrollTop: boardEl.scrollTop,
+      containerLeft: containerRect.left,
+      containerRight: containerRect.right,
+      firstRowLeft: firstRowRect ? firstRowRect.left : null,
+      firstRowWidth: firstRowRect ? firstRowRect.width : null
     });
     
     // Add corner markers for easier visualization
