@@ -314,19 +314,44 @@ class GameEngine {
     this.player.position = targetPosition;
     this.turn++;
     
-    // Calculate damage if teleporting TO an Ace of a suit you're not immune to
-    // No damage when teleporting to central chamber
+    // Calculate and apply damage from the tile we're standing on
+    // Use calculateDamage to handle all card types (Aces, number cards, etc.)
+    // No damage when teleporting to central chamber (empty tile)
     let damage = 0;
-    if (targetIsAce && !this.player.isImmuneTo(targetTile.card.suit)) {
-      damage = targetTile.card.value; // Aces are worth 1
-      this.player.takeDamage(damage);
-      this.renderer.onDamage(damage, this.player.health, 'Teleport');
+    if (!targetIsCentralChamber) {
+      damage = this.rulesEngine.calculateDamage(targetTile, this.player);
+      if (damage > 0) {
+        this.player.takeDamage(damage);
+        this.renderer.onDamage(damage, this.player.health, 'Teleport');
+      }
     }
     
-    // Reveal adjacent tiles
+    // Check for card collection
+    if (targetTile.card) {
+      this._handleCardCollection(targetTile);
+      
+      // Check for victory immediately after card collection
+      // This ensures the game ends before any Jack damage can kill the player
+      if (this.player.hasWon()) {
+        this.gameOver = true;
+        this.victory = true;
+        this.renderer.onGameOver(true);
+        this.renderer.render(this.getGameState());
+        return { success: true, damage: damage };
+      }
+    }
+    
+    // Reveal adjacent tiles (this will check for newly revealed Jacks)
     this._revealAdjacentTiles();
     
-    // Check game over
+    // Check for Jack adjacent damage (for all adjacent Jacks, including newly revealed)
+    // This ensures we catch Jacks that were already revealed before teleporting
+    // Skip if game is already over (victory condition)
+    if (!this.gameOver) {
+      this._checkJackAdjacentDamage(targetPosition);
+    }
+    
+    // Check game over conditions (death check)
     this._checkGameOver();
     
     // Render update
