@@ -127,7 +127,7 @@ class DOMRenderer extends RendererInterface {
     // For now, just ensure container exists
     
     // Add scroll event listener to track manual scrolling (mobile only)
-    // This ensures _currentScrollX/Y stays in sync with user's manual scroll
+    // This updates initial scroll when user manually scrolls
     const boardContainer = document.querySelector('.board-container');
     if (boardContainer && window.innerWidth <= 768) {
       let scrollTimeout = null;
@@ -570,11 +570,13 @@ class DOMRenderer extends RendererInterface {
             debugText += `Scroll adj: X=${Math.round(this._lastBoundsChange.scrollAdjustX)} Y=${Math.round(this._lastBoundsChange.scrollAdjustY)}\n`;
           }
           
-          // Show current scroll adjustment
-          debugText += `\n=== SCROLL ADJUSTMENT ===\n`;
-          debugText += `Tracked: X=${Math.round(this._currentScrollX)} Y=${Math.round(this._currentScrollY)}\n`;
+          // Show initial scroll
+          debugText += `\n=== SCROLL ===\n`;
+          debugText += `Initial: X=${this._initialScrollX !== null ? Math.round(this._initialScrollX) : 'null'} Y=${this._initialScrollY !== null ? Math.round(this._initialScrollY) : 'null'}\n`;
           debugText += `DOM Scroll: X=${Math.round(actualScrollX)} Y=${Math.round(actualScrollY)}\n`;
-          debugText += `Match: X=${Math.abs(actualScrollX - this._currentScrollX) < 1} Y=${Math.abs(actualScrollY - this._currentScrollY) < 1}\n`;
+          if (this._initialScrollX !== null && this._initialScrollY !== null) {
+            debugText += `Match: X=${Math.abs(actualScrollX - this._initialScrollX) < 1} Y=${Math.abs(actualScrollY - this._initialScrollY) < 1}\n`;
+          }
           debugText += `Board Size: scrollWidth=${Math.round(boardEl.scrollWidth)} scrollHeight=${Math.round(boardEl.scrollHeight)}\n`;
           debugText += `Viewport: clientWidth=${Math.round(boardEl.clientWidth)} clientHeight=${Math.round(boardEl.clientHeight)}\n`;
           debugText += `Can Scroll: X=${boardEl.scrollWidth > boardEl.clientWidth} Y=${boardEl.scrollHeight > boardEl.clientHeight}\n`;
