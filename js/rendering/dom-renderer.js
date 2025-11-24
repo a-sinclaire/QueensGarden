@@ -566,7 +566,7 @@ class DOMRenderer extends RendererInterface {
     }
     
     // Add debug rectangle showing board boundaries (21x21 grid from -10 to +10)
-    this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, totalTileWidth, totalTileHeight, rowWidth);
+    this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, tileWidth, tileHeight, gap, rowWidth);
     
   }
   
@@ -791,7 +791,7 @@ class DOMRenderer extends RendererInterface {
    * Add debug rectangle showing board boundaries
    * @private
    */
-  _addBoardBoundaryDebug(boardEl, minX, maxX, minY, maxY, totalTileWidth, totalTileHeight, rowWidth) {
+  _addBoardBoundaryDebug(boardEl, minX, maxX, minY, maxY, tileWidth, tileHeight, gap, rowWidth) {
     // Remove existing debug rectangle if present
     const existingDebug = boardEl.querySelector('.board-boundary-debug');
     if (existingDebug) {
