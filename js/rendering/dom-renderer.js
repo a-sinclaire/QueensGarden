@@ -286,6 +286,23 @@ class DOMRenderer extends RendererInterface {
    * Center board on player position (mobile) - Simple scrollable approach
    */
   _centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY) {
+    // Ensure debug panel is visible and ready on mobile
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      const debugPanel = document.getElementById('mobile-debug');
+      const debugContent = document.getElementById('debug-content');
+      if (debugPanel) {
+        if (!debugPanel.style.display || debugPanel.style.display === 'none') {
+          debugPanel.style.display = 'block';
+          debugPanel.style.visibility = 'visible';
+          debugPanel.style.opacity = '1';
+        }
+      }
+      if (debugContent && debugContent.textContent === 'Waiting for camera update...') {
+        debugContent.textContent = 'Initializing camera...';
+      }
+    }
+    
     // Simple approach: Let CSS handle the container, we just scroll to center the player
     // Use setTimeout to ensure DOM is fully rendered and browser has recalculated layout
     
