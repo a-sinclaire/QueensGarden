@@ -389,7 +389,7 @@ function showErrorFeedback(x, y, errorMessage) {
   }
   
   // Check if this is a king collection error
-  if (errorMessage && errorMessage.includes('Queen')) {
+  if (errorMessage && (errorMessage.includes('Queen') || errorMessage.includes('Need Queen'))) {
     // Try to extract the missing suit from the error or target tile
     let missingSuit = null;
     
@@ -418,6 +418,7 @@ function showErrorFeedback(x, y, errorMessage) {
     
     // Update party display with highlight
     if (renderer && missingSuit) {
+      console.log('Highlighting missing queen suit:', missingSuit);
       renderer._updateParty(gameEngine.player.party, missingSuit);
       // Remove highlight after animation
       setTimeout(() => {
@@ -426,6 +427,7 @@ function showErrorFeedback(x, y, errorMessage) {
         }
       }, 2000);
     } else {
+      console.log('Could not find missing suit. missingSuit:', missingSuit, 'renderer:', renderer);
       // Just highlight party display
       const partyDisplay = document.getElementById('party-display');
       const mobileParty = document.getElementById('mobile-party');

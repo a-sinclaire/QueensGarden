@@ -1148,6 +1148,11 @@ class DOMRenderer extends RendererInterface {
     // Get next tile from queue
     const { tileEl } = this.flipQueue.shift();
     
+    // Mark tile as revealed immediately to prevent re-adding to queue
+    const x = parseInt(tileEl.dataset.x);
+    const y = parseInt(tileEl.dataset.y);
+    this.revealedTiles.add(`${x},${y}`);
+    
     // Add flip animation
     tileEl.classList.add('card-flip-animate');
     
@@ -1158,7 +1163,7 @@ class DOMRenderer extends RendererInterface {
       setTimeout(() => {
         this._animateNextFlip();
       }, 50); // 50ms delay between flips
-    }, 300); // Animation duration
+    }, 500); // Animation duration (match CSS)
   }
   
   /**
@@ -1380,6 +1385,61 @@ class DOMRenderer extends RendererInterface {
   
   onGameOver(victory) {
     this._showGameOver(victory);
+  }
+  
+  /**
+   * Show damage popup
+   * @private
+   */
+  _showDamagePopup(amount, source = null) {
+    // Create or get damage popup container
+    let popupContainer = document.getElementById('damage-popup-container');
+    if (!popupContainer) {
+      popupContainer = document.createElement('div');
+      popupContainer.id = 'damage-popup-container';
+      popupContainer.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 2000;
+      `;
+      document.body.appendChild(popupContainer);
+    }
+    
+    // Create damage popup element
+    const popup = document.createElement('div');
+    popup.className = 'damage-popup';
+    popup.textContent = `-${amount}`;
+    popup.style.cssText = `
+      font-size: 3rem;
+      font-weight: bold;
+      color: #ff4444;
+      text-shadow: 0 0 10px rgba(255, 68, 68, 0.8), 0 0 20px rgba(255, 68, 68, 0.6);
+      animation: damage-popup 1s ease-out forwards;
+    `;
+    
+    popupContainer.appendChild(popup);
+    
+    // Remove after animation
+    setTimeout(() => {
+      popup.remove();
+    }, 1000);
+  }
+  
+  /**
+   * Screen shake effect
+   * @private
+   */
+  _screenShake() {
+    const gameContainer = document.getElementById('game-container');
+    if (!gameContainer) return;
+    
+    gameContainer.classList.add('screen-shake');
+    setTimeout(() => {
+      gameContainer.classList.remove('screen-shake');
+    }, 500);
   }
   
   clearHighlights() {
