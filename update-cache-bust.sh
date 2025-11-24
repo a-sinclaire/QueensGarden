@@ -9,12 +9,12 @@ COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "dev")
 # Update all ?v= values in link tags (CSS files)
 if [[ "$OSTYPE" == "darwin"* ]]; then
   # macOS
-  sed -i '' "s/?cb=[^\"']*/?cb=${COMMIT_HASH}/g" index.html
-  sed -i '' "s/\\.css\\?v=[^\"']*/\\.css?v=${COMMIT_HASH}/g" index.html
+  sed -i '' "s/?cb=[^\"'&]*/?cb=${COMMIT_HASH}/g" index.html
+  sed -i '' "s/\\.css\\?v=[^\"'&]*/\\.css?v=${COMMIT_HASH}/g" index.html
 else
   # Linux
-  sed -i "s/?cb=[^\"']*/?cb=${COMMIT_HASH}/g" index.html
-  sed -i "s/\\.css\\?v=[^\"']*/\\.css?v=${COMMIT_HASH}/g" index.html
+  sed -i "s/?cb=[^\"'&]*/?cb=${COMMIT_HASH}/g" index.html
+  sed -i "s/\\.css\\?v=[^\"'&]*/\\.css?v=${COMMIT_HASH}/g" index.html
 fi
 
 echo "Updated cache-busting to: ${COMMIT_HASH}"
