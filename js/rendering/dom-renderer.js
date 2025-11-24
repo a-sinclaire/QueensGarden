@@ -879,7 +879,8 @@ class DOMRenderer extends RendererInterface {
       debugRect.appendChild(marker);
     });
     
-    // Add center marker (0,0)
+    // Add center marker (0,0) - positioned at 50% to mark the board center
+    // The central chamber card should be centered at this position
     const centerMarker = document.createElement('div');
     centerMarker.style.cssText = `
       position: absolute;
