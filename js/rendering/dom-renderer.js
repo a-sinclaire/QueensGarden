@@ -1278,9 +1278,12 @@ class DOMRenderer extends RendererInterface {
         }
       }
       
-      // Add right spacer for horizontal scrolling (add to each row)
-      if (minBoardWidthForScroll > viewportWidth) {
-        const rows = boardEl.querySelectorAll('.board-row');
+      // Add right spacer for centering (if player is too far right)
+      const rightSpacerNeeded = this._rightSpacerNeeded || 0;
+      const rows = boardEl.querySelectorAll('.board-row');
+      
+      if (rightSpacerNeeded > 0) {
+        // Add right spacer for centering
         rows.forEach(row => {
           let spacer = row.querySelector('.scroll-spacer-right');
           if (!spacer) {
@@ -1292,15 +1295,32 @@ class DOMRenderer extends RendererInterface {
             spacer.style.verticalAlign = 'top';
             row.appendChild(spacer);
           }
-          void row.offsetWidth; // Force reflow
-          const currentRowWidth = row.scrollWidth;
-          const spacerWidth = Math.max(0, minBoardWidthForScroll - currentRowWidth);
-          spacer.style.width = `${spacerWidth}px`;
+          spacer.style.width = `${rightSpacerNeeded}px`;
         });
       } else {
-        // Remove spacers from all rows
-        const spacers = boardEl.querySelectorAll('.scroll-spacer-right');
-        spacers.forEach(spacer => spacer.remove());
+        // Add right spacer for scrolling if needed (even if not for centering)
+        if (minBoardWidthForScroll > viewportWidth) {
+          rows.forEach(row => {
+            let spacer = row.querySelector('.scroll-spacer-right');
+            if (!spacer) {
+              spacer = document.createElement('div');
+              spacer.className = 'scroll-spacer-right';
+              spacer.style.height = '100%';
+              spacer.style.flexShrink = '0';
+              spacer.style.display = 'inline-block';
+              spacer.style.verticalAlign = 'top';
+              row.appendChild(spacer);
+            }
+            void row.offsetWidth; // Force reflow
+            const currentRowWidth = row.scrollWidth;
+            const spacerWidth = Math.max(0, minBoardWidthForScroll - currentRowWidth);
+            spacer.style.width = `${spacerWidth}px`;
+          });
+        } else {
+          // Remove spacers from all rows if not needed
+          const spacers = boardEl.querySelectorAll('.scroll-spacer-right');
+          spacers.forEach(spacer => spacer.remove());
+        }
       }
     }
     
