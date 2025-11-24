@@ -266,47 +266,45 @@ class DOMRenderer extends RendererInterface {
     if (!boardEl) return;
     
     // Fixed 20x20 grid bounds (10 in each direction from center)
-    // This provides a consistent coordinate system regardless of board state
+    // Always render the full fixed grid - never changes size
     const BOARD_SIZE = 10; // 10 in each direction = 20x20 total
     const minX = -BOARD_SIZE;
     const maxX = BOARD_SIZE;
     const minY = -BOARD_SIZE;
     const maxY = BOARD_SIZE;
     
-    // Find all revealed tiles (tiles that exist in the board are all revealed)
-    // Calculate bounds from all tiles in the board
-    let renderMinX = Infinity, renderMaxX = -Infinity;
-    let renderMinY = Infinity, renderMaxY = -Infinity;
-    let hasTiles = false;
+    // Always render the full fixed grid (never changes)
+    const renderMinX = minX;
+    const renderMaxX = maxX;
+    const renderMinY = minY;
+    const renderMaxY = maxY;
     
+    // Find all revealed tiles (tiles that exist in the board)
+    const revealedTiles = new Set();
     for (const [key, tile] of board.entries()) {
       if (tile) {
-        const [x, y] = key.split(',').map(Number);
-        if (!hasTiles) {
-          renderMinX = renderMaxX = x;
-          renderMinY = renderMaxY = y;
-          hasTiles = true;
-        } else {
-          renderMinX = Math.min(renderMinX, x);
-          renderMaxX = Math.max(renderMaxX, x);
-          renderMinY = Math.min(renderMinY, y);
-          renderMaxY = Math.max(renderMaxY, y);
-        }
+        revealedTiles.add(key);
       }
     }
     
-    // If no tiles yet, start with player position
-    if (!hasTiles) {
-      renderMinX = renderMaxX = playerPos.x;
-      renderMinY = renderMaxY = playerPos.y;
+    // Calculate which tiles should be populated (revealed + 2-tile buffer)
+    const tilesToPopulate = new Set();
+    for (const key of revealedTiles) {
+      const [x, y] = key.split(',').map(Number);
+      // Add revealed tile
+      tilesToPopulate.add(key);
+      // Add tiles within 2 tiles in all directions (buffer zone)
+      for (let dx = -2; dx <= 2; dx++) {
+        for (let dy = -2; dy <= 2; dy++) {
+          const bufferX = x + dx;
+          const bufferY = y + dy;
+          // Only add if within grid bounds
+          if (bufferX >= minX && bufferX <= maxX && bufferY >= minY && bufferY <= maxY) {
+            tilesToPopulate.add(`${bufferX},${bufferY}`);
+          }
+        }
+      }
     }
-    
-    // Expand render bounds by 2 tiles in all directions for visual buffer
-    // This prevents abrupt drop-off at the edges and shows empty tiles near explored areas
-    renderMinX = Math.max(minX, renderMinX - 2);
-    renderMaxX = Math.min(maxX, renderMaxX + 2);
-    renderMinY = Math.max(minY, renderMinY - 2);
-    renderMaxY = Math.min(maxY, renderMaxY + 2);
     
     // Clear board
     boardEl.innerHTML = '';
@@ -342,8 +340,19 @@ class DOMRenderer extends RendererInterface {
       for (let x = renderMinX; x <= renderMaxX; x++) {
         const key = `${x},${y}`;
         const tile = board.get(key);
+        
+        // Always create DOM element to maintain grid size
         const tileEl = document.createElement('div');
         tileEl.className = 'tile';
+        
+        // Only populate content if tile is revealed or within 2 tiles of revealed
+        const shouldPopulate = tilesToPopulate.has(key);
+        if (!shouldPopulate) {
+          // Empty div for unexplored tiles beyond buffer zone - maintains grid structure
+          // No styling needed, just empty space
+          row.appendChild(tileEl);
+          continue;
+        }
         
         // Add click and touch handlers for mobile support
         let touchStartTime = null;
