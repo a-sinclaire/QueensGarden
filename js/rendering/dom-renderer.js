@@ -401,69 +401,23 @@ class DOMRenderer extends RendererInterface {
       const playerScreenX = playerPixelX - currentScrollX;
       const playerScreenY = playerPixelY - currentScrollY;
       
-      // Start with current scroll position
+      // Calculate scroll position needed to center the queen
+      // On first render, use spacers that were added in _updateBoard
       let scrollX = currentScrollX;
       let scrollY = currentScrollY;
       
-      // AUTO-SCROLL DISABLED: Use spacers to center queen instead of scrolling
-      // Keep scroll position unchanged (no auto-scrolling)
-      scrollX = currentScrollX;
-      scrollY = currentScrollY;
-      
-      // OLD AUTO-SCROLL CODE (disabled - using spacers instead):
-      /*
       if (this.isFirstRender) {
-        // Very first render - always center the player completely (bypass deadzone check)
-        // Calculate scroll offset to center the queen
-        // The queen's pixel position minus half the viewport gives us the scroll position
-        // The playerPixelX/Y already accounts for tile center (tileStart + tileWidth/2)
-        // So we want: scrollX = playerPixelX - (viewportWidth / 2)
-        // This centers the player's tile center at the viewport center
-        const centerScrollX = playerPixelX - (viewportWidth / 2);
-        const centerScrollY = playerPixelY - (viewportHeight / 2);
+        // Use the center scroll values calculated in _updateBoard
+        const centerScrollX = this._centerScrollX || (playerPixelX - (viewportWidth / 2));
+        const centerScrollY = this._centerScrollY || (playerPixelY - (viewportHeight / 2));
+        const leftSpacer = this._leftSpacerNeeded || 0;
+        const topSpacer = this._topSpacerNeeded || 0;
         
-        // Store the centered scroll position for reference
-        // This is the "base" scroll position when queen is centered
-        this.centeredScrollX = centerScrollX;
-        this.centeredScrollY = centerScrollY;
-        
-        scrollX = centerScrollX;
-        scrollY = centerScrollY;
-      } else if (playerMoved) {
-      */
-      
-      if (false) { // Disabled - kept for reference
-        // AUTO-SCROLL DISABLED: User requested manual scrolling only
-        // Keep scroll position unchanged when player moves (manual scrolling only)
-        scrollX = currentScrollX;
-        scrollY = currentScrollY;
-        
-        // OLD AUTO-SCROLL CODE (disabled):
-        // After first render AND player moved - check deadzone and scroll if needed
-        // If player is outside dead zone, scroll by exactly one tile spacing in that direction
-        /*
-        // Horizontal scroll: check if player is outside horizontal dead zone
-        if (playerScreenX < deadZoneLeft) {
-          // Player too far left - scroll LEFT (decrease scrollX) to move board right, bringing player right
-          scrollX = currentScrollX - totalTileWidth;
-        } else if (playerScreenX > deadZoneRight) {
-          // Player too far right - scroll RIGHT (increase scrollX) to move board left, bringing player left
-          scrollX = currentScrollX + totalTileWidth;
-        }
-        // If player is within dead zone horizontally, scrollX stays as currentScrollX
-        
-        // Vertical scroll: check if player is outside vertical dead zone
-        if (playerScreenY < deadZoneTop) {
-          // Player too far up - scroll UP (decrease scrollY) to move board down, bringing player down
-          scrollY = currentScrollY - totalTileHeight;
-        } else if (playerScreenY > deadZoneBottom) {
-          // Player too far down - scroll DOWN (increase scrollY) to move board up, bringing player up
-          scrollY = currentScrollY + totalTileHeight;
-        }
-        // If player is within dead zone vertically, scrollY stays as currentScrollY
-        */
+        // Spacers push content, so scroll = centerScroll + spacer
+        scrollX = centerScrollX + leftSpacer;
+        scrollY = centerScrollY + topSpacer;
       }
-      // If player didn't move, scrollX/Y stay as currentScrollX/Y (no change)
+      // After first render: no auto-scrolling, keep current scroll
       
       // Calculate minimum board dimensions needed to allow scrolling to center player in all directions
       // For first render centering: need enough space to scroll to center position
@@ -1295,27 +1249,9 @@ class DOMRenderer extends RendererInterface {
     // and it will use it if needed. Restoring here would interfere with the deadzone logic.
     
     // Scroll to center the queen after spacers are added (mobile only)
+    // NOTE: Don't set isFirstRender = false here - let _centerBoardOnPlayer handle it
     if (window.innerWidth <= 768) {
-      if (this.isFirstRender) {
-        // After spacers are added, scroll to center position
-        const centerScrollX = this._centerScrollX || 0;
-        const centerScrollY = this._centerScrollY || 0;
-        const leftSpacer = this._leftSpacerNeeded || 0;
-        const topSpacer = this._topSpacerNeeded || 0;
-        
-        // Adjust scroll for spacers: spacers push content, so scroll position = centerScroll + spacer
-        const finalScrollX = Math.max(0, centerScrollX + leftSpacer);
-        const finalScrollY = Math.max(0, centerScrollY + topSpacer);
-        
-        // Scroll to center position
-        boardEl.scrollLeft = finalScrollX;
-        boardEl.scrollTop = finalScrollY;
-        
-        // Mark first render as complete
-        this.isFirstRender = false;
-      }
-      
-      // Always call _centerBoardOnPlayer to update debug overlays
+      // Always call _centerBoardOnPlayer to update debug overlays and handle scrolling
       this._centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY);
     }
   }
