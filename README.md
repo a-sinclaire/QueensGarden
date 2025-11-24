@@ -72,7 +72,7 @@ This installs git hooks that will:
 ### Version Management
 
 - **Version numbers** (`js/config/version.js`): Only bump for releases. Follow semantic versioning (major.minor.patch).
-- **Cache-busting** (`?cb=` in `index.html`): Automatically updated to git commit hash by the pre-commit hook. This ensures browsers reload files on each deployment.
+- **Cache-busting** (`?cb=` for JS, `?v=` for CSS in `index.html`): Automatically updated to git commit hash by the pre-commit hook. This ensures browsers reload files on each deployment. The `update-cache-bust.sh` script handles both JavaScript and CSS files.
 - **Changelog**: Update `CHANGELOG.md` whenever you bump the version number.
 
 ### Adding New Features
