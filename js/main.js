@@ -371,6 +371,9 @@ function resetGame() {
   selectedKing = null;
 }
 
+// Expose resetGame for quick restart
+window.resetGame = resetGame;
+
 // Make handleTileClick available globally for renderer
 window.handleTileClick = handleTileClick;
 

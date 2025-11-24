@@ -16,6 +16,8 @@ class DOMRenderer extends RendererInterface {
     // Track existing tile elements by coordinate for in-place updates
     this.tileElements = new Map(); // key: "x,y" -> tile element
     this.rowElements = new Map(); // key: y -> row element
+    // Track tiles that have been revealed (for animation)
+    this.revealedTiles = new Set(); // key: "x,y"
   }
   
   /**
@@ -67,6 +69,8 @@ class DOMRenderer extends RendererInterface {
     // Clear tile/row element tracking
     this.tileElements.clear();
     this.rowElements.clear();
+    // Clear revealed tiles tracking (for animations)
+    this.revealedTiles.clear();
     
     // Clear the board DOM completely for new game
     const boardEl = document.getElementById('game-board');
@@ -293,6 +297,8 @@ class DOMRenderer extends RendererInterface {
     let isLongPress = false;
     let touchStartPos = null;
     let hasMoved = false;
+    let isDestroyHolding = false;
+    let isRestartHolding = false;
     
     const handleTileAction = (e) => {
       // Don't handle if it was a long press
@@ -308,6 +314,17 @@ class DOMRenderer extends RendererInterface {
       }
     };
     
+    const cleanupHold = () => {
+      if (isDestroyHolding) {
+        tileEl.classList.remove('destroy-holding');
+        isDestroyHolding = false;
+      }
+      if (isRestartHolding) {
+        tileEl.classList.remove('destroy-holding'); // Reuse same visual
+        isRestartHolding = false;
+      }
+    };
+    
     // Touch start - begin long press timer
     tileEl.addEventListener('touchstart', (e) => {
       const touch = e.touches[0];
@@ -315,6 +332,27 @@ class DOMRenderer extends RendererInterface {
       touchStartTime = Date.now();
       isLongPress = false;
       hasMoved = false;
+      cleanupHold();
+      
+      // Check if this is central chamber for quick restart
+      if (this.gameEngine) {
+        const playerPos = this.gameEngine.player.position;
+        const isCentralChamber = x === 0 && y === 0 && playerPos.x === 0 && playerPos.y === 0;
+        
+        if (isCentralChamber) {
+          // Start restart timer (500ms)
+          touchTimer = setTimeout(() => {
+            isRestartHolding = true;
+            tileEl.classList.add('destroy-holding');
+            
+            // Provide haptic feedback if available
+            if (navigator.vibrate) {
+              navigator.vibrate(50);
+            }
+          }, 500);
+          return;
+        }
+      }
       
       // Check if this tile is destroyable (adjacent to player)
       if (this.gameEngine && !this.destroyMode) {
@@ -324,7 +362,7 @@ class DOMRenderer extends RendererInterface {
         if (isAdjacent) {
           // Start long press timer (500ms)
           touchTimer = setTimeout(() => {
-            isLongPress = true;
+            isDestroyHolding = true;
             
             // Check if player has available Kings
             const availableKings = this.gameEngine.player.collectedKings.filter(king => 
@@ -332,26 +370,13 @@ class DOMRenderer extends RendererInterface {
             );
             
             if (availableKings.length > 0) {
-              // Activate destroy mode
-              if (window.toggleDestroyMode) {
-                window.toggleDestroyMode();
-              }
+              // Start shaking animation (release to confirm)
+              tileEl.classList.add('destroy-holding');
               
               // Provide haptic feedback if available
               if (navigator.vibrate) {
                 navigator.vibrate(50);
               }
-              
-              // Visual feedback
-              tileEl.style.transform = 'scale(1.1)';
-              tileEl.style.transition = 'transform 0.1s';
-              
-              // After activating, handle the tile click for destroy
-              setTimeout(() => {
-                if (window.handleTileClick) {
-                  window.handleTileClick(x, y);
-                }
-              }, 100);
             }
           }, 500); // 500ms hold time
         }
@@ -376,7 +401,7 @@ class DOMRenderer extends RendererInterface {
       }
     }, { passive: true });
     
-    // Touch end - cancel timer if released early
+    // Touch end - release to confirm destroy or restart
     tileEl.addEventListener('touchend', (e) => {
       if (touchTimer) {
         clearTimeout(touchTimer);
@@ -391,6 +416,41 @@ class DOMRenderer extends RendererInterface {
         const moveY = Math.abs(touch.clientY - touchStartPos.y);
         // Only treat as tap if moved less than 10px (allows for small finger movement)
         wasTap = moveX < 10 && moveY < 10;
+      }
+      
+      // Release to confirm destroy
+      if (isDestroyHolding && wasTap && !hasMoved) {
+        cleanupHold();
+        // Activate destroy mode and destroy
+        if (window.toggleDestroyMode) {
+          window.toggleDestroyMode();
+        }
+        setTimeout(() => {
+          if (window.handleTileClick) {
+            window.handleTileClick(x, y);
+          }
+        }, 100);
+        touchStartTime = null;
+        touchStartPos = null;
+        hasMoved = false;
+        return;
+      }
+      
+      // Release to confirm restart
+      if (isRestartHolding && wasTap && !hasMoved) {
+        cleanupHold();
+        if (window.resetGame) {
+          window.resetGame();
+        }
+        touchStartTime = null;
+        touchStartPos = null;
+        hasMoved = false;
+        return;
+      }
+      
+      // Cancel hold if moved away
+      if (hasMoved) {
+        cleanupHold();
       }
       
       // Only handle as normal tap if not a long press, not scrolling, and it was actually a tap
@@ -409,6 +469,7 @@ class DOMRenderer extends RendererInterface {
         clearTimeout(touchTimer);
         touchTimer = null;
       }
+      cleanupHold();
       touchStartTime = null;
       touchStartPos = null;
       hasMoved = false;
@@ -421,7 +482,20 @@ class DOMRenderer extends RendererInterface {
     let isMouseLongPress = false;
     let mouseStartPos = null;
     let hasMouseMoved = false;
+    let isMouseDestroyHolding = false;
+    let isMouseRestartHolding = false;
     let lastClickTime = 0; // Cooldown to prevent double-firing
+    
+    const cleanupMouseHold = () => {
+      if (isMouseDestroyHolding) {
+        tileEl.classList.remove('destroy-holding');
+        isMouseDestroyHolding = false;
+      }
+      if (isMouseRestartHolding) {
+        tileEl.classList.remove('destroy-holding'); // Reuse same visual
+        isMouseRestartHolding = false;
+      }
+    };
     
     tileEl.addEventListener('mousedown', (e) => {
       // Only handle left mouse button
@@ -431,6 +505,22 @@ class DOMRenderer extends RendererInterface {
       mouseStartTime = Date.now();
       isMouseLongPress = false;
       hasMouseMoved = false;
+      cleanupMouseHold();
+      
+      // Check if this is central chamber for quick restart
+      if (this.gameEngine) {
+        const playerPos = this.gameEngine.player.position;
+        const isCentralChamber = x === 0 && y === 0 && playerPos.x === 0 && playerPos.y === 0;
+        
+        if (isCentralChamber) {
+          // Start restart timer (500ms)
+          mouseTimer = setTimeout(() => {
+            isMouseRestartHolding = true;
+            tileEl.classList.add('destroy-holding');
+          }, 500);
+          return;
+        }
+      }
       
       // Check if this tile is destroyable (adjacent to player)
       if (this.gameEngine && !this.destroyMode) {
@@ -440,7 +530,7 @@ class DOMRenderer extends RendererInterface {
         if (isAdjacent) {
           // Start long press timer (500ms)
           mouseTimer = setTimeout(() => {
-            isMouseLongPress = true;
+            isMouseDestroyHolding = true;
             
             // Check if player has available Kings
             const availableKings = this.gameEngine.player.collectedKings.filter(king => 
@@ -448,21 +538,8 @@ class DOMRenderer extends RendererInterface {
             );
             
             if (availableKings.length > 0) {
-              // Activate destroy mode
-              if (window.toggleDestroyMode) {
-                window.toggleDestroyMode();
-              }
-              
-              // Visual feedback
-              tileEl.style.transform = 'scale(1.1)';
-              tileEl.style.transition = 'transform 0.1s';
-              
-              // After activating, handle the tile click for destroy
-              setTimeout(() => {
-                if (window.handleTileClick) {
-                  window.handleTileClick(x, y);
-                }
-              }, 100);
+              // Start shaking animation (release to confirm)
+              tileEl.classList.add('destroy-holding');
             }
           }, 500); // 500ms hold time
         }
@@ -503,6 +580,41 @@ class DOMRenderer extends RendererInterface {
         wasClick = moveX < 10 && moveY < 10;
       }
       
+      // Release to confirm destroy
+      if (isMouseDestroyHolding && wasClick && !hasMouseMoved) {
+        cleanupMouseHold();
+        // Activate destroy mode and destroy
+        if (window.toggleDestroyMode) {
+          window.toggleDestroyMode();
+        }
+        setTimeout(() => {
+          if (window.handleTileClick) {
+            window.handleTileClick(x, y);
+          }
+        }, 100);
+        mouseStartTime = null;
+        mouseStartPos = null;
+        hasMouseMoved = false;
+        return;
+      }
+      
+      // Release to confirm restart
+      if (isMouseRestartHolding && wasClick && !hasMouseMoved) {
+        cleanupMouseHold();
+        if (window.resetGame) {
+          window.resetGame();
+        }
+        mouseStartTime = null;
+        mouseStartPos = null;
+        hasMouseMoved = false;
+        return;
+      }
+      
+      // Cancel hold if moved away
+      if (hasMouseMoved) {
+        cleanupMouseHold();
+      }
+      
       // Only handle as normal click if not a long press, not dragging, and it was actually a click
       if (!isMouseLongPress && !hasMouseMoved && mouseStartTime && (Date.now() - mouseStartTime) < 500 && wasClick) {
         const now = Date.now();
@@ -527,6 +639,7 @@ class DOMRenderer extends RendererInterface {
         clearTimeout(mouseTimer);
         mouseTimer = null;
       }
+      cleanupMouseHold();
       mouseStartTime = null;
       mouseStartPos = null;
       hasMouseMoved = false;
@@ -609,18 +722,31 @@ class DOMRenderer extends RendererInterface {
     
     // Check if this tile exists in the board (all tiles in board are revealed)
     const isRevealed = tile !== undefined && tile !== null;
+    const tileKey = `${x},${y}`;
+    const isNewlyRevealed = isRevealed && !this.revealedTiles.has(tileKey);
     
     if (isRevealed) {
+      // Mark as revealed
+      this.revealedTiles.add(tileKey);
+      
       // This tile has been explored/revealed
       if (tile.isCentralChamber) {
         tileEl.classList.add('central-chamber');
         tileEl.classList.add('revealed');
+        // Add flip animation if newly revealed
+        if (isNewlyRevealed) {
+          tileEl.classList.add('card-flip-animate');
+        }
         const content = document.createElement('div');
         content.className = 'tile-content';
         content.textContent = 'C';
         tileEl.appendChild(content);
       } else if (tile.card) {
         tileEl.classList.add('revealed');
+        // Add flip animation if newly revealed
+        if (isNewlyRevealed) {
+          tileEl.classList.add('card-flip-animate');
+        }
         const card = tile.card;
         const cardType = card.getType();
         tileEl.classList.add(`card-type-${cardType}`);
@@ -644,6 +770,10 @@ class DOMRenderer extends RendererInterface {
         // Empty revealed tile
         tileEl.classList.add('empty');
         tileEl.classList.add('revealed');
+        // Add flip animation if newly revealed
+        if (isNewlyRevealed) {
+          tileEl.classList.add('card-flip-animate');
+        }
       }
     } else {
       // Unexplored tile within render bounds (buffer zone)
