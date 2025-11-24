@@ -488,6 +488,8 @@ class DOMRenderer extends RendererInterface {
           debugText += `Player Screen: X=${Math.round(playerScreenX)} Y=${Math.round(playerScreenY)}\n`;
           debugText += `Deadzone X: ${Math.round(deadZoneLeft)}-${Math.round(deadZoneRight)}\n`;
           debugText += `Deadzone Y: ${Math.round(deadZoneTop)}-${Math.round(deadZoneBottom)}\n`;
+          debugText += `In Deadzone X: ${playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight}\n`;
+          debugText += `In Deadzone Y: ${playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom}\n`;
           debugText += `Scroll: X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}\n`;
           debugText += `Player Pos: (${playerPos.x}, ${playerPos.y})\n`;
           
@@ -516,9 +518,13 @@ class DOMRenderer extends RendererInterface {
           }
           
           debugText += scrollAction;
+          debugText += `\n\nDeadzone Check:`;
+          debugText += `\n  X: ${playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight ? 'IN' : 'OUT'} (${Math.round(playerScreenX)} vs ${Math.round(deadZoneLeft)}-${Math.round(deadZoneRight)})`;
+          debugText += `\n  Y: ${playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom ? 'IN' : 'OUT'} (${Math.round(playerScreenY)} vs ${Math.round(deadZoneTop)}-${Math.round(deadZoneBottom)})`;
           debugText += `\n\nWill scroll: X=${needsScrollX} Y=${needsScrollY}`;
           debugText += `\nfinalScrollX=${Math.round(finalScrollX)} finalScrollY=${Math.round(finalScrollY)}`;
           debugText += `\ncurrentScrollX=${Math.round(currentScrollX)} currentScrollY=${Math.round(currentScrollY)}`;
+          debugText += `\nscrollX calc=${Math.round(scrollX)} scrollY calc=${Math.round(scrollY)}`;
           debugEl.textContent = debugText;
         }
       }
