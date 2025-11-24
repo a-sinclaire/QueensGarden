@@ -44,6 +44,8 @@ This file tracks current bugs, issues, and ideas for future improvements.
 
 8. tutorial?
 
+- game skins?
+
 ## AI Ideas
 
 *Note: These ideas need human approval before implementation*

@@ -180,6 +180,23 @@
   animation: card-flip 0.3s ease-out;
 }
 
+/* Floating reset text animation */
+@keyframes float-reset {
+  0%, 100% {
+    transform: translate(-50%, -50%) translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-10px);
+    opacity: 0.8;
+  }
+}
+
+.tile.destroy-holding {
+  z-index: 10; /* Ensure shake is visible */
+  position: relative;
+}
+
 /* Adjacent tiles for tap-to-move (mobile) */
 .tile.adjacent-moveable {
   border: 2px solid var(--party-color);

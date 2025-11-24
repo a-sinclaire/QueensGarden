@@ -314,6 +314,8 @@ class DOMRenderer extends RendererInterface {
       }
     };
     
+    let resetTextEl = null;
+    
     const cleanupHold = () => {
       if (isDestroyHolding) {
         tileEl.classList.remove('destroy-holding');
@@ -322,7 +324,34 @@ class DOMRenderer extends RendererInterface {
       if (isRestartHolding) {
         tileEl.classList.remove('destroy-holding'); // Reuse same visual
         isRestartHolding = false;
+        // Remove floating reset text
+        if (resetTextEl) {
+          resetTextEl.remove();
+          resetTextEl = null;
+        }
       }
+    };
+    
+    const showResetText = () => {
+      if (resetTextEl) return; // Already showing
+      
+      resetTextEl = document.createElement('div');
+      resetTextEl.className = 'reset-text-float';
+      resetTextEl.textContent = 'Reset?';
+      resetTextEl.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ff6b6b;
+        text-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+        pointer-events: none;
+        z-index: 1000;
+        animation: float-reset 0.5s ease-in-out infinite;
+      `;
+      document.body.appendChild(resetTextEl);
     };
     
     // Touch start - begin long press timer
@@ -334,24 +363,26 @@ class DOMRenderer extends RendererInterface {
       hasMoved = false;
       cleanupHold();
       
-      // Check if this is central chamber for quick restart
+      // Allow reset from anywhere - check if holding for 1000ms (longer than destroy)
       if (this.gameEngine) {
-        const playerPos = this.gameEngine.player.position;
-        const isCentralChamber = x === 0 && y === 0 && playerPos.x === 0 && playerPos.y === 0;
-        
-        if (isCentralChamber) {
-          // Start restart timer (500ms)
-          touchTimer = setTimeout(() => {
-            isRestartHolding = true;
-            tileEl.classList.add('destroy-holding');
-            
-            // Provide haptic feedback if available
-            if (navigator.vibrate) {
-              navigator.vibrate(50);
-            }
-          }, 500);
-          return;
-        }
+        // Start restart timer (1000ms - longer than destroy to avoid conflicts)
+        touchTimer = setTimeout(() => {
+          isRestartHolding = true;
+          tileEl.classList.add('destroy-holding');
+          showResetText();
+          
+          // Disable scrolling on board container
+          const boardEl = document.getElementById('game-board');
+          if (boardEl) {
+            boardEl.style.overflow = 'hidden';
+            boardEl.style.touchAction = 'none';
+          }
+          
+          // Provide haptic feedback if available
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+        }, 1000); // 1000ms hold time for reset
       }
       
       // Check if this tile is destroyable (adjacent to player)
@@ -372,6 +403,13 @@ class DOMRenderer extends RendererInterface {
             if (availableKings.length > 0) {
               // Start shaking animation (release to confirm)
               tileEl.classList.add('destroy-holding');
+              
+              // Disable scrolling on board container during hold
+              const boardEl = document.getElementById('game-board');
+              if (boardEl) {
+                boardEl.style.overflow = 'hidden';
+                boardEl.style.touchAction = 'none';
+              }
               
               // Provide haptic feedback if available
               if (navigator.vibrate) {
@@ -418,6 +456,13 @@ class DOMRenderer extends RendererInterface {
         wasTap = moveX < 10 && moveY < 10;
       }
       
+      // Re-enable scrolling
+      const boardEl = document.getElementById('game-board');
+      if (boardEl) {
+        boardEl.style.overflow = '';
+        boardEl.style.touchAction = '';
+      }
+      
       // Release to confirm destroy
       if (isDestroyHolding && wasTap && !hasMoved) {
         cleanupHold();
@@ -449,7 +494,7 @@ class DOMRenderer extends RendererInterface {
       }
       
       // Cancel hold if moved away
-      if (hasMoved) {
+      if (hasMoved || (isDestroyHolding || isRestartHolding)) {
         cleanupHold();
       }
       
@@ -469,6 +514,12 @@ class DOMRenderer extends RendererInterface {
         clearTimeout(touchTimer);
         touchTimer = null;
       }
+      // Re-enable scrolling
+      const boardEl = document.getElementById('game-board');
+      if (boardEl) {
+        boardEl.style.overflow = '';
+        boardEl.style.touchAction = '';
+      }
       cleanupHold();
       touchStartTime = null;
       touchStartPos = null;
@@ -486,6 +537,8 @@ class DOMRenderer extends RendererInterface {
     let isMouseRestartHolding = false;
     let lastClickTime = 0; // Cooldown to prevent double-firing
     
+    let mouseResetTextEl = null;
+    
     const cleanupMouseHold = () => {
       if (isMouseDestroyHolding) {
         tileEl.classList.remove('destroy-holding');
@@ -494,7 +547,34 @@ class DOMRenderer extends RendererInterface {
       if (isMouseRestartHolding) {
         tileEl.classList.remove('destroy-holding'); // Reuse same visual
         isMouseRestartHolding = false;
+        // Remove floating reset text
+        if (mouseResetTextEl) {
+          mouseResetTextEl.remove();
+          mouseResetTextEl = null;
+        }
       }
+    };
+    
+    const showMouseResetText = () => {
+      if (mouseResetTextEl) return; // Already showing
+      
+      mouseResetTextEl = document.createElement('div');
+      mouseResetTextEl.className = 'reset-text-float';
+      mouseResetTextEl.textContent = 'Reset?';
+      mouseResetTextEl.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ff6b6b;
+        text-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+        pointer-events: none;
+        z-index: 1000;
+        animation: float-reset 0.5s ease-in-out infinite;
+      `;
+      document.body.appendChild(mouseResetTextEl);
     };
     
     tileEl.addEventListener('mousedown', (e) => {
@@ -507,19 +587,20 @@ class DOMRenderer extends RendererInterface {
       hasMouseMoved = false;
       cleanupMouseHold();
       
-      // Check if this is central chamber for quick restart
+      // Allow reset from anywhere - check if holding for 1000ms (longer than destroy)
       if (this.gameEngine) {
-        const playerPos = this.gameEngine.player.position;
-        const isCentralChamber = x === 0 && y === 0 && playerPos.x === 0 && playerPos.y === 0;
-        
-        if (isCentralChamber) {
-          // Start restart timer (500ms)
-          mouseTimer = setTimeout(() => {
-            isMouseRestartHolding = true;
-            tileEl.classList.add('destroy-holding');
-          }, 500);
-          return;
-        }
+        // Start restart timer (1000ms - longer than destroy to avoid conflicts)
+        mouseTimer = setTimeout(() => {
+          isMouseRestartHolding = true;
+          tileEl.classList.add('destroy-holding');
+          showMouseResetText();
+          
+          // Disable scrolling on board container
+          const boardEl = document.getElementById('game-board');
+          if (boardEl) {
+            boardEl.style.overflow = 'hidden';
+          }
+        }, 1000); // 1000ms hold time for reset
       }
       
       // Check if this tile is destroyable (adjacent to player)
@@ -540,6 +621,12 @@ class DOMRenderer extends RendererInterface {
             if (availableKings.length > 0) {
               // Start shaking animation (release to confirm)
               tileEl.classList.add('destroy-holding');
+              
+              // Disable scrolling on board container during hold
+              const boardEl = document.getElementById('game-board');
+              if (boardEl) {
+                boardEl.style.overflow = 'hidden';
+              }
             }
           }, 500); // 500ms hold time
         }
@@ -569,6 +656,12 @@ class DOMRenderer extends RendererInterface {
       if (mouseTimer) {
         clearTimeout(mouseTimer);
         mouseTimer = null;
+      }
+      
+      // Re-enable scrolling
+      const boardEl = document.getElementById('game-board');
+      if (boardEl) {
+        boardEl.style.overflow = '';
       }
       
       // Check if this was a click by comparing start/end positions
@@ -611,7 +704,7 @@ class DOMRenderer extends RendererInterface {
       }
       
       // Cancel hold if moved away
-      if (hasMouseMoved) {
+      if (hasMouseMoved || (isMouseDestroyHolding || isMouseRestartHolding)) {
         cleanupMouseHold();
       }
       
@@ -638,6 +731,11 @@ class DOMRenderer extends RendererInterface {
       if (mouseTimer) {
         clearTimeout(mouseTimer);
         mouseTimer = null;
+      }
+      // Re-enable scrolling
+      const boardEl = document.getElementById('game-board');
+      if (boardEl) {
+        boardEl.style.overflow = '';
       }
       cleanupMouseHold();
       mouseStartTime = null;
@@ -733,10 +831,7 @@ class DOMRenderer extends RendererInterface {
       if (tile.isCentralChamber) {
         tileEl.classList.add('central-chamber');
         tileEl.classList.add('revealed');
-        // Add flip animation if newly revealed
-        if (isNewlyRevealed) {
-          tileEl.classList.add('card-flip-animate');
-        }
+        // Flip animation is handled in _updateBoard with sequential delays
         const content = document.createElement('div');
         content.className = 'tile-content';
         content.textContent = 'C';
@@ -770,10 +865,7 @@ class DOMRenderer extends RendererInterface {
         // Empty revealed tile
         tileEl.classList.add('empty');
         tileEl.classList.add('revealed');
-        // Add flip animation if newly revealed
-        if (isNewlyRevealed) {
-          tileEl.classList.add('card-flip-animate');
-        }
+        // Flip animation is handled in _updateBoard with sequential delays
       }
     } else {
       // Unexplored tile within render bounds (buffer zone)
@@ -931,8 +1023,27 @@ class DOMRenderer extends RendererInterface {
         // Get or create tile element (will create if it doesn't exist)
         const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
         
+        // Track newly revealed tiles for sequential animation
+        const tileKey = `${x},${y}`;
+        const isNewlyRevealed = tile !== undefined && tile !== null && !this.revealedTiles.has(tileKey);
+        
         // Show tile and update visual state
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
+        
+        // Add sequential flip animation for newly revealed tiles
+        if (isNewlyRevealed) {
+          // Calculate delay based on distance from player (closer tiles flip first)
+          const distance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
+          const delay = distance * 50; // 50ms per tile distance
+          
+          setTimeout(() => {
+            tileEl.classList.add('card-flip-animate');
+            // Remove animation class after animation completes
+            setTimeout(() => {
+              tileEl.classList.remove('card-flip-animate');
+            }, 300);
+          }, delay);
+        }
       }
     }
     

@@ -246,7 +246,7 @@ function toggleDestroyMode() {
   );
   
   if (availableKings.length === 0 && !destroyMode) {
-    alert('No Kings with unused destroy abilities available!');
+    // Silently ignore - no popup needed
     return;
   }
   
@@ -317,8 +317,7 @@ function handleTileClick(x, y) {
       // Exit destroy mode after successful destroy
       toggleDestroyMode();
     } else {
-      // Show error
-      alert(result.message);
+      // Silently ignore errors - no popup needed
     }
     return;
   }
@@ -338,11 +337,7 @@ function handleTileClick(x, y) {
   // This consolidates move and teleport logic into one place
   const result = gameEngine.moveToPosition(x, y);
   if (!result.success) {
-    // Visual feedback for invalid move
-    // Don't alert for same position - just silently ignore
-    if (result.message !== 'Cannot move to the same position') {
-      alert(result.message);
-    }
+    // Silently ignore invalid moves - no popup needed
   }
 }
 
