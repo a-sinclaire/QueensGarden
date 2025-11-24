@@ -1192,7 +1192,7 @@ class DOMRenderer extends RendererInterface {
         playerPixelX + viewportWidth + leftSpacer // Allow scrolling left to center
       );
       
-      // Add top spacer if needed for negative scroll (first render centering)
+      // Add top spacer if needed for negative scroll (centering)
       if (topSpacer > 0) {
         let topSpacerEl = boardEl.querySelector('.scroll-spacer-top');
         if (!topSpacerEl) {
@@ -1209,6 +1209,31 @@ class DOMRenderer extends RendererInterface {
         if (topSpacerEl) {
           topSpacerEl.remove();
         }
+      }
+      
+      // Add left spacer if needed for negative scroll (centering)
+      // Add to each row at the beginning (like right spacer is at the end)
+      if (leftSpacer > 0) {
+        const rows = boardEl.querySelectorAll('.board-row');
+        rows.forEach(row => {
+          let leftSpacerEl = row.querySelector('.scroll-spacer-left');
+          if (!leftSpacerEl) {
+            leftSpacerEl = document.createElement('div');
+            leftSpacerEl.className = 'scroll-spacer-left';
+            leftSpacerEl.style.width = `${leftSpacer}px`;
+            leftSpacerEl.style.height = '100%';
+            leftSpacerEl.style.flexShrink = '0';
+            leftSpacerEl.style.display = 'inline-block';
+            leftSpacerEl.style.verticalAlign = 'top';
+            // Insert at the beginning of the row
+            row.insertBefore(leftSpacerEl, row.firstChild);
+          }
+          leftSpacerEl.style.width = `${leftSpacer}px`;
+        });
+      } else {
+        // Remove left spacers from all rows
+        const leftSpacers = boardEl.querySelectorAll('.scroll-spacer-left');
+        leftSpacers.forEach(spacer => spacer.remove());
       }
       
       // Add bottom spacer for vertical scrolling
