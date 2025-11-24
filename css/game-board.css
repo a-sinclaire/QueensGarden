@@ -6,20 +6,15 @@
 .board-container {
   width: 100%;
   max-width: 100%;
-  /* ABSOLUTE positioning to break out of flex chain and use viewport directly */
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* Fixed height based on viewport - account for header */
-  height: calc(100vh - 80px); /* 80px for header */
-  max-height: calc(100vh - 80px);
+  /* FIXED height - must be smaller than content for scrolling to work */
+  height: 500px !important; /* Force a fixed height for testing */
+  max-height: 500px !important;
   overflow-x: scroll;
   overflow-y: scroll;
   padding: 0;
   margin: 0;
   box-sizing: border-box;
+  position: relative;
   /* Force scrollbars - use scroll instead of auto */
   -webkit-overflow-scrolling: touch;
   /* Ensure container can receive touch events for scrolling */
@@ -30,9 +25,8 @@
 
 @media (max-width: 768px) {
   .board-container {
-    /* On mobile, header is hidden, so use full viewport */
-    height: 100vh;
-    max-height: 100vh;
+    height: 400px !important; /* Fixed height for mobile */
+    max-height: 400px !important;
   }
 }
 
