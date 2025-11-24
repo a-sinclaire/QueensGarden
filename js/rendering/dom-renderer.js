@@ -405,35 +405,46 @@ class DOMRenderer extends RendererInterface {
         window._debugPlayerMoved = playerMoved;
         
         // Only adjust horizontal scroll if player is outside horizontal dead zone
+        // CRITICAL: Check deadzone BEFORE calculating scroll to prevent unwanted scrolling
         if (playerScreenX < deadZoneLeft) {
           // Player too far left - scroll LEFT (decrease scrollX) to move board right, bringing player right
           scrollX = currentScrollX - totalTileWidth;
         } else if (playerScreenX > deadZoneRight) {
           // Player too far right - scroll RIGHT (increase scrollX) to move board left, bringing player left
           scrollX = currentScrollX + totalTileWidth;
+        } else {
+          // Player is within dead zone horizontally - explicitly keep scroll unchanged
+          scrollX = currentScrollX;
         }
-        // If player is within dead zone horizontally, don't scroll horizontally
         
         // Only adjust vertical scroll if player is outside vertical dead zone
+        // CRITICAL: Check deadzone BEFORE calculating scroll to prevent unwanted scrolling
         if (playerScreenY < deadZoneTop) {
           // Player too far up - scroll UP (decrease scrollY) to move board down, bringing player down
           scrollY = currentScrollY - totalTileHeight;
         } else if (playerScreenY > deadZoneBottom) {
           // Player too far down - scroll DOWN (increase scrollY) to move board up, bringing player up
           scrollY = currentScrollY + totalTileHeight;
+        } else {
+          // Player is within dead zone vertically - explicitly keep scroll unchanged
+          scrollY = currentScrollY;
         }
-        // If player is within dead zone vertically, don't scroll vertically
       }
       
-      // Calculate minimum board height needed to allow scrolling to player position
+      // Calculate minimum board dimensions needed to allow scrolling to center player in all directions
       // Need: playerPixelY + (viewportHeight / 2) to allow scrolling down
-      // And: playerPixelY - (viewportHeight / 2) >= 0 to allow scrolling up
-      // Also ensure we can scroll up enough to center the player (for manual scrolling)
-      // If player is at position Y, we need at least Y + viewportHeight/2 above to center
+      // And: playerPixelY + viewportHeight to allow scrolling up to center
+      // Need: playerPixelX + (viewportWidth / 2) to allow scrolling right
+      // And: playerPixelX + viewportWidth to allow scrolling left to center
       const minBoardHeightForScroll = Math.max(
         expectedBoardHeight, // At least as tall as content
         playerPixelY + (viewportHeight / 2), // Tall enough to scroll down to center player
         playerPixelY + viewportHeight // Allow scrolling up to center (extra space above)
+      );
+      const minBoardWidthForScroll = Math.max(
+        expectedBoardWidth, // At least as wide as content
+        playerPixelX + (viewportWidth / 2), // Wide enough to scroll right to center player
+        playerPixelX + viewportWidth // Allow scrolling left to center (extra space to the left)
       );
       
       // CRITICAL: Ensure container stays at viewport height for scrolling to work
