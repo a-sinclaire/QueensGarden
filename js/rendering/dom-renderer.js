@@ -405,7 +405,13 @@ class DOMRenderer extends RendererInterface {
       let scrollX = currentScrollX;
       let scrollY = currentScrollY;
       
-      // Simplified logic: Queen starts in middle, then always follow deadzone rules
+      // AUTO-SCROLL DISABLED: Use spacers to center queen instead of scrolling
+      // Keep scroll position unchanged (no auto-scrolling)
+      scrollX = currentScrollX;
+      scrollY = currentScrollY;
+      
+      // OLD AUTO-SCROLL CODE (disabled - using spacers instead):
+      /*
       if (this.isFirstRender) {
         // Very first render - always center the player completely (bypass deadzone check)
         // Calculate scroll offset to center the queen
@@ -423,33 +429,10 @@ class DOMRenderer extends RendererInterface {
         
         scrollX = centerScrollX;
         scrollY = centerScrollY;
-        
-        // Debug: Log centering calculation with all relevant values
-        if (window.innerWidth <= 768) {
-          console.log('First render centering:', {
-            playerPos: { x: playerPos.x, y: playerPos.y },
-            playerPixelX,
-            playerPixelY,
-            viewportWidth,
-            viewportHeight,
-            centerScrollX,
-            centerScrollY,
-            currentScrollX,
-            currentScrollY,
-            tileWidth,
-            tileHeight,
-            totalTileWidth,
-            totalTileHeight,
-            gap,
-            padding,
-            bounds: { minX, maxX, minY, maxY },
-            playerXOffset,
-            playerYOffset,
-            tileStartX,
-            tileStartY
-          });
-        }
       } else if (playerMoved) {
+      */
+      
+      if (false) { // Disabled - kept for reference
         // AUTO-SCROLL DISABLED: User requested manual scrolling only
         // Keep scroll position unchanged when player moves (manual scrolling only)
         scrollX = currentScrollX;
