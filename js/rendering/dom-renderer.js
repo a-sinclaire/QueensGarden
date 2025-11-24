@@ -852,13 +852,39 @@ class DOMRenderer extends RendererInterface {
       this.lastBoardBounds.minX !== minX || this.lastBoardBounds.maxX !== maxX ||
       this.lastBoardBounds.minY !== minY || this.lastBoardBounds.maxY !== maxY
     );
-    this.lastBoardBounds = currentBounds;
     
     // Preserve scroll position before clearing board (prevents jump when bounds change)
     // CRITICAL: When board bounds change, clearing innerHTML can reset scroll position
     // We need to preserve it and pass it to _centerBoardOnPlayer to use instead of reading it
-    const savedScrollX = boardEl.scrollLeft;
-    const savedScrollY = boardEl.scrollTop;
+    let savedScrollX = boardEl.scrollLeft;
+    let savedScrollY = boardEl.scrollTop;
+    
+    // Adjust scroll position when bounds change to maintain player's visual position
+    // When board expands, the player's pixel position relative to board changes
+    // We need to adjust scroll to compensate
+    if (boundsChanged && this.lastBoardBounds) {
+      // Calculate tile dimensions for scroll adjustment
+      const tileWidth = window.innerWidth <= 480 ? 65 : 70;
+      const tileHeight = window.innerWidth <= 480 ? 85 : 90;
+      const gap = 2;
+      const totalTileWidth = tileWidth + gap;
+      const totalTileHeight = tileHeight + gap;
+      
+      const deltaMinX = minX - this.lastBoardBounds.minX; // Negative if expanded left
+      const deltaMinY = minY - this.lastBoardBounds.minY; // Negative if expanded up
+      
+      // Adjust scroll: if board expanded left (deltaMinX < 0), we need to scroll right (increase scrollX)
+      // to keep the player in the same visual position
+      // The adjustment is: deltaMinX * totalTileWidth (negative delta = positive scroll adjustment)
+      savedScrollX += -deltaMinX * totalTileWidth;
+      savedScrollY += -deltaMinY * totalTileHeight;
+      
+      // Clamp to valid range (will be clamped again after board rebuild)
+      savedScrollX = Math.max(0, savedScrollX);
+      savedScrollY = Math.max(0, savedScrollY);
+    }
+    
+    this.lastBoardBounds = currentBounds;
     
     // Store saved scroll for use in _centerBoardOnPlayer
     this._savedScrollBeforeRebuild = { x: savedScrollX, y: savedScrollY };
