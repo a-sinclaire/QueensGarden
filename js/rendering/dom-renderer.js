@@ -1382,14 +1382,6 @@ class DOMRenderer extends RendererInterface {
     }
   }
   
-  onDamage(amount, newHealth, source = null) {
-    // Show damage popup
-    this._showDamagePopup(amount, source);
-    
-    // Screen shake effect
-    this._screenShake();
-  }
-  
   onGameOver(victory) {
     this._showGameOver(victory);
   }
