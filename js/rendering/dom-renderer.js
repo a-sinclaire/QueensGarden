@@ -435,20 +435,39 @@ class DOMRenderer extends RendererInterface {
       // If player didn't move, scrollX/Y stay as currentScrollX/Y (no change)
       
       // Calculate minimum board dimensions needed to allow scrolling to center player in all directions
-      // Need: playerPixelY + (viewportHeight / 2) to allow scrolling down
-      // And: playerPixelY + viewportHeight to allow scrolling up to center
-      // Need: playerPixelX + (viewportWidth / 2) to allow scrolling right
-      // And: playerPixelX + viewportWidth to allow scrolling left to center
-      const minBoardHeightForScroll = Math.max(
-        expectedBoardHeight, // At least as tall as content
-        playerPixelY + (viewportHeight / 2), // Tall enough to scroll down to center player
-        playerPixelY + viewportHeight // Allow scrolling up to center (extra space above)
-      );
-      const minBoardWidthForScroll = Math.max(
-        expectedBoardWidth, // At least as wide as content
-        playerPixelX + (viewportWidth / 2), // Wide enough to scroll right to center player
-        playerPixelX + viewportWidth // Allow scrolling left to center (extra space to the left)
-      );
+      // For first render centering: need enough space to scroll to center position
+      // For normal scrolling: need space for deadzone + movement
+      let minBoardHeightForScroll, minBoardWidthForScroll;
+      
+      if (this.isFirstRender) {
+        // On first render, we need enough space to scroll to the center position
+        // Center scroll position is: playerPixelX/Y - viewportWidth/Height / 2
+        const centerScrollX = playerPixelX - (viewportWidth / 2);
+        const centerScrollY = playerPixelY - (viewportHeight / 2);
+        // Board needs to be at least: center scroll position + viewport size
+        minBoardWidthForScroll = Math.max(
+          expectedBoardWidth,
+          centerScrollX + viewportWidth,
+          playerPixelX + (viewportWidth / 2) // Also ensure we can scroll right if needed
+        );
+        minBoardHeightForScroll = Math.max(
+          expectedBoardHeight,
+          centerScrollY + viewportHeight,
+          playerPixelY + (viewportHeight / 2) // Also ensure we can scroll down if needed
+        );
+      } else {
+        // Normal scrolling: need space for deadzone + movement
+        minBoardHeightForScroll = Math.max(
+          expectedBoardHeight,
+          playerPixelY + (viewportHeight / 2),
+          playerPixelY + viewportHeight
+        );
+        minBoardWidthForScroll = Math.max(
+          expectedBoardWidth,
+          playerPixelX + (viewportWidth / 2),
+          playerPixelX + viewportWidth
+        );
+      }
       
       // CRITICAL: Ensure container stays at viewport height for scrolling to work
       // Container must have: clientHeight = viewport, scrollHeight > clientHeight
