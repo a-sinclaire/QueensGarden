@@ -584,8 +584,8 @@ class DOMRenderer extends RendererInterface {
           // Create invisible spacer to maintain grid structure without rendering content
           // Remove tile if it exists and replace with spacer
           if (this.tileElements.has(key)) {
-            const tileEl = this.tileElements.get(key);
-            tileEl.remove();
+            const existingTileEl = this.tileElements.get(key);
+            existingTileEl.remove();
             this.tileElements.delete(key);
           }
           // Check if spacer already exists
@@ -623,7 +623,7 @@ class DOMRenderer extends RendererInterface {
         }
         
         // Get or create tile element (will create if it doesn't exist)
-        tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
+        const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
         
         // Show tile and update visual state
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
