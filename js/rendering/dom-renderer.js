@@ -126,6 +126,24 @@ class DOMRenderer extends RendererInterface {
     // This will be implemented with full HTML structure
     // For now, just ensure container exists
     
+    // Add scroll event listener to track manual scrolling (mobile only)
+    // This ensures _currentScrollX/Y stays in sync with user's manual scroll
+    const boardContainer = document.querySelector('.board-container');
+    if (boardContainer && window.innerWidth <= 768) {
+      let scrollTimeout = null;
+      boardContainer.addEventListener('scroll', () => {
+        // Debounce to avoid too many updates
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
+        }
+        scrollTimeout = setTimeout(() => {
+          // Update tracked scroll to match manual scroll
+          this._currentScrollX = boardContainer.scrollLeft;
+          this._currentScrollY = boardContainer.scrollTop;
+        }, 50);
+      }, { passive: true });
+    }
+    
     // Create debug overlay for dead zone visualization
     const gameArea = document.querySelector('.game-area');
     if (gameArea && !document.getElementById('debug-deadzone')) {
