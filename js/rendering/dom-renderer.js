@@ -1091,8 +1091,11 @@ class DOMRenderer extends RendererInterface {
         // Show tile and update visual state
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
         
-        // Add to flip queue for sequential animation
-        if (isNewlyRevealed) {
+        // Add to flip queue for sequential animation ONLY if newly revealed AND not already animating
+        if (isNewlyRevealed && !tileEl.classList.contains('card-flip-animate')) {
+          // Mark as revealed IMMEDIATELY to prevent re-adding to queue
+          this.revealedTiles.add(tileKey);
+          
           // Calculate distance from player (closer tiles flip first)
           const distance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
           this.flipQueue.push({ tileEl, distance, x, y });
@@ -1148,10 +1151,14 @@ class DOMRenderer extends RendererInterface {
     // Get next tile from queue
     const { tileEl } = this.flipQueue.shift();
     
-    // Mark tile as revealed immediately to prevent re-adding to queue
-    const x = parseInt(tileEl.dataset.x);
-    const y = parseInt(tileEl.dataset.y);
-    this.revealedTiles.add(`${x},${y}`);
+    // Double-check tile hasn't already been animated (safety check)
+    if (tileEl.classList.contains('card-flip-animate')) {
+      // Skip this tile and move to next
+      setTimeout(() => {
+        this._animateNextFlip();
+      }, 50);
+      return;
+    }
     
     // Add flip animation
     tileEl.classList.add('card-flip-animate');
@@ -1429,17 +1436,54 @@ class DOMRenderer extends RendererInterface {
   }
   
   /**
-   * Screen shake effect
+   * Screen shake effect - intensity scales with damage
    * @private
    */
-  _screenShake() {
+  _screenShake(damageAmount = 1) {
     const gameContainer = document.getElementById('game-container');
     if (!gameContainer) return;
     
-    gameContainer.classList.add('screen-shake');
+    // Calculate shake intensity based on damage (min 1px, max 10px per step)
+    const intensity = Math.min(Math.max(damageAmount, 1), 10);
+    
+    // Create custom shake animation based on damage
+    const shakeKeyframes = `
+      @keyframes screen-shake-${intensity} {
+        0%, 100% { transform: translateX(0) translateY(0); }
+        10% { transform: translateX(-${intensity}px) translateY(-${intensity * 0.6}px); }
+        20% { transform: translateX(${intensity}px) translateY(${intensity * 0.6}px); }
+        30% { transform: translateX(-${intensity * 0.8}px) translateY(-${intensity * 0.4}px); }
+        40% { transform: translateX(${intensity * 0.8}px) translateY(${intensity * 0.4}px); }
+        50% { transform: translateX(-${intensity * 0.6}px) translateY(-${intensity * 0.2}px); }
+        60% { transform: translateX(${intensity * 0.6}px) translateY(${intensity * 0.2}px); }
+        70% { transform: translateX(-${intensity * 0.4}px) translateY(-${intensity * 0.2}px); }
+        80% { transform: translateX(${intensity * 0.4}px) translateY(${intensity * 0.2}px); }
+        90% { transform: translateX(-${intensity * 0.2}px) translateY(0); }
+      }
+    `;
+    
+    // Add keyframes if not already added
+    let styleSheet = document.getElementById('dynamic-shake-styles');
+    if (!styleSheet) {
+      styleSheet = document.createElement('style');
+      styleSheet.id = 'dynamic-shake-styles';
+      document.head.appendChild(styleSheet);
+    }
+    styleSheet.textContent = shakeKeyframes;
+    
+    // Apply shake class with intensity
+    gameContainer.classList.add(`screen-shake-${intensity}`);
     setTimeout(() => {
-      gameContainer.classList.remove('screen-shake');
+      gameContainer.classList.remove(`screen-shake-${intensity}`);
     }, 500);
+  }
+  
+  onDamage(amount, newHealth, source = null) {
+    // Show damage popup
+    this._showDamagePopup(amount, source);
+    
+    // Screen shake effect with damage-based intensity
+    this._screenShake(amount);
   }
   
   clearHighlights() {
