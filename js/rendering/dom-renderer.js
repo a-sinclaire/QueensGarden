@@ -384,6 +384,9 @@ class DOMRenderer extends RendererInterface {
         // Very first render - always center the player completely (bypass deadzone check)
         // Calculate scroll offset to center the queen
         // The queen's pixel position minus half the viewport gives us the scroll position
+        // The playerPixelX/Y already accounts for tile center (tileStart + tileWidth/2)
+        // So we want: scrollX = playerPixelX - (viewportWidth / 2)
+        // This centers the player's tile center at the viewport center
         const centerScrollX = playerPixelX - (viewportWidth / 2);
         const centerScrollY = playerPixelY - (viewportHeight / 2);
         
@@ -395,9 +398,10 @@ class DOMRenderer extends RendererInterface {
         scrollX = centerScrollX;
         scrollY = centerScrollY;
         
-        // Debug: Log centering calculation
+        // Debug: Log centering calculation with all relevant values
         if (window.innerWidth <= 768) {
           console.log('First render centering:', {
+            playerPos: { x: playerPos.x, y: playerPos.y },
             playerPixelX,
             playerPixelY,
             viewportWidth,
@@ -405,7 +409,18 @@ class DOMRenderer extends RendererInterface {
             centerScrollX,
             centerScrollY,
             currentScrollX,
-            currentScrollY
+            currentScrollY,
+            tileWidth,
+            tileHeight,
+            totalTileWidth,
+            totalTileHeight,
+            gap,
+            padding,
+            bounds: { minX, maxX, minY, maxY },
+            playerXOffset,
+            playerYOffset,
+            tileStartX,
+            tileStartY
           });
         }
       } else if (playerMoved) {
@@ -585,42 +600,124 @@ class DOMRenderer extends RendererInterface {
           debugText += `\n  Scroll Delta Y: ${Math.round(finalScrollY - currentScrollY)} (threshold: ${this.isFirstRender ? '0.1' : '1'})`;
           debugText += `\n  Max Scroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}`;
           debugText += `\n  Board Size: W=${Math.round(boardWidth)} H=${Math.round(boardHeight)}`;
+          debugText += `\n  Board ScrollSize: W=${Math.round(boardEl.scrollWidth)} H=${Math.round(boardEl.scrollHeight)}`;
+          debugText += `\n  Board ClientSize: W=${Math.round(boardEl.clientWidth)} H=${Math.round(boardEl.clientHeight)}`;
           debugText += `\n  Viewport: W=${viewportWidth} H=${viewportHeight}`;
+          debugText += `\n  Tile Size: W=${tileWidth} H=${tileHeight} Gap=${gap}`;
+          debugText += `\n  Total Tile: W=${totalTileWidth} H=${totalTileHeight}`;
+          debugText += `\n  Padding: ${padding}`;
+          debugText += `\n  Min Board For Scroll: W=${Math.round(minBoardWidthForScroll)} H=${Math.round(minBoardHeightForScroll)}`;
+          
+          // Add first render specific info
+          if (this.isFirstRender) {
+            debugText += `\n\n=== FIRST RENDER CENTERING ===`;
+            debugText += `\n  Center Scroll Calc: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}`;
+            debugText += `\n  Clamped Scroll: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}`;
+            debugText += `\n  Board can scroll X: ${boardEl.scrollWidth > boardEl.clientWidth}`;
+            debugText += `\n  Board can scroll Y: ${boardEl.scrollHeight > boardEl.clientHeight}`;
+          }
+          
           debugEl.textContent = debugText;
+          
+          // Also log to console for easier debugging
+          console.log('Debug Panel Updated:', {
+            needsScrollX,
+            needsScrollY,
+            finalScrollX,
+            finalScrollY,
+            currentScrollX,
+            currentScrollY,
+            boardScrollWidth: boardEl.scrollWidth,
+            boardScrollHeight: boardEl.scrollHeight,
+            boardClientWidth: boardEl.clientWidth,
+            boardClientHeight: boardEl.clientHeight,
+            isFirstRender: this.isFirstRender
+          });
         }
       }
       
       if (needsScrollX || needsScrollY) {
         const isMobile = window.innerWidth <= 768;
         
-        if (isMobile) {
-          // Mobile: direct assignment for instant scroll
-          if (needsScrollX) {
-            boardEl.scrollLeft = finalScrollX;
+        // CRITICAL: On first render, ensure board is tall/wide enough before scrolling
+        if (this.isFirstRender) {
+          // Force board to be tall/wide enough for centering
+          if (minBoardHeightForScroll > boardEl.scrollHeight) {
+            boardEl.style.minHeight = `${minBoardHeightForScroll}px`;
+            void boardEl.offsetHeight; // Force reflow
           }
-          if (needsScrollY) {
-            // If board isn't tall enough to scroll, force it to be taller first
-            if (boardEl.scrollHeight <= boardEl.clientHeight && expectedBoardHeight > boardEl.clientHeight) {
-              // Force the container to be tall enough to enable scrolling
-              boardEl.style.minHeight = `${expectedBoardHeight}px`;
-              // Force reflow
-              void boardEl.offsetHeight;
-              // Recalculate after forcing height
-              const newScrollHeight = boardEl.scrollHeight;
-              const newMaxScrollY = Math.max(0, newScrollHeight - viewportHeight);
-              const newFinalScrollY = Math.max(0, Math.min(scrollY, newMaxScrollY));
-              boardEl.scrollTop = newFinalScrollY;
-            } else {
-              boardEl.scrollTop = finalScrollY;
-            }
+          if (minBoardWidthForScroll > boardEl.scrollWidth) {
+            // Width is handled by row width, but ensure it's wide enough
+            const rows = boardEl.querySelectorAll('.board-row');
+            rows.forEach(row => {
+              row.style.minWidth = `${minBoardWidthForScroll}px`;
+            });
+            void boardEl.offsetWidth; // Force reflow
+          }
+          // Recalculate max scroll after forcing size
+          const newMaxScrollX = Math.max(0, boardEl.scrollWidth - viewportWidth);
+          const newMaxScrollY = Math.max(0, boardEl.scrollHeight - viewportHeight);
+          // Re-clamp scroll values with new max
+          const clampedScrollX = Math.max(0, Math.min(scrollX, newMaxScrollX));
+          const clampedScrollY = Math.max(0, Math.min(scrollY, newMaxScrollY));
+          
+          // Debug: Log centering scroll
+          if (window.innerWidth <= 768) {
+            console.log('First render scroll:', {
+              scrollX,
+              scrollY,
+              clampedScrollX,
+              clampedScrollY,
+              newMaxScrollX,
+              newMaxScrollY,
+              boardWidth: boardEl.scrollWidth,
+              boardHeight: boardEl.scrollHeight,
+              minBoardWidthForScroll,
+              minBoardHeightForScroll
+            });
+          }
+          
+          if (isMobile) {
+            boardEl.scrollLeft = clampedScrollX;
+            boardEl.scrollTop = clampedScrollY;
+          } else {
+            boardEl.scrollTo({
+              left: clampedScrollX,
+              top: clampedScrollY,
+              behavior: 'smooth'
+            });
           }
         } else {
-          // Desktop: smooth scrolling
-          boardEl.scrollTo({
-            left: finalScrollX,
-            top: finalScrollY,
-            behavior: 'smooth'
-          });
+          // Normal scrolling after first render
+          if (isMobile) {
+            // Mobile: direct assignment for instant scroll
+            if (needsScrollX) {
+              boardEl.scrollLeft = finalScrollX;
+            }
+            if (needsScrollY) {
+              // If board isn't tall enough to scroll, force it to be taller first
+              if (boardEl.scrollHeight <= boardEl.clientHeight && expectedBoardHeight > boardEl.clientHeight) {
+                // Force the container to be tall enough to enable scrolling
+                boardEl.style.minHeight = `${expectedBoardHeight}px`;
+                // Force reflow
+                void boardEl.offsetHeight;
+                // Recalculate after forcing height
+                const newScrollHeight = boardEl.scrollHeight;
+                const newMaxScrollY = Math.max(0, newScrollHeight - viewportHeight);
+                const newFinalScrollY = Math.max(0, Math.min(scrollY, newMaxScrollY));
+                boardEl.scrollTop = newFinalScrollY;
+              } else {
+                boardEl.scrollTop = finalScrollY;
+              }
+            }
+          } else {
+            // Desktop: smooth scrolling
+            boardEl.scrollTo({
+              left: finalScrollX,
+              top: finalScrollY,
+              behavior: 'smooth'
+            });
+          }
         }
       }
       
