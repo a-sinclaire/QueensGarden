@@ -928,6 +928,7 @@ class DOMRenderer extends RendererInterface {
       'queen': 'Q',
       'jack': 'J',
       '10': '10',
+      'ten': '10', // Handle both '10' and 'ten' formats
       '9': '9',
       '8': '8',
       '7': '7',

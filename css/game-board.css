@@ -36,6 +36,9 @@
   /* Ensure rows maintain their width and don't shrink - this makes them wider than container */
   min-width: max-content;
   width: max-content;
+  /* Ensure rows maintain their height - critical for vertical scrolling */
+  min-height: max-content;
+  height: max-content;
 }
 
 .tile {
