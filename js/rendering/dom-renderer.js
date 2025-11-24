@@ -1172,6 +1172,12 @@ class DOMRenderer extends RendererInterface {
       }
       // After first render: use stored spacer values (don't recalculate)
       
+      // Get spacer values (from initialization or stored)
+      const topSpacer = this._topSpacerNeeded || 0;
+      const bottomSpacer = this._bottomSpacerNeeded || 0;
+      const leftSpacer = this._leftSpacerNeeded || 0;
+      const rightSpacer = this._rightSpacerNeeded || 0;
+      
       // Calculate minimum dimensions needed for centering in all directions
       const minBoardHeightForScroll = Math.max(
         expectedBoardHeight,
