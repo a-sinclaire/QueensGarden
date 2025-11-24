@@ -440,9 +440,10 @@ function showErrorFeedback(x, y, errorMessage) {
     }
   }
   
-  // Highlight relevant UI based on error message
-  if (errorMessage && (errorMessage.includes('King') || errorMessage.includes('ability'))) {
-    // Highlight kings display
+  // Don't highlight king box for king collection errors - only highlight missing queen
+  // (King-related errors like "no available kings" still highlight king box)
+  if (errorMessage && errorMessage.includes('ability') && !errorMessage.includes('Queen')) {
+    // Highlight kings display for ability-related errors (not collection errors)
     const kingsDisplay = document.getElementById('kings-display');
     const mobileKings = document.getElementById('mobile-kings');
     if (kingsDisplay) {

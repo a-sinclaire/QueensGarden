@@ -483,6 +483,10 @@ class DOMRenderer extends RendererInterface {
             clearTimeout(touchTimer);
             touchTimer = null;
           }
+          // Stop reset text and shaking if moved away
+          if (isRestartHolding) {
+            cleanupHold();
+          }
         }
       }
     }, { passive: true });
@@ -695,6 +699,12 @@ class DOMRenderer extends RendererInterface {
           if (mouseTimer) {
             clearTimeout(mouseTimer);
             mouseTimer = null;
+          }
+          // Stop reset text and shaking if moved away
+          if (isMouseRestartHolding) {
+            cleanupMouseHold();
+          } else {
+            cleanupMouseHold(); // Clean up visual feedback if moved away
           }
         }
       }
@@ -1093,7 +1103,62 @@ class DOMRenderer extends RendererInterface {
     // Debug rectangle disabled - uncomment to enable
     // this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, tileWidth, tileHeight, gap, rowWidth);
     
+    // Process flip queue sequentially (one card at a time)
+    this._processFlipQueue();
+    
     // No need to restore scroll position - we never cleared the DOM!
+  }
+  
+  /**
+   * Process flip queue sequentially - one card at a time
+   * @private
+   */
+  _processFlipQueue() {
+    // If already processing or queue is empty, return
+    if (this.isProcessingFlipQueue || this.flipQueue.length === 0) {
+      return;
+    }
+    
+    // Sort queue by distance (closer tiles first), then by x, then y for consistent ordering
+    this.flipQueue.sort((a, b) => {
+      if (a.distance !== b.distance) {
+        return a.distance - b.distance;
+      }
+      if (a.x !== b.x) {
+        return a.x - b.x;
+      }
+      return a.y - b.y;
+    });
+    
+    // Start processing
+    this.isProcessingFlipQueue = true;
+    this._animateNextFlip();
+  }
+  
+  /**
+   * Animate the next card in the flip queue
+   * @private
+   */
+  _animateNextFlip() {
+    if (this.flipQueue.length === 0) {
+      this.isProcessingFlipQueue = false;
+      return;
+    }
+    
+    // Get next tile from queue
+    const { tileEl } = this.flipQueue.shift();
+    
+    // Add flip animation
+    tileEl.classList.add('card-flip-animate');
+    
+    // Remove animation class after animation completes and process next
+    setTimeout(() => {
+      tileEl.classList.remove('card-flip-animate');
+      // Small delay between flips for smooth sequential effect
+      setTimeout(() => {
+        this._animateNextFlip();
+      }, 50); // 50ms delay between flips
+    }, 300); // Animation duration
   }
   
   /**
@@ -1303,6 +1368,14 @@ class DOMRenderer extends RendererInterface {
         messageEl.textContent = victory ? 'Victory!' : 'Game Over';
       }
     }
+  }
+  
+  onDamage(amount, newHealth, source = null) {
+    // Show damage popup
+    this._showDamagePopup(amount, source);
+    
+    // Screen shake effect
+    this._screenShake();
   }
   
   onGameOver(victory) {
