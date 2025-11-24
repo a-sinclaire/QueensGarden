@@ -428,45 +428,39 @@ class DOMRenderer extends RendererInterface {
       // For normal scrolling: need space for deadzone + movement
       let minBoardHeightForScroll, minBoardWidthForScroll;
       
+      // Spacers are set once in _updateBoard and never change
+      // Just use stored spacer values for board dimension calculations
+      const topSpacer = this._topSpacerNeeded || 0;
+      const leftSpacer = this._leftSpacerNeeded || 0;
+      
       if (this.isFirstRender) {
         // On first render, we need enough space to scroll to the center position
         // Center scroll position is: playerPixelX/Y - viewportWidth/Height / 2
         const centerScrollX = playerPixelX - (viewportWidth / 2);
         const centerScrollY = playerPixelY - (viewportHeight / 2);
         
-        // If centerScrollY is negative, we need extra space ABOVE the board to allow scrolling up
-        // Add top padding/spacer equal to the absolute value of negative scroll
-        const topSpacerNeeded = centerScrollY < 0 ? Math.abs(centerScrollY) : 0;
-        const leftSpacerNeeded = centerScrollX < 0 ? Math.abs(centerScrollX) : 0;
-        
-        // Board needs to be at least: center scroll position + viewport size + any negative scroll offset
+        // Board needs to be at least: center scroll position + viewport size + spacers
         minBoardWidthForScroll = Math.max(
           expectedBoardWidth,
-          centerScrollX + viewportWidth + leftSpacerNeeded,
-          playerPixelX + (viewportWidth / 2) + leftSpacerNeeded // Also ensure we can scroll right if needed
+          centerScrollX + viewportWidth + leftSpacer,
+          playerPixelX + (viewportWidth / 2) + leftSpacer
         );
         minBoardHeightForScroll = Math.max(
           expectedBoardHeight,
-          centerScrollY + viewportHeight + topSpacerNeeded,
-          playerPixelY + (viewportHeight / 2) + topSpacerNeeded // Also ensure we can scroll down if needed
+          centerScrollY + viewportHeight + topSpacer,
+          playerPixelY + (viewportHeight / 2) + topSpacer
         );
-        
-        // Store spacer needs for use when adding spacers
-        this._topSpacerNeeded = topSpacerNeeded;
-        this._leftSpacerNeeded = leftSpacerNeeded;
       } else {
-        this._topSpacerNeeded = 0;
-        this._leftSpacerNeeded = 0;
-        // Normal scrolling: need space for deadzone + movement
+        // Normal scrolling: need space for content + spacers
         minBoardHeightForScroll = Math.max(
           expectedBoardHeight,
-          playerPixelY + (viewportHeight / 2),
-          playerPixelY + viewportHeight
+          playerPixelY + (viewportHeight / 2) + topSpacer,
+          playerPixelY + viewportHeight + topSpacer
         );
         minBoardWidthForScroll = Math.max(
           expectedBoardWidth,
-          playerPixelX + (viewportWidth / 2),
-          playerPixelX + viewportWidth
+          playerPixelX + (viewportWidth / 2) + leftSpacer,
+          playerPixelX + viewportWidth + leftSpacer
         );
       }
       
@@ -1115,27 +1109,23 @@ class DOMRenderer extends RendererInterface {
       // Calculate spacer needs for centering
       // Set spacers ONCE on first render, then keep them fixed
       // After that, adjust scroll offset to maintain relative position
+      // Spacers should be SYMMETRIC (T=B, L=R) to allow centering in all directions
       if (!this._spacersInitialized) {
-        // Always add spacers on all sides (at least viewport/2) to allow scrolling to center
+        // Always add spacers on all sides (viewport/2) to allow scrolling to center
         // This ensures we can always scroll in any direction to center the queen
-        const minSpacerWidth = viewportWidth / 2;
-        const minSpacerHeight = viewportHeight / 2;
+        // Use symmetric spacers: same size on opposite sides
+        const spacerWidth = viewportWidth / 2;
+        const spacerHeight = viewportHeight / 2;
         
-        // Calculate how much we need to scroll to center
+        // Calculate how much we need to scroll to center (for initial centering)
         const centerScrollX = playerPixelX - (viewportWidth / 2);
         const centerScrollY = playerPixelY - (viewportHeight / 2);
         
-        // Add spacers: at least minSpacer on each side, plus any extra needed
-        const topSpacer = Math.max(minSpacerHeight, centerScrollY < 0 ? Math.abs(centerScrollY) : minSpacerHeight);
-        const bottomSpacer = Math.max(minSpacerHeight, centerScrollY > 0 ? centerScrollY : minSpacerHeight);
-        const leftSpacer = Math.max(minSpacerWidth, centerScrollX < 0 ? Math.abs(centerScrollX) : minSpacerWidth);
-        const rightSpacer = Math.max(minSpacerWidth, centerScrollX > 0 ? centerScrollX : minSpacerWidth);
-        
-        // Store spacer sizes (fixed after first render)
-        this._topSpacerNeeded = topSpacer;
-        this._leftSpacerNeeded = leftSpacer;
-        this._bottomSpacerNeeded = bottomSpacer;
-        this._rightSpacerNeeded = rightSpacer;
+        // Store symmetric spacer sizes (fixed after first render)
+        this._topSpacerNeeded = spacerHeight;
+        this._bottomSpacerNeeded = spacerHeight;
+        this._leftSpacerNeeded = spacerWidth;
+        this._rightSpacerNeeded = spacerWidth;
         this._centerScrollX = centerScrollX;
         this._centerScrollY = centerScrollY;
         this._spacersInitialized = true;
