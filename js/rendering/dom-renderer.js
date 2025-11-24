@@ -718,11 +718,11 @@ class DOMRenderer extends RendererInterface {
           const actualScrollAfter = boardEl.scrollLeft;
           const actualScrollYAfter = boardEl.scrollTop;
           debugEl.textContent += `\n\n=== AFTER SCROLL ===`;
-          debugEl.textContent += `\n  Expected Scroll: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}`;
+          debugEl.textContent += `\n  Tracked Scroll: X=${Math.round(this._currentScrollX)} Y=${Math.round(this._currentScrollY)}`;
           debugEl.textContent += `\n  Actual DOM Scroll: X=${Math.round(actualScrollAfter)} Y=${Math.round(actualScrollYAfter)}`;
           debugEl.textContent += `\n  Stored Scroll: X=${Math.round(this.lastScrollX)} Y=${Math.round(this.lastScrollY)}`;
-          debugEl.textContent += `\n  Scroll Match X: ${Math.abs(actualScrollAfter - finalScrollX) < 1}`;
-          debugEl.textContent += `\n  Scroll Match Y: ${Math.abs(actualScrollYAfter - finalScrollY) < 1}`;
+          debugEl.textContent += `\n  Scroll Match X: ${Math.abs(actualScrollAfter - this._currentScrollX) < 1}`;
+          debugEl.textContent += `\n  Scroll Match Y: ${Math.abs(actualScrollYAfter - this._currentScrollY) < 1}`;
           
           // Check if scroll actually happened
           if (needsScrollX || needsScrollY) {
