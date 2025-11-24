@@ -12,35 +12,49 @@ class RulesEngine {
    * Check if a move is valid
    */
   canMove(from, to, board, player) {
-    // Check if destination is adjacent
-    if (!this._isAdjacent(from, to)) {
-      return { valid: false, reason: 'Can only move to adjacent tiles' };
-    }
-    
-    // Check if destination exists and is passable
+    // Check if destination exists
     const targetTile = board.get(`${to.x},${to.y}`);
     if (!targetTile) {
       return { valid: false, reason: 'Destination tile does not exist' };
     }
     
-    // Check if tile is a Queen and party is full (Queens become walls when party is full)
-    if (targetTile.card && targetTile.card.getType() === 'queen') {
-      const canCollect = this.canCollectQueen(targetTile.card, player);
-      if (!canCollect.valid && canCollect.reason === 'Party is full (max 3 Queens)') {
-        return { valid: false, reason: 'Tile is impassable (Queen - party is full)' };
-      }
+    // Get current tile
+    const currentTile = board.get(`${from.x},${from.y}`);
+    const isOnAce = currentTile && currentTile.card && currentTile.card.getType() === 'ace';
+    
+    // Check if destination is adjacent OR if we're teleporting (on Ace to Ace/central chamber)
+    const isAdjacent = this._isAdjacent(from, to);
+    const isTeleport = isOnAce && (
+      (targetTile.card && targetTile.card.getType() === 'ace') ||
+      targetTile.isCentralChamber
+    );
+    
+    if (!isAdjacent && !isTeleport) {
+      return { valid: false, reason: 'Can only move to adjacent tiles, or teleport from Ace to Ace/central chamber' };
     }
     
-    // Check if tile is a King (Kings are walls unless you can collect them)
-    if (targetTile.card && targetTile.card.getType() === 'king') {
-      const canCollect = this.canCollectKing(targetTile.card, player);
-      if (!canCollect.valid) {
-        return { valid: false, reason: 'Tile is impassable (King - cannot collect)' };
+    // For teleport moves (non-adjacent from Ace), skip passability checks
+    // Teleports can go to Aces or central chamber regardless of passability
+    if (!isTeleport) {
+      // Check if tile is a Queen and party is full (Queens become walls when party is full)
+      if (targetTile.card && targetTile.card.getType() === 'queen') {
+        const canCollect = this.canCollectQueen(targetTile.card, player);
+        if (!canCollect.valid && canCollect.reason === 'Party is full (max 3 Queens)') {
+          return { valid: false, reason: 'Tile is impassable (Queen - party is full)' };
+        }
       }
-    }
-    
-    if (!targetTile.isPassable()) {
-      return { valid: false, reason: 'Tile is impassable (wall or Jack)' };
+      
+      // Check if tile is a King (Kings are walls unless you can collect them)
+      if (targetTile.card && targetTile.card.getType() === 'king') {
+        const canCollect = this.canCollectKing(targetTile.card, player);
+        if (!canCollect.valid) {
+          return { valid: false, reason: 'Tile is impassable (King - cannot collect)' };
+        }
+      }
+      
+      if (!targetTile.isPassable()) {
+        return { valid: false, reason: 'Tile is impassable (wall or Jack)' };
+      }
     }
     
     return { valid: true };
@@ -127,7 +141,9 @@ class RulesEngine {
     // Check if this is the final King
     const finalKingSuit = player.getFinalKing();
     const isFinalKing = kingCard.suit === finalKingSuit;
-    const hasAllOtherKings = player.collectedKings.length >= 3;
+    // Must have all other kings before collecting final king
+    const requiredOtherKings = this.rules.cardBehaviors.king.totalKingsToWin - 1;
+    const hasAllOtherKings = player.collectedKings.length >= requiredOtherKings;
     
     if (isFinalKing && !hasAllOtherKings) {
       return { valid: false, reason: 'Must collect all other Kings before the final King' };

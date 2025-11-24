@@ -74,6 +74,8 @@ const GAME_RULES = {
   // Board
   board: {
     centralChamberPosition: { x: 0, y: 0 },
+    size: 10,  // Size in each direction from center (10 = 21x21 grid total)
+    bufferZoneSize: 2,  // Tiles to show around revealed tiles (2 = 5x5 area around each revealed tile)
     initialRevealDirections: [
       { x: 0, y: 1 },   // North
       { x: 0, y: -1 },  // South
@@ -81,6 +83,20 @@ const GAME_RULES = {
       { x: -1, y: 0 }   // West
     ],
     revealAdjacentOnMove: true
+  },
+  
+  // Rendering
+  rendering: {
+    tileWidth: {
+      mobile: 65,  // px
+      desktop: 70   // px
+    },
+    tileHeight: {
+      mobile: 85,  // px
+      desktop: 90  // px
+    },
+    tileGap: 2,  // px gap between tiles
+    mobileBreakpoint: 480  // px - switch between mobile/desktop tile sizes
   },
   
   // Damage rules

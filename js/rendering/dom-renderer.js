@@ -507,9 +507,11 @@ class DOMRenderer extends RendererInterface {
     const boardEl = document.getElementById('game-board');
     if (!boardEl) return;
     
-    // Fixed 20x20 grid bounds (10 in each direction from center)
+    // Fixed grid bounds (configurable size in each direction from center)
     // Always render the full fixed grid - never changes size
-    const BOARD_SIZE = 10; // 10 in each direction = 20x20 total
+    const BOARD_SIZE = typeof GAME_RULES !== 'undefined' && GAME_RULES.board.size 
+      ? GAME_RULES.board.size 
+      : 10; // Default fallback
     const minX = -BOARD_SIZE;
     const maxX = BOARD_SIZE;
     const minY = -BOARD_SIZE;
@@ -529,8 +531,13 @@ class DOMRenderer extends RendererInterface {
       }
     }
     
-    // Calculate which tiles should be populated (revealed + 2-tile buffer)
+    // Calculate which tiles should be populated (revealed + buffer zone)
     const tilesToPopulate = new Set();
+    
+    // Get buffer zone size from config
+    const bufferZoneSize = typeof GAME_RULES !== 'undefined' && GAME_RULES.board.bufferZoneSize !== undefined
+      ? GAME_RULES.board.bufferZoneSize
+      : 2; // Default fallback
     
     // If no revealed tiles yet, start with player position as the "revealed" area
     if (revealedTiles.size === 0) {
@@ -541,10 +548,10 @@ class DOMRenderer extends RendererInterface {
       const [x, y] = key.split(',').map(Number);
       // Add revealed tile
       tilesToPopulate.add(key);
-      // Add tiles within 2 tiles in all directions (buffer zone)
-      // This creates a 5x5 area (2 tiles on each side + center)
-      for (let dx = -2; dx <= 2; dx++) {
-        for (let dy = -2; dy <= 2; dy++) {
+      // Add tiles within buffer zone in all directions
+      // Creates a (bufferZoneSize*2+1) x (bufferZoneSize*2+1) area around each revealed tile
+      for (let dx = -bufferZoneSize; dx <= bufferZoneSize; dx++) {
+        for (let dy = -bufferZoneSize; dy <= bufferZoneSize; dy++) {
           const bufferX = x + dx;
           const bufferY = y + dy;
           // Only add if within grid bounds
@@ -566,10 +573,19 @@ class DOMRenderer extends RendererInterface {
     // Get adjacent tiles for tap-to-move highlighting (mobile)
     const adjacentTiles = this._getAdjacentMoveableTiles(board, playerPos);
     
-    // Calculate tile dimensions and spacing
-    const tileWidth = window.innerWidth <= 480 ? 65 : 70;
-    const tileHeight = window.innerWidth <= 480 ? 85 : 90;
-    const gap = 2; // Gap between tiles
+    // Calculate tile dimensions and spacing from config
+    const renderingConfig = typeof GAME_RULES !== 'undefined' && GAME_RULES.rendering
+      ? GAME_RULES.rendering
+      : { tileWidth: { mobile: 65, desktop: 70 }, tileHeight: { mobile: 85, desktop: 90 }, tileGap: 2, mobileBreakpoint: 480 };
+    
+    const breakpoint = renderingConfig.mobileBreakpoint || 480;
+    const tileWidth = window.innerWidth <= breakpoint 
+      ? (renderingConfig.tileWidth?.mobile || 65)
+      : (renderingConfig.tileWidth?.desktop || 70);
+    const tileHeight = window.innerWidth <= breakpoint
+      ? (renderingConfig.tileHeight?.mobile || 85)
+      : (renderingConfig.tileHeight?.desktop || 90);
+    const gap = renderingConfig.tileGap || 2;
     const totalTileWidth = tileWidth + gap;
     const totalTileHeight = tileHeight + gap;
     
@@ -760,7 +776,8 @@ class DOMRenderer extends RendererInterface {
     // Update mobile health display
     const mobileHealthValueEl = document.getElementById('mobile-health-value');
     if (mobileHealthValueEl) {
-      mobileHealthValueEl.textContent = `${player.health}/20`;
+      const maxHealth = typeof GAME_RULES !== 'undefined' ? GAME_RULES.startingHealth : 20;
+      mobileHealthValueEl.textContent = `${player.health}/${maxHealth}`;
     }
     
     // Update mobile party suits display
