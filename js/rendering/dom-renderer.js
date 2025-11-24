@@ -22,6 +22,8 @@ class DOMRenderer extends RendererInterface {
     this.deadZoneTiles = 1.0;
     // Track if this is the very first render (game initialization)
     this.isFirstRender = true;
+    // Track previous board bounds to detect bounds changes
+    this.lastBoardBounds = null;
     // Cache-bust color for debugging (changes with each deployment)
     this.cacheBustColor = this._getCacheBustColor();
   }
@@ -474,11 +476,21 @@ class DOMRenderer extends RendererInterface {
       
       // Only scroll if position changed significantly (more than 1px)
       // BUT: Don't scroll if we're within the deadzone (player should stay put)
+      // EXCEPT: Always allow first render to center, and allow centering scrolls
       const scrollThreshold = 1;
       const isInDeadzoneX = playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight;
       const isInDeadzoneY = playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom;
-      const needsScrollX = !isInDeadzoneX && Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
-      const needsScrollY = !isInDeadzoneY && Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
+      
+      // Check if this is a centering scroll (first render or bounds change compensation)
+      const isCenteringScroll = this.isFirstRender || 
+        (this.lastBoardBounds && (
+          this.lastBoardBounds.minX !== minX || this.lastBoardBounds.maxX !== maxX ||
+          this.lastBoardBounds.minY !== minY || this.lastBoardBounds.maxY !== maxY
+        ));
+      
+      // Allow scrolling if: outside deadzone OR centering scroll
+      const needsScrollX = (isCenteringScroll || !isInDeadzoneX) && Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
+      const needsScrollY = (isCenteringScroll || !isInDeadzoneY) && Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
       
       // Debug: Update debug panel with scroll decision
       const playerMoved = window._debugPlayerMoved || false;
