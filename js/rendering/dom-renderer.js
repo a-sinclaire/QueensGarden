@@ -473,9 +473,12 @@ class DOMRenderer extends RendererInterface {
       const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
       
       // Only scroll if position changed significantly (more than 1px)
+      // BUT: Don't scroll if we're within the deadzone (player should stay put)
       const scrollThreshold = 1;
-      const needsScrollX = Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
-      const needsScrollY = Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
+      const isInDeadzoneX = playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight;
+      const isInDeadzoneY = playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom;
+      const needsScrollX = !isInDeadzoneX && Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
+      const needsScrollY = !isInDeadzoneY && Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
       
       // Debug: Update debug panel with scroll decision
       const playerMoved = window._debugPlayerMoved || false;
@@ -637,7 +640,10 @@ class DOMRenderer extends RendererInterface {
     
     // Restore scroll position immediately after clearing (before browser recalculates layout)
     // This prevents the scroll from jumping when the board is rebuilt
-    // Use requestAnimationFrame to ensure DOM is ready before setting scroll
+    // Set immediately first (synchronous)
+    boardEl.scrollLeft = savedScrollX;
+    boardEl.scrollTop = savedScrollY;
+    // Then use requestAnimationFrame to ensure DOM is ready and scroll sticks
     requestAnimationFrame(() => {
       boardEl.scrollLeft = savedScrollX;
       boardEl.scrollTop = savedScrollY;
