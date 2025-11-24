@@ -26,8 +26,11 @@
     /* Content determines size, container scrolls */
     width: fit-content;
     min-width: 100%;
-    min-height: 100%;
+    /* Ensure content is tall enough to scroll */
+    min-height: calc(100% + 1px); /* Force scrollability */
     flex-shrink: 0;
+    /* Critical: ensure content can exceed container height */
+    align-content: flex-start;
   }
 }
 

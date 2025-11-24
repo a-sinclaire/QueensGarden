@@ -29,13 +29,16 @@
     order: 2; /* Show game area second */
     width: 100vw;
     height: 100vh;
+    max-height: 100vh; /* Ensure it doesn't exceed viewport */
     overflow: hidden; /* Hide overflow, board-container handles scrolling */
     padding: 0;
     position: relative;
     margin-top: 0;
-    /* Prevent browser from capturing scroll */
+    /* Prevent browser from capturing scroll, but allow element scrolling */
     overscroll-behavior: none;
     -webkit-overflow-scrolling: auto;
+    /* Ensure proper height calculation on mobile */
+    height: 100dvh; /* Use dynamic viewport height on mobile */
   }
   
   /* Hide mobile control buttons - using tap-to-move instead */
@@ -46,6 +49,8 @@
   .board-container {
     /* Simple scrollable container - fills parent, scrolls content */
     width: 100%;
+    /* CRITICAL: Match parent height exactly, then scroll when content exceeds */
+    /* Parent (.game-area) is 100dvh, so this is also 100dvh */
     height: 100%;
     overflow-x: auto;
     overflow-y: auto;
@@ -56,19 +61,22 @@
     -webkit-overflow-scrolling: touch;
     /* Prevent browser from capturing scroll - allow element to scroll */
     overscroll-behavior: contain;
-    /* Let content determine size */
+    /* Let content determine size - content can exceed container height */
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     /* Ensure container can scroll */
     position: relative;
-    /* Allow touch scrolling in both directions */
+    /* Allow touch scrolling in both directions - critical for mobile */
     touch-action: pan-x pan-y;
-    /* Ensure container has proper height for scrolling */
-    min-height: 100%;
-    /* Prevent browser scroll capture */
-    overscroll-behavior-y: contain;
-    overscroll-behavior-x: contain;
+    /* Force hardware acceleration for smooth scrolling */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: scroll-position;
+    /* Ensure content can be taller than container */
+    align-content: flex-start;
+    /* Content inside can grow beyond container height */
+    flex-shrink: 0;
   }
 }
 
