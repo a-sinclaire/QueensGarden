@@ -104,7 +104,7 @@
   min-height: 0;
   width: 100%;
   max-width: 100%; /* Constrain width to prevent expansion */
-  height: 100%;
+  /* Remove height: 100% - let flex: 1 handle height constraint */
 }
 
 /* Mobile Controls */
