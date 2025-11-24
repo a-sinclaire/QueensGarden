@@ -7,14 +7,16 @@
   width: 100%;
   max-width: 100%;
   height: 100%;
-  overflow-x: auto;
-  overflow-y: auto;
+  overflow-x: scroll;
+  overflow-y: scroll;
   padding: 0;
   margin: 0;
   box-sizing: border-box;
   position: relative;
-  /* Ensure scrolling works */
+  /* Force scrollbars - use scroll instead of auto */
   -webkit-overflow-scrolling: touch;
+  /* Ensure container can receive touch events for scrolling */
+  touch-action: pan-x pan-y;
 }
 
 @media (max-width: 768px) {
