@@ -4,17 +4,14 @@
  */
 
 .board-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  display: block;
   padding: 0; /* No padding needed with 20x20 grid */
   margin: 0;
   /* Content determines size - must be larger than container to enable scrolling */
   width: fit-content;
   min-width: 100%;
   /* Height and overflow handled by ui.css for scrolling */
-  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
