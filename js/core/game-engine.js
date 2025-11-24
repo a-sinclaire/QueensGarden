@@ -105,7 +105,7 @@ class GameEngine {
   }
   
   /**
-   * Move player to a new position
+   * Move player to a new position (by direction)
    */
   movePlayer(direction) {
     if (this.gameOver) {
@@ -115,7 +115,21 @@ class GameEngine {
     const currentPos = this.player.position;
     const newPos = this._getNewPosition(currentPos, direction);
     
-    // Validate move
+    return this.moveToPosition(newPos.x, newPos.y);
+  }
+  
+  /**
+   * Move player to a specific position (handles both adjacent moves and teleports)
+   */
+  moveToPosition(x, y) {
+    if (this.gameOver) {
+      return { success: false, message: 'Game is over' };
+    }
+    
+    const currentPos = this.player.position;
+    const newPos = { x, y };
+    
+    // Validate move (this now handles both adjacent moves and teleports)
     const validation = this.rulesEngine.canMove(currentPos, newPos, this.board, this.player);
     if (!validation.valid) {
       return { success: false, message: validation.reason };
@@ -144,9 +158,30 @@ class GameEngine {
     }
     
     // STEP 2: Calculate and apply damage from stepping on tile
+    // Use calculateDamage for all moves (including teleports) - Aces deal 1 damage
     const damage = this.rulesEngine.calculateDamage(targetTile, this.player);
+    // Debug: Log damage calculation for Aces
+    if (targetTile.card && targetTile.card.getType() === 'ace' && damage > 0) {
+      console.log('Ace damage calculation:', {
+        cardValue: targetTile.card.value,
+        calculatedDamage: damage,
+        isImmune: this.player.isImmuneTo(targetTile.card.suit),
+        card: targetTile.card
+      });
+    }
     if (damage > 0) {
+      const healthBefore = this.player.health;
       this.player.takeDamage(damage);
+      const healthAfter = this.player.health;
+      // Debug: Check if damage was applied correctly
+      if (targetTile.card && targetTile.card.getType() === 'ace') {
+        console.log('Damage application:', {
+          damageAmount: damage,
+          healthBefore,
+          healthAfter,
+          healthDifference: healthBefore - healthAfter
+        });
+      }
       this.renderer.onDamage(damage, this.player.health);
     }
     

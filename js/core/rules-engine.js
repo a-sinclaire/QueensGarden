@@ -86,6 +86,11 @@ class RulesEngine {
     
     // Aces deal damage equal to their value (1) when stepped on
     if (cardType === 'ace') {
+      // Use card.value which should be 1 from GAME_RULES.cardBehaviors.ace.value
+      // Debug: Log if value seems wrong
+      if (card.value !== 1 && typeof GAME_RULES !== 'undefined') {
+        console.warn('Ace card.value is', card.value, 'expected 1. Card:', card);
+      }
       return card.value; // Aces are worth 1
     }
     
