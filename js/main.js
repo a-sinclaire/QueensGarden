@@ -340,7 +340,11 @@ function handleTileClick(x, y) {
   if (!result.success) {
     // Visual feedback for move errors
     showErrorFeedback(x, y, result.message);
+    // Don't render on failed moves - prevents cards from flipping
+    return;
   }
+  // Only render if move was successful (tiles will be revealed)
+  renderer.render(gameEngine.getGameState());
 }
 
 /**

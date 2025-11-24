@@ -1091,14 +1091,24 @@ class DOMRenderer extends RendererInterface {
         // Show tile and update visual state
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
         
-        // Add to flip queue for sequential animation ONLY if newly revealed AND not already animating
+        // Add to flip queue for sequential animation ONLY if:
+        // 1. Newly revealed (not in revealedTiles set)
+        // 2. Not already animating
+        // 3. Not in the queue already
         if (isNewlyRevealed && !tileEl.classList.contains('card-flip-animate')) {
-          // Mark as revealed IMMEDIATELY to prevent re-adding to queue
-          this.revealedTiles.add(tileKey);
+          // Check if already in queue
+          const alreadyInQueue = this.flipQueue.some(item => 
+            item.x === x && item.y === y
+          );
           
-          // Calculate distance from player (closer tiles flip first)
-          const distance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
-          this.flipQueue.push({ tileEl, distance, x, y });
+          if (!alreadyInQueue) {
+            // Mark as revealed IMMEDIATELY to prevent re-adding to queue
+            this.revealedTiles.add(tileKey);
+            
+            // Calculate distance from player (closer tiles flip first)
+            const distance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
+            this.flipQueue.push({ tileEl, distance, x, y });
+          }
         }
       }
     }
@@ -1106,8 +1116,10 @@ class DOMRenderer extends RendererInterface {
     // Debug rectangle disabled - uncomment to enable
     // this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, tileWidth, tileHeight, gap, rowWidth);
     
-    // Process flip queue sequentially (one card at a time)
-    this._processFlipQueue();
+    // Process flip queue sequentially (one card at a time) - only if queue has items
+    if (this.flipQueue.length > 0) {
+      this._processFlipQueue();
+    }
     
     // No need to restore scroll position - we never cleared the DOM!
   }
