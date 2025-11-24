@@ -312,6 +312,14 @@ class DOMRenderer extends RendererInterface {
       : null;
     
     setTimeout(() => {
+      // Debug: Verify setTimeout callback is executing
+      if (window.innerWidth <= 768) {
+        console.log('_centerBoardOnPlayer setTimeout callback executing', {
+          playerPos: { x: playerPos.x, y: playerPos.y },
+          isFirstRender: this.isFirstRender
+        });
+      }
+      
       // Always update stored scroll position from actual scroll (handles manual scrolling)
       // This ensures relative scrolling works even if user manually scrolled
       // BUT: If we have preserved scroll (board was just rebuilt), use that instead
@@ -340,8 +348,9 @@ class DOMRenderer extends RendererInterface {
       const computedStyle = window.getComputedStyle(boardEl);
       const padding = parseInt(computedStyle.paddingTop) || parseInt(computedStyle.paddingLeft) || (window.innerWidth <= 768 ? 8 : 16);
       
-      // Calculate expected board height to ensure container is tall enough
+      // Calculate expected board dimensions to ensure container is tall/wide enough
       const expectedBoardHeight = padding * 2 + (maxY - minY + 1) * totalTileHeight;
+      const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
       
       // Get viewport dimensions - use window, not container (container may have grown)
       const viewportWidth = window.innerWidth;
@@ -537,8 +546,7 @@ class DOMRenderer extends RendererInterface {
       const actualScrollWidth = boardEl.scrollWidth;
       const actualScrollHeight = boardEl.scrollHeight;
       
-      // Calculate expected board width from bounds (height already calculated above)
-      const expectedBoardWidth = padding * 2 + (maxX - minX + 1) * totalTileWidth;
+      // expectedBoardWidth already calculated above (before minBoardWidthForScroll calculation)
       
       // Use the larger of actual scroll dimensions or minimum needed dimensions
       // (minBoardWidthForScroll and minBoardHeightForScroll already calculated above)
