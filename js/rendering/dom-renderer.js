@@ -1328,30 +1328,11 @@ class DOMRenderer extends RendererInterface {
     // The preserved scroll is passed to _centerBoardOnPlayer via _savedScrollBeforeRebuild
     // and it will use it if needed. Restoring here would interfere with the deadzone logic.
     
-    // Center camera on player AFTER board is rendered (mobile only)
-    // But with spacers, we can just scroll to center position once
-    if (window.innerWidth <= 768 && this.isFirstRender) {
-      // After spacers are added, scroll to center the player
-      // Use the center scroll values we calculated
-      const centerScrollX = this._centerScrollX || 0;
-      const centerScrollY = this._centerScrollY || 0;
-      
-      // Adjust for spacers: if we added left spacer, scroll position shifts
-      const leftSpacer = this._leftSpacerNeeded || 0;
-      const topSpacer = this._topSpacerNeeded || 0;
-      
-      // Final scroll position: center scroll + spacer offset
-      const finalScrollX = Math.max(0, centerScrollX + leftSpacer);
-      const finalScrollY = Math.max(0, centerScrollY + topSpacer);
-      
-      // Scroll to center position
-      boardEl.scrollLeft = finalScrollX;
-      boardEl.scrollTop = finalScrollY;
-      
-      // Mark first render as complete
-      this.isFirstRender = false;
-    } else if (window.innerWidth <= 768) {
-      // After first render, just update camera (no auto-scroll)
+    // Update debug overlays and panel (mobile only)
+    // Spacers handle centering, but we still need to update debug displays
+    if (window.innerWidth <= 768) {
+      // Always call _centerBoardOnPlayer to update debug overlays
+      // It won't scroll (needsScrollX/Y are false), but will update debug panel
       this._centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY);
     }
   }
