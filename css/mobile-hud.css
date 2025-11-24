@@ -78,11 +78,12 @@
 }
 
 .party-suit.error-glow {
-  animation: error-glow 1s ease-in-out infinite;
-  border: 2px solid #ff4444;
-  border-radius: 4px;
-  padding: 2px 4px;
-  box-shadow: 0 0 10px rgba(255, 68, 68, 0.8);
+  animation: error-glow 1s ease-in-out infinite !important;
+  border: 2px solid #ff4444 !important;
+  border-radius: 4px !important;
+  padding: 2px 4px !important;
+  box-shadow: 0 0 10px rgba(255, 68, 68, 0.8) !important;
+  background-color: rgba(255, 68, 68, 0.2) !important;
 }
 
 .hud-kings {
