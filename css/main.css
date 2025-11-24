@@ -443,6 +443,6 @@ header h1 {
 }
 
 #game-container.screen-shake {
-  animation: screen-shake 0.5s ease-in-out;
+  animation: screen-shake 0.5s ease-in-out !important;
 }
 

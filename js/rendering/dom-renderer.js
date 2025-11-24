@@ -1444,50 +1444,25 @@ class DOMRenderer extends RendererInterface {
   }
   
   /**
-   * Screen shake effect - intensity scales with damage
+   * Screen shake effect
    * @private
    */
   _screenShake(damageAmount = 1) {
     const gameContainer = document.getElementById('game-container');
     if (!gameContainer) return;
     
-    // Calculate shake intensity based on damage
-    // Scale: 1 damage = 2px, 9 damage = 10px (max damage currently)
-    // Formula: intensity = damage * 1.0 + 1, clamped between 2 and 10
-    const intensity = Math.min(Math.max(Math.round(damageAmount * 1.0 + 1), 2), 10);
-    
-    // Create custom shake animation based on damage
-    const shakeKeyframes = `
-      @keyframes screen-shake-${intensity} {
-        0%, 100% { transform: translateX(0) translateY(0) !important; }
-        10% { transform: translateX(-${intensity}px) translateY(-${intensity * 0.6}px) !important; }
-        20% { transform: translateX(${intensity}px) translateY(${intensity * 0.6}px) !important; }
-        30% { transform: translateX(-${intensity * 0.8}px) translateY(-${intensity * 0.4}px) !important; }
-        40% { transform: translateX(${intensity * 0.8}px) translateY(${intensity * 0.4}px) !important; }
-        50% { transform: translateX(-${intensity * 0.6}px) translateY(-${intensity * 0.2}px) !important; }
-        60% { transform: translateX(${intensity * 0.6}px) translateY(${intensity * 0.2}px) !important; }
-        70% { transform: translateX(-${intensity * 0.4}px) translateY(-${intensity * 0.2}px) !important; }
-        80% { transform: translateX(${intensity * 0.4}px) translateY(${intensity * 0.2}px) !important; }
-        90% { transform: translateX(-${intensity * 0.2}px) translateY(0) !important; }
-      }
-    `;
-    
-    // Add keyframes if not already added
-    let styleSheet = document.getElementById('dynamic-shake-styles');
-    if (!styleSheet) {
-      styleSheet = document.createElement('style');
-      styleSheet.id = 'dynamic-shake-styles';
-      document.head.appendChild(styleSheet);
-    }
-    styleSheet.textContent = shakeKeyframes;
-    
     // Remove any existing shake classes first
-    gameContainer.className = gameContainer.className.replace(/screen-shake-\d+/g, '').trim();
+    gameContainer.classList.remove('screen-shake');
     
-    // Apply shake class with intensity
-    gameContainer.classList.add(`screen-shake-${intensity}`);
+    // Force reflow to ensure class removal is processed
+    void gameContainer.offsetWidth;
+    
+    // Apply shake class
+    gameContainer.classList.add('screen-shake');
+    
+    // Remove after animation completes
     setTimeout(() => {
-      gameContainer.classList.remove(`screen-shake-${intensity}`);
+      gameContainer.classList.remove('screen-shake');
     }, 500);
   }
   
