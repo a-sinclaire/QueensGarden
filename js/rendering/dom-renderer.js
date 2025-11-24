@@ -531,20 +531,24 @@ class DOMRenderer extends RendererInterface {
       const needsScrollY = (isCenteringScroll || (!isInDeadzoneY && playerMoved)) && Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
       
       // Debug: Update debug panel with scroll decision
-      const playerMoved = window._debugPlayerMoved || false;
-      if (window.innerWidth <= 768 && playerMoved) {
+      // Always show debug on mobile, not just when player moved
+      if (window.innerWidth <= 768) {
         const debugEl = document.getElementById('debug-content');
         if (debugEl) {
           let debugText = `Viewport: ${viewportWidth}×${viewportHeight}\n`;
           debugText += `Board Bounds: X(${minX}-${maxX}) Y(${minY}-${maxY})\n`;
           debugText += `Player Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}\n`;
-          debugText += `Player Screen: X=${Math.round(playerScreenX)} Y=${Math.round(playerScreenY)}\n`;
+          debugText += `Player Screen (FINAL): X=${Math.round(finalPlayerScreenX)} Y=${Math.round(finalPlayerScreenY)}\n`;
           debugText += `Deadzone X: ${Math.round(deadZoneLeft)}-${Math.round(deadZoneRight)}\n`;
           debugText += `Deadzone Y: ${Math.round(deadZoneTop)}-${Math.round(deadZoneBottom)}\n`;
-          debugText += `In Deadzone X: ${playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight}\n`;
-          debugText += `In Deadzone Y: ${playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom}\n`;
-          debugText += `Scroll: X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}\n`;
+          debugText += `In Deadzone X: ${isInDeadzoneX}\n`;
+          debugText += `In Deadzone Y: ${isInDeadzoneY}\n`;
+          debugText += `Current Scroll: X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}\n`;
+          debugText += `Calculated Scroll: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}\n`;
+          debugText += `Final Scroll: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}\n`;
           debugText += `Player Pos: (${playerPos.x}, ${playerPos.y})\n`;
+          debugText += `First Render: ${this.isFirstRender}\n`;
+          debugText += `Player Moved: ${playerMoved}\n`;
           
           // Show previous values for comparison
           if (this.lastPlayerPixelX !== null) {
@@ -571,13 +575,12 @@ class DOMRenderer extends RendererInterface {
           }
           
           debugText += scrollAction;
-          debugText += `\n\nDeadzone Check:`;
-          debugText += `\n  X: ${playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight ? 'IN' : 'OUT'} (${Math.round(playerScreenX)} vs ${Math.round(deadZoneLeft)}-${Math.round(deadZoneRight)})`;
-          debugText += `\n  Y: ${playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom ? 'IN' : 'OUT'} (${Math.round(playerScreenY)} vs ${Math.round(deadZoneTop)}-${Math.round(deadZoneBottom)})`;
           debugText += `\n\nWill scroll: X=${needsScrollX} Y=${needsScrollY}`;
-          debugText += `\nfinalScrollX=${Math.round(finalScrollX)} finalScrollY=${Math.round(finalScrollY)}`;
-          debugText += `\ncurrentScrollX=${Math.round(currentScrollX)} currentScrollY=${Math.round(currentScrollY)}`;
-          debugText += `\nscrollX calc=${Math.round(scrollX)} scrollY calc=${Math.round(scrollY)}`;
+          debugText += `\n  Reason X: ${isCenteringScroll ? 'FIRST_RENDER' : (!isInDeadzoneX && playerMoved ? 'OUTSIDE_DEADZONE' : 'IN_DEADZONE_OR_NO_MOVE')}`;
+          debugText += `\n  Reason Y: ${isCenteringScroll ? 'FIRST_RENDER' : (!isInDeadzoneY && playerMoved ? 'OUTSIDE_DEADZONE' : 'IN_DEADZONE_OR_NO_MOVE')}`;
+          debugText += `\n\nUp/Down Logic Check:`;
+          debugText += `\n  Up: playerScreenY(${Math.round(finalPlayerScreenY)}) < deadZoneTop(${Math.round(deadZoneTop)}) = ${finalPlayerScreenY < deadZoneTop}`;
+          debugText += `\n  Down: playerScreenY(${Math.round(finalPlayerScreenY)}) > deadZoneBottom(${Math.round(deadZoneBottom)}) = ${finalPlayerScreenY > deadZoneBottom}`;
           debugEl.textContent = debugText;
         }
       }
