@@ -553,73 +553,14 @@ class DOMRenderer extends RendererInterface {
         });
         
         if (debugEl) {
-          let debugText = `Viewport: ${viewportWidth}×${viewportHeight}\n`;
-          debugText += `Board Bounds: X(${minX}-${maxX}) Y(${minY}-${maxY})\n`;
-          debugText += `Player Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}\n`;
+          let debugText = `Player Pos: (${playerPos.x}, ${playerPos.y})\n`;
           debugText += `Player Screen: X=${Math.round(playerScreenX)} Y=${Math.round(playerScreenY)}\n`;
-          debugText += `Deadzone X: ${Math.round(deadZoneLeft)}-${Math.round(deadZoneRight)}\n`;
-          debugText += `Deadzone Y: ${Math.round(deadZoneTop)}-${Math.round(deadZoneBottom)}\n`;
-          debugText += `In Deadzone X: ${playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight}\n`;
-          debugText += `In Deadzone Y: ${playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom}\n`;
           debugText += `Current Scroll: X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}\n`;
-          debugText += `Calculated Scroll: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}\n`;
           debugText += `Final Scroll: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}\n`;
-          debugText += `Player Pos: (${playerPos.x}, ${playerPos.y})\n`;
+          debugText += `Will scroll: X=${needsScrollX} Y=${needsScrollY}\n`;
           debugText += `First Render: ${this.isFirstRender}\n`;
-          debugText += `Player Moved: ${playerMoved}\n`;
           
-          // Show previous values for comparison
-          if (this.lastPlayerPixelX !== null) {
-            debugText += `\nLast Pixel: X=${Math.round(this.lastPlayerPixelX)} Y=${Math.round(this.lastPlayerPixelY)}`;
-            debugText += `\nPixel Delta: X=${Math.round(playerPixelX - this.lastPlayerPixelX)} Y=${Math.round(playerPixelY - this.lastPlayerPixelY)}`;
-          }
-          
-          // Determine scroll action
-          let scrollAction = '';
-          if (this.isFirstRender) {
-            scrollAction = '→ CENTERING';
-          } else if (playerMoved) {
-            if (playerScreenX < deadZoneLeft) {
-              scrollAction = '→ Scroll LEFT';
-            } else if (playerScreenX > deadZoneRight) {
-              scrollAction = '→ Scroll RIGHT';
-            } else {
-              scrollAction = '✓ No X scroll';
-            }
-            
-            if (playerScreenY < deadZoneTop) {
-              scrollAction += ' / Scroll UP';
-            } else if (playerScreenY > deadZoneBottom) {
-              scrollAction += ' / Scroll DOWN';
-            } else {
-              scrollAction += ' / ✓ No Y scroll';
-            }
-          } else {
-            scrollAction = '✓ No move, no scroll';
-          }
-          
-          debugText += scrollAction;
-          debugText += `\n\nWill scroll: X=${needsScrollX} Y=${needsScrollY}`;
-          debugText += `\n  Scroll Delta X: ${Math.round(finalScrollX - currentScrollX)} (threshold: ${this.isFirstRender ? '0.1' : '1'})`;
-          debugText += `\n  Scroll Delta Y: ${Math.round(finalScrollY - currentScrollY)} (threshold: ${this.isFirstRender ? '0.1' : '1'})`;
-          debugText += `\n  Max Scroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}`;
-          debugText += `\n  Board Size: W=${Math.round(boardWidth)} H=${Math.round(boardHeight)}`;
-          debugText += `\n  Board ScrollSize: W=${Math.round(boardEl.scrollWidth)} H=${Math.round(boardEl.scrollHeight)}`;
-          debugText += `\n  Board ClientSize: W=${Math.round(boardEl.clientWidth)} H=${Math.round(boardEl.clientHeight)}`;
-          debugText += `\n  Viewport: W=${viewportWidth} H=${viewportHeight}`;
-          debugText += `\n  Tile Size: W=${tileWidth} H=${tileHeight} Gap=${gap}`;
-          debugText += `\n  Total Tile: W=${totalTileWidth} H=${totalTileHeight}`;
-          debugText += `\n  Padding: ${padding}`;
-          debugText += `\n  Min Board For Scroll: W=${Math.round(minBoardWidthForScroll)} H=${Math.round(minBoardHeightForScroll)}`;
-          
-          // Add spacer and offset info
-          const offsetX = playerPixelX - (viewportWidth / 2);
-          const offsetY = playerPixelY - (viewportHeight / 2);
-          debugText += `\n\n=== CENTERING INFO ===`;
-          debugText += `\n  Offset from center: X=${Math.round(offsetX)} Y=${Math.round(offsetY)}`;
-          debugText += `\n  Spacers: Top=${this._topSpacerNeeded || 0} Bottom=${this._bottomSpacerNeeded || 0} Left=${this._leftSpacerNeeded || 0} Right=${this._rightSpacerNeeded || 0}`;
-          
-          // Add bounds change info
+          // Add bounds change info (most important for debugging the offset issue)
           if (this.lastBoardBounds) {
             const boundsChanged = (
               this.lastBoardBounds.minX !== minX || this.lastBoardBounds.maxX !== maxX ||
@@ -628,22 +569,21 @@ class DOMRenderer extends RendererInterface {
             if (boundsChanged) {
               const deltaMinX = minX - this.lastBoardBounds.minX;
               const deltaMinY = minY - this.lastBoardBounds.minY;
-              debugText += `\n\n=== BOUNDS CHANGE ===`;
-              debugText += `\n  Old bounds: X(${this.lastBoardBounds.minX}-${this.lastBoardBounds.maxX}) Y(${this.lastBoardBounds.minY}-${this.lastBoardBounds.maxY})`;
-              debugText += `\n  New bounds: X(${minX}-${maxX}) Y(${minY}-${maxY})`;
-              debugText += `\n  Delta: X=${deltaMinX} Y=${deltaMinY}`;
-              debugText += `\n  Scroll adjustment: X=${-deltaMinX * totalTileWidth} Y=${-deltaMinY * totalTileHeight}`;
+              debugText += `\n=== BOUNDS CHANGE ===\n`;
+              debugText += `Old: X(${this.lastBoardBounds.minX}-${this.lastBoardBounds.maxX}) Y(${this.lastBoardBounds.minY}-${this.lastBoardBounds.maxY})\n`;
+              debugText += `New: X(${minX}-${maxX}) Y(${minY}-${maxY})\n`;
+              debugText += `Delta: X=${deltaMinX} Y=${deltaMinY}\n`;
+              debugText += `Scroll adj: X=${Math.round(-deltaMinX * totalTileWidth)} Y=${Math.round(-deltaMinY * totalTileHeight)}\n`;
+              
+              // Show preserved scroll if available
+              if (preservedScroll) {
+                debugText += `Preserved scroll: X=${Math.round(preservedScroll.x)} Y=${Math.round(preservedScroll.y)}\n`;
+              }
             }
           }
           
-          // Add first render specific info
-          if (this.isFirstRender) {
-            debugText += `\n\n=== FIRST RENDER ===`;
-            debugText += `\n  Center Scroll Calc: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}`;
-            debugText += `\n  Clamped Scroll: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}`;
-            debugText += `\n  Board can scroll X: ${boardEl.scrollWidth > boardEl.clientWidth}`;
-            debugText += `\n  Board can scroll Y: ${boardEl.scrollHeight > boardEl.clientHeight}`;
-          }
+          // Add spacer info
+          debugText += `\nSpacers: T=${Math.round(this._topSpacerNeeded || 0)} B=${Math.round(this._bottomSpacerNeeded || 0)} L=${Math.round(this._leftSpacerNeeded || 0)} R=${Math.round(this._rightSpacerNeeded || 0)}\n`;
           
           try {
             debugEl.textContent = debugText;
