@@ -638,6 +638,14 @@ class DOMRenderer extends RendererInterface {
     minY -= 2;
     maxY += 2;
     
+    // Store current bounds for bounds change detection (used in _centerBoardOnPlayer)
+    const currentBounds = { minX, maxX, minY, maxY };
+    const boundsChanged = this.lastBoardBounds && (
+      this.lastBoardBounds.minX !== minX || this.lastBoardBounds.maxX !== maxX ||
+      this.lastBoardBounds.minY !== minY || this.lastBoardBounds.maxY !== maxY
+    );
+    this.lastBoardBounds = currentBounds;
+    
     // Preserve scroll position before clearing board (prevents jump when bounds change)
     // CRITICAL: When board bounds change, clearing innerHTML can reset scroll position
     // We need to preserve it and pass it to _centerBoardOnPlayer to use instead of reading it
