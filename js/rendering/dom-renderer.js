@@ -546,8 +546,12 @@ class DOMRenderer extends RendererInterface {
       
       // Debug: Update debug panel with scroll decision
       // Always show debug on mobile, not just when player moved
-      if (window.innerWidth <= 768) {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
         const debugEl = document.getElementById('debug-content');
+        if (!debugEl) {
+          console.error('Debug element not found! Looking for #debug-content');
+        }
         if (debugEl) {
           let debugText = `Viewport: ${viewportWidth}×${viewportHeight}\n`;
           debugText += `Board Bounds: X(${minX}-${maxX}) Y(${minY}-${maxY})\n`;
@@ -746,8 +750,11 @@ class DOMRenderer extends RendererInterface {
       }
       
       // Update debug panel with final scroll values AFTER scrolling
-      if (window.innerWidth <= 768) {
+      if (isMobile) {
         const debugEl = document.getElementById('debug-content');
+        if (!debugEl) {
+          console.error('Debug element not found after scroll! Looking for #debug-content');
+        }
         if (debugEl) {
           const actualScrollAfter = boardEl.scrollLeft;
           const actualScrollYAfter = boardEl.scrollTop;
