@@ -832,70 +832,22 @@ class DOMRenderer extends RendererInterface {
       this._lastBoundsChange = null;
     }
     
-    // Preserve scroll position before clearing board (prevents jump when bounds change)
-    // CRITICAL: When board bounds change, clearing innerHTML can reset scroll position
-    // We need to preserve it and pass it to _centerBoardOnPlayer to use instead of reading it
-    let savedScrollX = boardEl.scrollLeft;
-    let savedScrollY = boardEl.scrollTop;
-    
-    // Debug: Log scroll before adjustment
-    if (boundsChanged && window.innerWidth <= 768) {
-      console.log('Before scroll adjustment:', {
-        savedScrollX,
-        savedScrollY,
-        boundsChanged,
-        deltaMinX: this._lastBoundsChange?.deltaMinX,
-        deltaMinY: this._lastBoundsChange?.deltaMinY,
-        scrollAdjustX: this._lastBoundsChange?.scrollAdjustX,
-        scrollAdjustY: this._lastBoundsChange?.scrollAdjustY
-      });
-    }
-    
-    // Adjust scroll position when bounds change to maintain relative offset
-    // When board expands, the player's pixel position relative to board changes
-    // We need to adjust scroll to compensate and maintain the same visual position
-    // This maintains the relative offset from center (not auto-centering)
+    // Update scroll adjustment when bounds change
+    // When board expands, adjust scroll to maintain relative position
     if (boundsChanged && this.lastBoardBounds && !this.isFirstRender && this._lastBoundsChange) {
-      savedScrollX += this._lastBoundsChange.scrollAdjustX;
-      savedScrollY += this._lastBoundsChange.scrollAdjustY;
+      // Update current scroll adjustment by the bounds change adjustment
+      this._currentScrollX += this._lastBoundsChange.scrollAdjustX;
+      this._currentScrollY += this._lastBoundsChange.scrollAdjustY;
       
-      // Debug: Log scroll after adjustment
-      if (window.innerWidth <= 768) {
-        console.log('After scroll adjustment:', {
-          savedScrollX,
-          savedScrollY,
-          adjustmentApplied: true
-        });
-      }
-      
-      // Clamp to valid range (will be clamped again after board rebuild)
-      savedScrollX = Math.max(0, savedScrollX);
-      savedScrollY = Math.max(0, savedScrollY);
+      // Clamp to valid range
+      this._currentScrollX = Math.max(0, this._currentScrollX);
+      this._currentScrollY = Math.max(0, this._currentScrollY);
     }
     
     this.lastBoardBounds = currentBounds;
     
-    // Store saved scroll for use in _centerBoardOnPlayer
-    this._savedScrollBeforeRebuild = { x: savedScrollX, y: savedScrollY };
-    
     // Clear board
     boardEl.innerHTML = '';
-    
-    // Restore scroll position immediately after clearing (before browser recalculates layout)
-    // This prevents the scroll from jumping when the board is rebuilt
-    // Set immediately first (synchronous)
-    boardEl.scrollLeft = savedScrollX;
-    boardEl.scrollTop = savedScrollY;
-    // Then use requestAnimationFrame to ensure DOM is ready and scroll sticks
-    requestAnimationFrame(() => {
-      boardEl.scrollLeft = savedScrollX;
-      boardEl.scrollTop = savedScrollY;
-      // Force a second frame to ensure scroll sticks
-      requestAnimationFrame(() => {
-        boardEl.scrollLeft = savedScrollX;
-        boardEl.scrollTop = savedScrollY;
-      });
-    });
     
     // Get destroyable tiles if in destroy mode
     const destroyableTiles = this.destroyMode && this.selectedKing && this.gameEngine
