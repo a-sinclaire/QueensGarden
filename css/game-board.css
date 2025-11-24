@@ -26,8 +26,7 @@
     /* Content determines size, container scrolls */
     width: fit-content;
     min-width: 100%;
-    /* Ensure content is tall enough to scroll */
-    min-height: calc(100% + 1px); /* Force scrollability */
+    /* Don't force min-height - let ui.css control height for scrolling */
     flex-shrink: 0;
     /* Critical: ensure content can exceed container height */
     align-content: flex-start;
@@ -37,6 +36,8 @@
 .board-row {
   display: flex;
   gap: 2px;
+  /* Ensure rows can exceed container height for scrolling */
+  flex-shrink: 0;
 }
 
 .tile {

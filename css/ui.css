@@ -28,17 +28,18 @@
   .game-area {
     order: 2; /* Show game area second */
     width: 100vw;
-    height: 100vh;
-    max-height: 100vh; /* Ensure it doesn't exceed viewport */
-    overflow: hidden; /* Hide overflow, board-container handles scrolling */
+    /* Use flex: 1 like desktop - allows natural growth */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: visible; /* Allow overflow for scrolling */
     padding: 0;
     position: relative;
     margin-top: 0;
     /* Prevent browser from capturing scroll, but allow element scrolling */
     overscroll-behavior: none;
-    -webkit-overflow-scrolling: auto;
-    /* Ensure proper height calculation on mobile */
-    height: 100dvh; /* Use dynamic viewport height on mobile */
   }
   
   /* Hide mobile control buttons - using tap-to-move instead */
@@ -47,13 +48,14 @@
   }
   
   .board-container {
-    /* Simple scrollable container - fills parent, scrolls content */
-    width: 100%;
-    /* CRITICAL: Fixed height to parent, content inside can exceed and scroll */
-    height: 100%;
+    /* Match desktop behavior - use min-height instead of fixed height */
+    /* This allows container to grow naturally, enabling scrolling */
+    width: fit-content;
+    min-width: 100%;
+    min-height: 100%;
     overflow-x: auto;
     overflow-y: auto;
-    padding: 0;
+    padding: 0.5rem;
     margin: 0;
     /* Instant scrolling on mobile (smooth looks bad) */
     scroll-behavior: auto;
@@ -64,6 +66,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    justify-content: flex-start;
     /* Ensure container can scroll */
     position: relative;
     /* Allow touch scrolling in both directions - critical for mobile */
@@ -76,8 +79,6 @@
     align-content: flex-start;
     /* Content inside can grow beyond container height - critical for scrolling */
     flex-shrink: 0;
-    /* Override min-height from game-board.css - we need fixed height for scrolling */
-    min-height: 0;
   }
 }
 

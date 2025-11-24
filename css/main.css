@@ -31,8 +31,12 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  /* Prevent pull-to-refresh on mobile */
+  /* Prevent pull-to-refresh on mobile, but allow scrolling within elements */
   overscroll-behavior-y: contain;
+  /* Ensure body doesn't prevent scrolling */
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
 }
 
 #game-container {
