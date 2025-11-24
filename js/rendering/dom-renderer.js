@@ -485,18 +485,30 @@ class DOMRenderer extends RendererInterface {
         // Center scroll position is: playerPixelX/Y - viewportWidth/Height / 2
         const centerScrollX = playerPixelX - (viewportWidth / 2);
         const centerScrollY = playerPixelY - (viewportHeight / 2);
-        // Board needs to be at least: center scroll position + viewport size
+        
+        // If centerScrollY is negative, we need extra space ABOVE the board to allow scrolling up
+        // Add top padding/spacer equal to the absolute value of negative scroll
+        const topSpacerNeeded = centerScrollY < 0 ? Math.abs(centerScrollY) : 0;
+        const leftSpacerNeeded = centerScrollX < 0 ? Math.abs(centerScrollX) : 0;
+        
+        // Board needs to be at least: center scroll position + viewport size + any negative scroll offset
         minBoardWidthForScroll = Math.max(
           expectedBoardWidth,
-          centerScrollX + viewportWidth,
-          playerPixelX + (viewportWidth / 2) // Also ensure we can scroll right if needed
+          centerScrollX + viewportWidth + leftSpacerNeeded,
+          playerPixelX + (viewportWidth / 2) + leftSpacerNeeded // Also ensure we can scroll right if needed
         );
         minBoardHeightForScroll = Math.max(
           expectedBoardHeight,
-          centerScrollY + viewportHeight,
-          playerPixelY + (viewportHeight / 2) // Also ensure we can scroll down if needed
+          centerScrollY + viewportHeight + topSpacerNeeded,
+          playerPixelY + (viewportHeight / 2) + topSpacerNeeded // Also ensure we can scroll down if needed
         );
+        
+        // Store spacer needs for use when adding spacers
+        this._topSpacerNeeded = topSpacerNeeded;
+        this._leftSpacerNeeded = leftSpacerNeeded;
       } else {
+        this._topSpacerNeeded = 0;
+        this._leftSpacerNeeded = 0;
         // Normal scrolling: need space for deadzone + movement
         minBoardHeightForScroll = Math.max(
           expectedBoardHeight,
@@ -558,8 +570,16 @@ class DOMRenderer extends RendererInterface {
       const maxScrollY = Math.max(0, boardHeight - viewportHeight);
       
       // Clamp scroll values to valid range
-      const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
-      const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
+      // BUT: If we added top/left spacers for negative scroll, adjust the scroll calculation
+      const topSpacer = this._topSpacerNeeded || 0;
+      const leftSpacer = this._leftSpacerNeeded || 0;
+      
+      // Adjust scroll for spacers: if we added a top spacer, the scroll position shifts
+      const adjustedScrollX = scrollX + leftSpacer;
+      const adjustedScrollY = scrollY + topSpacer;
+      
+      const finalScrollX = Math.max(0, Math.min(adjustedScrollX, maxScrollX));
+      const finalScrollY = Math.max(0, Math.min(adjustedScrollY, maxScrollY));
       
       // Determine if we need to scroll
       // CRITICAL: Always scroll on first render (centering), otherwise only if position changed
@@ -1171,6 +1191,26 @@ class DOMRenderer extends RendererInterface {
         playerPixelX + (viewportWidth / 2), // Wide enough to scroll right to center
         playerPixelX + viewportWidth // Allow scrolling left to center
       );
+      
+      // Add top spacer if needed for negative scroll (first render centering)
+      const topSpacer = this._topSpacerNeeded || 0;
+      if (topSpacer > 0) {
+        let topSpacerEl = boardEl.querySelector('.scroll-spacer-top');
+        if (!topSpacerEl) {
+          topSpacerEl = document.createElement('div');
+          topSpacerEl.className = 'scroll-spacer-top';
+          topSpacerEl.style.width = '100%';
+          topSpacerEl.style.flexShrink = '0';
+          // Insert at the beginning of the board
+          boardEl.insertBefore(topSpacerEl, boardEl.firstChild);
+        }
+        topSpacerEl.style.height = `${topSpacer}px`;
+      } else {
+        const topSpacerEl = boardEl.querySelector('.scroll-spacer-top');
+        if (topSpacerEl) {
+          topSpacerEl.remove();
+        }
+      }
       
       // Add bottom spacer for vertical scrolling
       if (minBoardHeightForScroll > viewportHeight) {
