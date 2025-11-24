@@ -724,7 +724,7 @@ class DOMRenderer extends RendererInterface {
           const actualScrollAfter = boardEl.scrollLeft;
           const actualScrollYAfter = boardEl.scrollTop;
           debugEl.textContent += `\n\n=== AFTER SCROLL ===`;
-          debugEl.textContent += `\n  Tracked Scroll: X=${Math.round(this._currentScrollX)} Y=${Math.round(this._currentScrollY)}`;
+          debugEl.textContent += `\n  Initial Scroll: X=${this._initialScrollX !== null ? Math.round(this._initialScrollX) : 'null'} Y=${this._initialScrollY !== null ? Math.round(this._initialScrollY) : 'null'}`;
           debugEl.textContent += `\n  Actual DOM Scroll: X=${Math.round(actualScrollAfter)} Y=${Math.round(actualScrollYAfter)}`;
           debugEl.textContent += `\n  Stored Scroll: X=${Math.round(this.lastScrollX)} Y=${Math.round(this.lastScrollY)}`;
           if (this._initialScrollX !== null && this._initialScrollY !== null) {
