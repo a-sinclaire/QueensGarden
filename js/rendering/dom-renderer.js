@@ -745,12 +745,42 @@ class DOMRenderer extends RendererInterface {
         this._savedScrollBeforeRebuild = null;
       }
       
-      // Debug: Log final scroll position
-      if (window.innerWidth <= 768 && window._debugPlayerMoved) {
+      // Update debug panel with final scroll values AFTER scrolling
+      if (window.innerWidth <= 768) {
         const debugEl = document.getElementById('debug-content');
         if (debugEl) {
-          debugEl.textContent += `\n\nAfter scroll: X=${Math.round(this.lastScrollX)} Y=${Math.round(this.lastScrollY)}`;
-          debugEl.textContent += `\nDOM scroll: X=${Math.round(boardEl.scrollLeft)} Y=${Math.round(boardEl.scrollTop)}`;
+          const actualScrollAfter = boardEl.scrollLeft;
+          const actualScrollYAfter = boardEl.scrollTop;
+          debugEl.textContent += `\n\n=== AFTER SCROLL ===`;
+          debugEl.textContent += `\n  Expected Scroll: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}`;
+          debugEl.textContent += `\n  Actual DOM Scroll: X=${Math.round(actualScrollAfter)} Y=${Math.round(actualScrollYAfter)}`;
+          debugEl.textContent += `\n  Stored Scroll: X=${Math.round(this.lastScrollX)} Y=${Math.round(this.lastScrollY)}`;
+          debugEl.textContent += `\n  Scroll Match X: ${Math.abs(actualScrollAfter - finalScrollX) < 1}`;
+          debugEl.textContent += `\n  Scroll Match Y: ${Math.abs(actualScrollYAfter - finalScrollY) < 1}`;
+          
+          // Check if scroll actually happened
+          if (needsScrollX || needsScrollY) {
+            if (this.isFirstRender) {
+              debugEl.textContent += `\n  ⚠️ FIRST RENDER: Scroll should have happened!`;
+            }
+            if (needsScrollX && Math.abs(actualScrollAfter - finalScrollX) > 1) {
+              debugEl.textContent += `\n  ❌ X SCROLL FAILED! Expected ${Math.round(finalScrollX)}, got ${Math.round(actualScrollAfter)}`;
+            }
+            if (needsScrollY && Math.abs(actualScrollYAfter - finalScrollY) > 1) {
+              debugEl.textContent += `\n  ❌ Y SCROLL FAILED! Expected ${Math.round(finalScrollY)}, got ${Math.round(actualScrollYAfter)}`;
+            }
+          }
+          
+          console.log('After scroll check:', {
+            needsScrollX,
+            needsScrollY,
+            expectedX: finalScrollX,
+            expectedY: finalScrollY,
+            actualX: actualScrollAfter,
+            actualY: actualScrollYAfter,
+            matchX: Math.abs(actualScrollAfter - finalScrollX) < 1,
+            matchY: Math.abs(actualScrollYAfter - finalScrollY) < 1
+          });
         }
       }
       
