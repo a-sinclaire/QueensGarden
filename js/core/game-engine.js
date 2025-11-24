@@ -128,39 +128,39 @@ class GameEngine {
     this.player.position = newPos;
     this.turn++;
     
-    // Calculate and apply damage from stepping on tile
+    // STEP 1: Check for card collection and victory FIRST
+    // This ensures victory happens before any damage can kill the player
+    if (targetTile.card) {
+      this._handleCardCollection(targetTile);
+      
+      // Check for victory immediately after card collection
+      if (this.player.hasWon()) {
+        this.gameOver = true;
+        this.victory = true;
+        this.renderer.onGameOver(true);
+        this.renderer.render(this.getGameState());
+        return { success: true, damage: 0 };
+      }
+    }
+    
+    // STEP 2: Calculate and apply damage from stepping on tile
     const damage = this.rulesEngine.calculateDamage(targetTile, this.player);
     if (damage > 0) {
       this.player.takeDamage(damage);
       this.renderer.onDamage(damage, this.player.health);
     }
     
-    // Check for card collection
-    if (targetTile.card) {
-      this._handleCardCollection(targetTile);
-      
-      // Check for victory immediately after card collection
-      // This ensures the game ends before any Jack damage can kill the player
-      if (this.player.hasWon()) {
-        this.gameOver = true;
-        this.victory = true;
-        this.renderer.onGameOver(true);
-        this.renderer.render(this.getGameState());
-        return { success: true, damage: damage };
-      }
-    }
-    
-    // Reveal adjacent tiles (this will check for newly revealed Jacks)
+    // STEP 3: Reveal adjacent tiles (this will check for newly revealed Jacks)
     this._revealAdjacentTiles();
     
-    // Check for Jack adjacent damage (for all adjacent Jacks, including newly revealed)
+    // STEP 4: Check for Jack adjacent damage (for all adjacent Jacks, including newly revealed)
     // This ensures we catch Jacks that were already revealed before moving
     // Skip if game is already over (victory condition)
     if (!this.gameOver) {
       this._checkJackAdjacentDamage(newPos);
     }
     
-    // Check game over conditions (death check)
+    // STEP 5: Check game over conditions (death check)
     this._checkGameOver();
     
     // Render update
