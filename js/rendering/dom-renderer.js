@@ -831,22 +831,6 @@ class DOMRenderer extends RendererInterface {
     // Clear board
     boardEl.innerHTML = '';
     
-    // Apply scroll adjustment after board is rebuilt (mobile only)
-    if (window.innerWidth <= 768) {
-      // Apply the current scroll adjustment
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        boardEl.scrollLeft = this._currentScrollX;
-        boardEl.scrollTop = this._currentScrollY;
-        
-        // Force a second frame to ensure scroll sticks
-        requestAnimationFrame(() => {
-          boardEl.scrollLeft = this._currentScrollX;
-          boardEl.scrollTop = this._currentScrollY;
-        });
-      });
-    }
-    
     // Get destroyable tiles if in destroy mode
     const destroyableTiles = this.destroyMode && this.selectedKing && this.gameEngine
       ? this._getDestroyableTiles(board, playerPos)
@@ -1124,17 +1108,12 @@ class DOMRenderer extends RendererInterface {
       const leftSpacer = this._leftSpacerNeeded || 0;
       const rightSpacer = this._rightSpacerNeeded || 0;
       
-      // Calculate minimum dimensions needed for centering in all directions
-      const minBoardHeightForScroll = Math.max(
-        expectedBoardHeight,
-        playerPixelY + (viewportHeight / 2) + topSpacer, // Tall enough to scroll down to center
-        playerPixelY + viewportHeight + topSpacer // Allow scrolling up to center
-      );
-      const minBoardWidthForScroll = Math.max(
-        expectedBoardWidth,
-        playerPixelX + (viewportWidth / 2) + leftSpacer, // Wide enough to scroll right to center
-        playerPixelX + viewportWidth + leftSpacer // Allow scrolling left to center
-      );
+      // Spacers ensure we always have enough space:
+      // - Top spacer = viewportHeight/2
+      // - Bottom spacer = viewportHeight/2  
+      // - Content = expectedBoardHeight
+      // Total scrollHeight = expectedBoardHeight + viewportHeight > viewportHeight
+      // So we always have enough space to scroll - no need to manipulate minHeight
       
       // Add top spacer if needed for centering
       if (topSpacer > 0) {
@@ -1215,14 +1194,47 @@ class DOMRenderer extends RendererInterface {
       }
     }
     
-    // Note: We don't restore scroll here because _centerBoardOnPlayer will handle it
-    // The preserved scroll is passed to _centerBoardOnPlayer via _savedScrollBeforeRebuild
-    // and it will use it if needed. Restoring here would interfere with the deadzone logic.
-    
-    // Scroll to center the queen after spacers are added (mobile only)
-    // NOTE: Don't set isFirstRender = false here - let _centerBoardOnPlayer handle it
+    // Apply scroll adjustment AFTER spacers are added (mobile only)
+    // This ensures the board is tall/wide enough to actually scroll
     if (window.innerWidth <= 768) {
-      // Always call _centerBoardOnPlayer to update debug overlays and handle scrolling
+      // Use requestAnimationFrame to ensure DOM is fully rendered with spacers
+      requestAnimationFrame(() => {
+        // Ensure board has enough height/width to scroll
+        const currentScrollHeight = boardEl.scrollHeight;
+        const currentScrollWidth = boardEl.scrollWidth;
+        const clientHeight = boardEl.clientHeight;
+        const clientWidth = boardEl.clientWidth;
+        
+        // Only set scroll if board is actually scrollable
+        if (currentScrollHeight > clientHeight || this._currentScrollY === 0) {
+          boardEl.scrollTop = this._currentScrollY;
+        }
+        if (currentScrollWidth > clientWidth || this._currentScrollX === 0) {
+          boardEl.scrollLeft = this._currentScrollX;
+        }
+        
+        // Force a second frame to ensure scroll sticks
+        requestAnimationFrame(() => {
+          boardEl.scrollLeft = this._currentScrollX;
+          boardEl.scrollTop = this._currentScrollY;
+          
+          // Debug logging
+          if (window.DEBUG_SCROLL) {
+            console.log('Scroll applied:', {
+              tracked: { x: this._currentScrollX, y: this._currentScrollY },
+              actual: { x: boardEl.scrollLeft, y: boardEl.scrollTop },
+              scrollSize: { w: boardEl.scrollWidth, h: boardEl.scrollHeight },
+              clientSize: { w: boardEl.clientWidth, h: boardEl.clientHeight },
+              canScrollY: boardEl.scrollHeight > boardEl.clientHeight,
+              canScrollX: boardEl.scrollWidth > boardEl.clientWidth
+            });
+          }
+        });
+      });
+    }
+    
+    // Always call _centerBoardOnPlayer to update debug overlays (mobile only)
+    if (window.innerWidth <= 768) {
       this._centerBoardOnPlayer(boardEl, playerPos, minX, maxX, minY, maxY);
     }
   }
