@@ -367,6 +367,9 @@ class DOMRenderer extends RendererInterface {
       // Update debug overlay to show dead zone
       this._updateDeadZoneDebug(deadZoneLeft, deadZoneTop, deadZoneRight - deadZoneLeft, deadZoneBottom - deadZoneTop);
       
+      // Update center guide to show where center tile should be
+      this._updateCenterGuide(viewportWidth, viewportHeight);
+      
       // Calculate where player is NOW (after move) on screen with current scroll
       // This is the SINGLE source of truth for player screen position
       const playerScreenX = playerPixelX - currentScrollX;
@@ -379,8 +382,32 @@ class DOMRenderer extends RendererInterface {
       // Simplified logic: Queen starts in middle, then always follow deadzone rules
       if (this.isFirstRender) {
         // Very first render - always center the player completely (bypass deadzone check)
-        scrollX = playerPixelX - (viewportWidth / 2);
-        scrollY = playerPixelY - (viewportHeight / 2);
+        // Calculate scroll offset to center the queen
+        // The queen's pixel position minus half the viewport gives us the scroll position
+        const centerScrollX = playerPixelX - (viewportWidth / 2);
+        const centerScrollY = playerPixelY - (viewportHeight / 2);
+        
+        // Store the centered scroll position for reference
+        // This is the "base" scroll position when queen is centered
+        this.centeredScrollX = centerScrollX;
+        this.centeredScrollY = centerScrollY;
+        
+        scrollX = centerScrollX;
+        scrollY = centerScrollY;
+        
+        // Debug: Log centering calculation
+        if (window.innerWidth <= 768) {
+          console.log('First render centering:', {
+            playerPixelX,
+            playerPixelY,
+            viewportWidth,
+            viewportHeight,
+            centerScrollX,
+            centerScrollY,
+            currentScrollX,
+            currentScrollY
+          });
+        }
       } else if (playerMoved) {
         // After first render AND player moved - check deadzone and scroll if needed
         // If player is outside dead zone, scroll by exactly one tile spacing in that direction
@@ -1211,6 +1238,32 @@ class DOMRenderer extends RendererInterface {
    * Update debug overlay to show the dead zone (middle 50% of viewport)
    * @private
    */
+  _updateCenterGuide(viewportWidth, viewportHeight) {
+    // Draw a box around the center tile to help visualize centering
+    let guide = document.getElementById('center-guide');
+    if (!guide) {
+      guide = document.createElement('div');
+      guide.id = 'center-guide';
+      guide.style.position = 'fixed';
+      guide.style.pointerEvents = 'none';
+      guide.style.zIndex = '9999';
+      guide.style.border = '2px dashed rgba(255, 0, 0, 0.5)';
+      guide.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+      document.body.appendChild(guide);
+    }
+    
+    // Center tile should be at viewport center
+    const tileWidth = window.innerWidth <= 480 ? 65 : 70;
+    const tileHeight = window.innerWidth <= 480 ? 85 : 90;
+    const centerX = (viewportWidth / 2) - (tileWidth / 2);
+    const centerY = (viewportHeight / 2) - (tileHeight / 2);
+    
+    guide.style.left = `${centerX}px`;
+    guide.style.top = `${centerY}px`;
+    guide.style.width = `${tileWidth}px`;
+    guide.style.height = `${tileHeight}px`;
+  }
+  
   _updateDeadZoneDebug(left, top, width, height) {
     const debugOverlay = document.getElementById('debug-deadzone');
     if (debugOverlay) {
