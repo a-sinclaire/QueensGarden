@@ -14,12 +14,22 @@ class Card {
   
   /**
    * Calculate card value based on rank
+   * Uses GAME_RULES configuration when available, falls back to defaults
    */
   _calculateValue() {
     if (typeof this.rank === 'number') {
       return this.rank;
     }
     
+    // Use GAME_RULES if available (from game-rules.js)
+    if (typeof GAME_RULES !== 'undefined' && GAME_RULES.cardBehaviors) {
+      const cardType = this.getType();
+      if (GAME_RULES.cardBehaviors[cardType] && GAME_RULES.cardBehaviors[cardType].value !== undefined) {
+        return GAME_RULES.cardBehaviors[cardType].value;
+      }
+    }
+    
+    // Fallback to hard-coded defaults if GAME_RULES not available
     const valueMap = {
       'ace': 1,
       'jack': 11,
