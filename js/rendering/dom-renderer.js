@@ -712,15 +712,48 @@ class DOMRenderer extends RendererInterface {
    */
   _updateMobileHUD(player) {
     // Update mobile health display
-    const mobileHealthEl = document.getElementById('mobile-health');
-    if (mobileHealthEl) {
-      mobileHealthEl.textContent = player.health.toString();
+    const mobileHealthValueEl = document.getElementById('mobile-health-value');
+    if (mobileHealthValueEl) {
+      mobileHealthValueEl.textContent = `${player.health}/20`;
     }
     
-    // Update mobile party count
-    const mobilePartyCountEl = document.getElementById('mobile-party-count');
-    if (mobilePartyCountEl) {
-      mobilePartyCountEl.textContent = player.party.length.toString();
+    // Update mobile party suits display
+    const mobilePartySuitsEl = document.getElementById('mobile-party-suits');
+    if (mobilePartySuitsEl) {
+      mobilePartySuitsEl.innerHTML = '';
+      if (player.party && player.party.length > 0) {
+        // Get player's starting suit (own suit) if available
+        const ownSuit = player.startingQueen ? player.startingQueen.suit : null;
+        
+        player.party.forEach(queen => {
+          const suitEl = document.createElement('span');
+          suitEl.className = 'party-suit';
+          if (ownSuit && queen.suit === ownSuit) {
+            suitEl.classList.add('own-suit');
+          }
+          suitEl.textContent = this._getSuitSymbol(queen.suit);
+          suitEl.title = `${queen.rank} of ${queen.suit}`;
+          mobilePartySuitsEl.appendChild(suitEl);
+        });
+      }
+    }
+    
+    // Update mobile Kings suits display
+    const mobileKingsSuitsEl = document.getElementById('mobile-kings-suits');
+    if (mobileKingsSuitsEl) {
+      mobileKingsSuitsEl.innerHTML = '';
+      if (player.collectedKings && player.collectedKings.length > 0) {
+        player.collectedKings.forEach(king => {
+          const suitEl = document.createElement('span');
+          suitEl.className = 'kings-suit';
+          suitEl.textContent = this._getSuitSymbol(king.suit);
+          suitEl.title = `${king.rank} of ${king.suit}`;
+          if (this.gameEngine && this.gameEngine.player.hasKingAbilityUsed(king)) {
+            suitEl.style.opacity = '0.5'; // Dim used kings
+          }
+          mobileKingsSuitsEl.appendChild(suitEl);
+        });
+      }
     }
     
     // Update mobile Kings count
