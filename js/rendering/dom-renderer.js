@@ -578,16 +578,13 @@ class DOMRenderer extends RendererInterface {
         const key = `${x},${y}`;
         const tile = board.get(key);
         
-        // Always create tile element for all positions in the fixed grid
-        // This ensures proper grid structure and scrolling
-        const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
-        
         // Only populate content if tile should be visible (revealed or within buffer)
         const shouldPopulate = tilesToPopulate.has(key);
         if (!shouldPopulate) {
           // Create invisible spacer to maintain grid structure without rendering content
           // Remove tile if it exists and replace with spacer
           if (this.tileElements.has(key)) {
+            const tileEl = this.tileElements.get(key);
             tileEl.remove();
             this.tileElements.delete(key);
           }
