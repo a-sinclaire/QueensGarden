@@ -337,9 +337,9 @@ class DOMRenderer extends RendererInterface {
     // Calculate row width based on render bounds
     const rowWidth = (renderMaxX - renderMinX + 1) * totalTileWidth;
     
-    // Set container width to row width (no padding needed with 20x20 grid)
-    // This ensures the container is exactly as wide as needed, enabling left/right scrolling
-    boardEl.style.width = `${rowWidth}px`;
+    // CRITICAL: Do NOT set fixed width here - it breaks vertical scrolling!
+    // Only set min-width to ensure container is wide enough for horizontal scrolling
+    // The container must be able to grow vertically, so we use min-width, not width
     boardEl.style.minWidth = `${rowWidth}px`;
     
     // Create rows (from top to bottom, y descending)
