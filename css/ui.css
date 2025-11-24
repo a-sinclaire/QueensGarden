@@ -49,8 +49,7 @@
   .board-container {
     /* Simple scrollable container - fills parent, scrolls content */
     width: 100%;
-    /* CRITICAL: Match parent height exactly, then scroll when content exceeds */
-    /* Parent (.game-area) is 100dvh, so this is also 100dvh */
+    /* CRITICAL: Fixed height to parent, content inside can exceed and scroll */
     height: 100%;
     overflow-x: auto;
     overflow-y: auto;
@@ -75,8 +74,10 @@
     will-change: scroll-position;
     /* Ensure content can be taller than container */
     align-content: flex-start;
-    /* Content inside can grow beyond container height */
+    /* Content inside can grow beyond container height - critical for scrolling */
     flex-shrink: 0;
+    /* Override min-height from game-board.css - we need fixed height for scrolling */
+    min-height: 0;
   }
 }
 
