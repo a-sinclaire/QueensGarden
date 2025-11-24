@@ -13,8 +13,7 @@
   /* Content determines size - must be larger than container to enable scrolling */
   width: fit-content;
   min-width: 100%;
-  min-height: 100%;
-  /* Ensure content can be taller/wider than container */
+  /* Height and overflow handled by ui.css for scrolling */
   flex-shrink: 0;
 }
 
