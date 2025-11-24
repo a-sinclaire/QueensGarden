@@ -771,28 +771,17 @@ class DOMRenderer extends RendererInterface {
     const boardEl = document.getElementById('game-board');
     if (!boardEl) return;
     
-    // Find bounds
-    let minX = 0, maxX = 0, minY = 0, maxY = 0;
+    // Use fixed bounds - never change! This eliminates all bounds-change complexity
+    // 100x100 grid is way more than enough (max 39 cards + central chamber = 40 tiles)
+    const BOARD_SIZE = 50; // 50 in each direction = 100x100 total
+    const minX = -BOARD_SIZE;
+    const maxX = BOARD_SIZE;
+    const minY = -BOARD_SIZE;
+    const maxY = BOARD_SIZE;
     
-    for (const [key, tile] of board.entries()) {
-      minX = Math.min(minX, tile.x);
-      maxX = Math.max(maxX, tile.x);
-      minY = Math.min(minY, tile.y);
-      maxY = Math.max(maxY, tile.y);
-    }
-    
-    // Expand bounds for visibility
-    minX -= 2;
-    maxX += 2;
-    minY -= 2;
-    maxY += 2;
-    
-    // Store current bounds for bounds change detection (used in _centerBoardOnPlayer)
+    // Bounds never change now - set this once and forget it
     const currentBounds = { minX, maxX, minY, maxY };
-    const boundsChanged = this.lastBoardBounds && (
-      this.lastBoardBounds.minX !== minX || this.lastBoardBounds.maxX !== maxX ||
-      this.lastBoardBounds.minY !== minY || this.lastBoardBounds.maxY !== maxY
-    );
+    const boundsChanged = false; // Never changes!
     
     // Store bounds change info BEFORE updating lastBoardBounds (for debug panel)
     if (boundsChanged && this.lastBoardBounds) {
@@ -817,18 +806,8 @@ class DOMRenderer extends RendererInterface {
       this._lastBoundsChange = null;
     }
     
-    // Update scroll adjustment when bounds change
-    // When board expands, adjust scroll to maintain relative position
-    if (boundsChanged && this.lastBoardBounds && !this.isFirstRender && this._lastBoundsChange) {
-      // Update current scroll adjustment by the bounds change adjustment
-      this._currentScrollX += this._lastBoundsChange.scrollAdjustX;
-      this._currentScrollY += this._lastBoundsChange.scrollAdjustY;
-      
-      // Clamp to valid range
-      this._currentScrollX = Math.max(0, this._currentScrollX);
-      this._currentScrollY = Math.max(0, this._currentScrollY);
-    }
-    
+    // Bounds never change now, so no scroll adjustment needed!
+    // Just store the bounds (though we don't really need to track them anymore)
     this.lastBoardBounds = currentBounds;
     
     // Clear board
