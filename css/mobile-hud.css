@@ -77,6 +77,14 @@
   font-weight: bold;
 }
 
+.party-suit.error-glow {
+  animation: error-glow 1s ease-in-out infinite;
+  border: 2px solid #ff4444;
+  border-radius: 4px;
+  padding: 2px 4px;
+  box-shadow: 0 0 10px rgba(255, 68, 68, 0.8);
+}
+
 .hud-kings {
   position: absolute;
   top: 10px;
