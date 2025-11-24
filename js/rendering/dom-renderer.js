@@ -535,8 +535,11 @@ class DOMRenderer extends RendererInterface {
           
           debugText += scrollAction;
           debugText += `\n\nWill scroll: X=${needsScrollX} Y=${needsScrollY}`;
-          debugText += `\n  Scroll Delta X: ${Math.round(finalScrollX - currentScrollX)}`;
-          debugText += `\n  Scroll Delta Y: ${Math.round(finalScrollY - currentScrollY)}`;
+          debugText += `\n  Scroll Delta X: ${Math.round(finalScrollX - currentScrollX)} (threshold: ${this.isFirstRender ? '0.1' : '1'})`;
+          debugText += `\n  Scroll Delta Y: ${Math.round(finalScrollY - currentScrollY)} (threshold: ${this.isFirstRender ? '0.1' : '1'})`;
+          debugText += `\n  Max Scroll: X=${Math.round(maxScrollX)} Y=${Math.round(maxScrollY)}`;
+          debugText += `\n  Board Size: W=${Math.round(boardWidth)} H=${Math.round(boardHeight)}`;
+          debugText += `\n  Viewport: W=${viewportWidth} H=${viewportHeight}`;
           debugEl.textContent = debugText;
         }
       }
