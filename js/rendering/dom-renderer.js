@@ -771,13 +771,55 @@ class DOMRenderer extends RendererInterface {
     const boardEl = document.getElementById('game-board');
     if (!boardEl) return;
     
-    // Use fixed bounds - never change! This eliminates all bounds-change complexity
-    // 100x100 grid is way more than enough (max 39 cards + central chamber = 40 tiles)
-    const BOARD_SIZE = 50; // 50 in each direction = 100x100 total
-    const minX = -BOARD_SIZE;
-    const maxX = BOARD_SIZE;
-    const minY = -BOARD_SIZE;
-    const maxY = BOARD_SIZE;
+    // Use fixed bounds for scroll calculations - never change! This eliminates bounds-change complexity
+    // 20x20 grid is way more than enough (max 39 cards + central chamber = 40 tiles)
+    const BOARD_SIZE = 10; // 10 in each direction = 20x20 total
+    const scrollMinX = -BOARD_SIZE;
+    const scrollMaxX = BOARD_SIZE;
+    const scrollMinY = -BOARD_SIZE;
+    const scrollMaxY = BOARD_SIZE;
+    
+    // But for rendering, only render tiles that actually exist (or are adjacent to player)
+    // Calculate actual bounds from existing tiles
+    let renderMinX = 0, renderMaxX = 0, renderMinY = 0, renderMaxY = 0;
+    let hasTiles = false;
+    
+    for (const [key, tile] of board.entries()) {
+      if (!hasTiles) {
+        renderMinX = renderMaxX = tile.x;
+        renderMinY = renderMaxY = tile.y;
+        hasTiles = true;
+      } else {
+        renderMinX = Math.min(renderMinX, tile.x);
+        renderMaxX = Math.max(renderMaxX, tile.x);
+        renderMinY = Math.min(renderMinY, tile.y);
+        renderMaxY = Math.max(renderMaxY, tile.y);
+      }
+    }
+    
+    // Expand render bounds to include player and adjacent tiles
+    if (hasTiles) {
+      renderMinX = Math.min(renderMinX, playerPos.x - 1);
+      renderMaxX = Math.max(renderMaxX, playerPos.x + 1);
+      renderMinY = Math.min(renderMinY, playerPos.y - 1);
+      renderMaxY = Math.max(renderMaxY, playerPos.y + 1);
+    } else {
+      // No tiles yet - use player position
+      renderMinX = renderMaxX = playerPos.x;
+      renderMinY = renderMaxY = playerPos.y;
+    }
+    
+    // Expand a bit more for visibility
+    renderMinX -= 2;
+    renderMaxX += 2;
+    renderMinY -= 2;
+    renderMaxY += 2;
+    
+    // Use scroll bounds for position calculations, render bounds for actual rendering
+    const minX = scrollMinX;
+    const maxX = scrollMaxX;
+    const minY = scrollMinY;
+    const maxY = scrollMaxY;
     
     // Bounds never change now - set this once and forget it
     const currentBounds = { minX, maxX, minY, maxY };
@@ -830,15 +872,15 @@ class DOMRenderer extends RendererInterface {
     const totalTileWidth = tileWidth + gap;
     const rowWidth = (maxX - minX + 1) * totalTileWidth;
     
-    // Create rows (from top to bottom, y descending)
-    for (let y = maxY; y >= minY; y--) {
+    // Create rows (from top to bottom, y descending) - only render tiles that exist
+    for (let y = renderMaxY; y >= renderMinY; y--) {
       const row = document.createElement('div');
       row.className = 'board-row';
       // Ensure row is wide enough to make container scrollable
       row.style.minWidth = `${rowWidth}px`;
       row.style.width = `${rowWidth}px`;
       
-      for (let x = minX; x <= maxX; x++) {
+      for (let x = renderMinX; x <= renderMaxX; x++) {
         const key = `${x},${y}`;
         const tile = board.get(key);
         const tileEl = document.createElement('div');
