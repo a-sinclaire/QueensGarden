@@ -629,8 +629,15 @@ class DOMRenderer extends RendererInterface {
         this.lastScrollY = boardEl.scrollTop;
       }
       
-      // Mark first render as complete after we've processed everything
-      if (this.isFirstRender) {
+      // Mark first render as complete ONLY after we've actually scrolled
+      // This ensures first render centering happens reliably
+      if (this.isFirstRender && (needsScrollX || needsScrollY)) {
+        // Wait a bit more to ensure scroll has completed
+        setTimeout(() => {
+          this.isFirstRender = false;
+        }, 50);
+      } else if (this.isFirstRender && !needsScrollX && !needsScrollY) {
+        // If we didn't need to scroll (player already centered), mark as complete immediately
         this.isFirstRender = false;
       }
     }, 0); // Use setTimeout(0) to ensure DOM is fully rendered
