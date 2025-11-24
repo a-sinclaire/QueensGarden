@@ -349,22 +349,12 @@ class DOMRenderer extends RendererInterface {
       // Logic: Don't auto-scroll if player is within dead zone (configurable % of viewport)
       // If player goes outside that area, scroll by exactly how much the queen moves (tile + gap)
       
-      // Calculate where player would be on screen with current scroll
-      // BUT: On first render, calculate based on centered position, not current scroll
-      // This ensures we always center on first render, even if player appears "in deadzone"
-      let playerScreenX, playerScreenY;
-      if (this.isFirstRender) {
-        // On first render, calculate screen position as if we're centered
-        // This ensures we always scroll to center, regardless of deadzone
-        const centeredScrollX = playerPixelX - (viewportWidth / 2);
-        const centeredScrollY = playerPixelY - (viewportHeight / 2);
-        playerScreenX = playerPixelX - centeredScrollX;
-        playerScreenY = playerPixelY - centeredScrollY;
-      } else {
-        // After first render, use actual current scroll
-        playerScreenX = playerPixelX - currentScrollX;
-        playerScreenY = playerPixelY - currentScrollY;
-      }
+      // Check if player moved (for deadzone logic - only scroll if player moved)
+      const playerMoved = this.lastPlayerPos && 
+        (this.lastPlayerPos.x !== playerPos.x || this.lastPlayerPos.y !== playerPos.y);
+      
+      // Store playerMoved for use later in the function
+      window._debugPlayerMoved = playerMoved;
       
       // Dead zone: tile-based (1 tile from each edge)
       // This ensures consistent deadzone size regardless of screen size
@@ -373,27 +363,13 @@ class DOMRenderer extends RendererInterface {
       const deadZoneTop = this.deadZoneTiles * totalTileHeight;
       const deadZoneBottom = viewportHeight - (this.deadZoneTiles * totalTileHeight);
       
-      // Debug: Log deadzone calculation to verify it's correct
-      if (window.innerWidth <= 768 && window._debugPlayerMoved) {
-        console.log('Deadzone calculation:', {
-          deadZoneTiles: this.deadZoneTiles,
-          totalTileWidth,
-          totalTileHeight,
-          viewportWidth,
-          viewportHeight,
-          deadZoneLeft,
-          deadZoneRight,
-          deadZoneTop,
-          deadZoneBottom,
-          playerScreenX,
-          playerScreenY,
-          isInDeadzoneX: playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight,
-          isInDeadzoneY: playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom
-        });
-      }
-      
       // Update debug overlay to show dead zone
       this._updateDeadZoneDebug(deadZoneLeft, deadZoneTop, deadZoneRight - deadZoneLeft, deadZoneBottom - deadZoneTop);
+      
+      // Calculate where player is NOW (after move) on screen with current scroll
+      // This is the SINGLE source of truth for player screen position
+      const playerScreenX = playerPixelX - currentScrollX;
+      const playerScreenY = playerPixelY - currentScrollY;
       
       // Start with current scroll position
       let scrollX = currentScrollX;
@@ -401,48 +377,34 @@ class DOMRenderer extends RendererInterface {
       
       // Simplified logic: Queen starts in middle, then always follow deadzone rules
       if (this.isFirstRender) {
-        // Very first render - always center the player completely
+        // Very first render - always center the player completely (bypass deadzone check)
         scrollX = playerPixelX - (viewportWidth / 2);
         scrollY = playerPixelY - (viewportHeight / 2);
-        // Don't mark first render as complete yet - wait until after scrolling completes
-        // (We'll set it to false in the setTimeout callback after scrolling)
-      } else {
-        // After first render - always use deadzone rules
-        // If player is outside dead zone, scroll by exactly one tile spacing
+      } else if (playerMoved) {
+        // After first render AND player moved - check deadzone and scroll if needed
+        // If player is outside dead zone, scroll by exactly one tile spacing in that direction
         
-        // Debug: Update on-screen debug display (only on mobile, and only if player moved)
-        const playerMoved = this.lastPlayerPos && 
-          (this.lastPlayerPos.x !== playerPos.x || this.lastPlayerPos.y !== playerPos.y);
-        
-        // Store playerMoved for use later in the function
-        window._debugPlayerMoved = playerMoved;
-        
-        // Only adjust horizontal scroll if player is outside horizontal dead zone
-        // CRITICAL: Check deadzone BEFORE calculating scroll to prevent unwanted scrolling
+        // Horizontal scroll: check if player is outside horizontal dead zone
         if (playerScreenX < deadZoneLeft) {
           // Player too far left - scroll LEFT (decrease scrollX) to move board right, bringing player right
           scrollX = currentScrollX - totalTileWidth;
         } else if (playerScreenX > deadZoneRight) {
           // Player too far right - scroll RIGHT (increase scrollX) to move board left, bringing player left
           scrollX = currentScrollX + totalTileWidth;
-        } else {
-          // Player is within dead zone horizontally - explicitly keep scroll unchanged
-          scrollX = currentScrollX;
         }
+        // If player is within dead zone horizontally, scrollX stays as currentScrollX
         
-        // Only adjust vertical scroll if player is outside vertical dead zone
-        // CRITICAL: Check deadzone BEFORE calculating scroll to prevent unwanted scrolling
+        // Vertical scroll: check if player is outside vertical dead zone
         if (playerScreenY < deadZoneTop) {
           // Player too far up - scroll UP (decrease scrollY) to move board down, bringing player down
           scrollY = currentScrollY - totalTileHeight;
         } else if (playerScreenY > deadZoneBottom) {
           // Player too far down - scroll DOWN (increase scrollY) to move board up, bringing player up
           scrollY = currentScrollY + totalTileHeight;
-        } else {
-          // Player is within dead zone vertically - explicitly keep scroll unchanged
-          scrollY = currentScrollY;
         }
+        // If player is within dead zone vertically, scrollY stays as currentScrollY
       }
+      // If player didn't move, scrollX/Y stay as currentScrollX/Y (no change)
       
       // Calculate minimum board dimensions needed to allow scrolling to center player in all directions
       // Need: playerPixelY + (viewportHeight / 2) to allow scrolling down
@@ -512,33 +474,10 @@ class DOMRenderer extends RendererInterface {
       const finalScrollX = Math.max(0, Math.min(scrollX, maxScrollX));
       const finalScrollY = Math.max(0, Math.min(scrollY, maxScrollY));
       
-      // Calculate where player is NOW (after move) on screen with current scroll
-      // This is used for the final deadzone check
-      // Note: playerScreenX/Y are already calculated above in the else block, but we need them here too
-      let finalPlayerScreenX, finalPlayerScreenY;
-      if (this.isFirstRender) {
-        // On first render, calculate as if centered (for deadzone check, but we'll scroll anyway)
-        finalPlayerScreenX = viewportWidth / 2;
-        finalPlayerScreenY = viewportHeight / 2;
-      } else {
-        // After move, calculate based on current scroll
-        finalPlayerScreenX = playerPixelX - currentScrollX;
-        finalPlayerScreenY = playerPixelY - currentScrollY;
-      }
-      
-      // Only scroll if position changed significantly (more than 1px)
-      // AND: Only scroll if player is outside deadzone AFTER move (or first render)
+      // Determine if we need to scroll (only if scroll position actually changed)
       const scrollThreshold = 1;
-      const isInDeadzoneX = finalPlayerScreenX >= deadZoneLeft && finalPlayerScreenX <= deadZoneRight;
-      const isInDeadzoneY = finalPlayerScreenY >= deadZoneTop && finalPlayerScreenY <= deadZoneBottom;
-      
-      // Check if this is a centering scroll (first render only)
-      const isCenteringScroll = this.isFirstRender;
-      
-      // Allow scrolling if: first render centering OR (player moved AND is outside deadzone)
-      // Don't scroll if player is in deadzone after move (unless first render)
-      const needsScrollX = (isCenteringScroll || (!isInDeadzoneX && playerMoved)) && Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
-      const needsScrollY = (isCenteringScroll || (!isInDeadzoneY && playerMoved)) && Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
+      const needsScrollX = Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
+      const needsScrollY = Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
       
       // Debug: Update debug panel with scroll decision
       // Always show debug on mobile, not just when player moved
@@ -548,11 +487,11 @@ class DOMRenderer extends RendererInterface {
           let debugText = `Viewport: ${viewportWidth}×${viewportHeight}\n`;
           debugText += `Board Bounds: X(${minX}-${maxX}) Y(${minY}-${maxY})\n`;
           debugText += `Player Pixel: X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}\n`;
-          debugText += `Player Screen (FINAL): X=${Math.round(finalPlayerScreenX)} Y=${Math.round(finalPlayerScreenY)}\n`;
+          debugText += `Player Screen: X=${Math.round(playerScreenX)} Y=${Math.round(playerScreenY)}\n`;
           debugText += `Deadzone X: ${Math.round(deadZoneLeft)}-${Math.round(deadZoneRight)}\n`;
           debugText += `Deadzone Y: ${Math.round(deadZoneTop)}-${Math.round(deadZoneBottom)}\n`;
-          debugText += `In Deadzone X: ${isInDeadzoneX}\n`;
-          debugText += `In Deadzone Y: ${isInDeadzoneY}\n`;
+          debugText += `In Deadzone X: ${playerScreenX >= deadZoneLeft && playerScreenX <= deadZoneRight}\n`;
+          debugText += `In Deadzone Y: ${playerScreenY >= deadZoneTop && playerScreenY <= deadZoneBottom}\n`;
           debugText += `Current Scroll: X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}\n`;
           debugText += `Calculated Scroll: X=${Math.round(scrollX)} Y=${Math.round(scrollY)}\n`;
           debugText += `Final Scroll: X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}\n`;
@@ -568,29 +507,32 @@ class DOMRenderer extends RendererInterface {
           
           // Determine scroll action
           let scrollAction = '';
-          if (playerScreenX < deadZoneLeft) {
-            scrollAction = '→ Scroll LEFT';
-          } else if (playerScreenX > deadZoneRight) {
-            scrollAction = '→ Scroll RIGHT';
+          if (this.isFirstRender) {
+            scrollAction = '→ CENTERING';
+          } else if (playerMoved) {
+            if (playerScreenX < deadZoneLeft) {
+              scrollAction = '→ Scroll LEFT';
+            } else if (playerScreenX > deadZoneRight) {
+              scrollAction = '→ Scroll RIGHT';
+            } else {
+              scrollAction = '✓ No X scroll';
+            }
+            
+            if (playerScreenY < deadZoneTop) {
+              scrollAction += ' / Scroll UP';
+            } else if (playerScreenY > deadZoneBottom) {
+              scrollAction += ' / Scroll DOWN';
+            } else {
+              scrollAction += ' / ✓ No Y scroll';
+            }
           } else {
-            scrollAction = '✓ No X scroll';
-          }
-          
-          if (playerScreenY < deadZoneTop) {
-            scrollAction += ' / Scroll UP';
-          } else if (playerScreenY > deadZoneBottom) {
-            scrollAction += ' / Scroll DOWN';
-          } else {
-            scrollAction += ' / ✓ No Y scroll';
+            scrollAction = '✓ No move, no scroll';
           }
           
           debugText += scrollAction;
           debugText += `\n\nWill scroll: X=${needsScrollX} Y=${needsScrollY}`;
-          debugText += `\n  Reason X: ${isCenteringScroll ? 'FIRST_RENDER' : (!isInDeadzoneX && playerMoved ? 'OUTSIDE_DEADZONE' : 'IN_DEADZONE_OR_NO_MOVE')}`;
-          debugText += `\n  Reason Y: ${isCenteringScroll ? 'FIRST_RENDER' : (!isInDeadzoneY && playerMoved ? 'OUTSIDE_DEADZONE' : 'IN_DEADZONE_OR_NO_MOVE')}`;
-          debugText += `\n\nUp/Down Logic Check:`;
-          debugText += `\n  Up: playerScreenY(${Math.round(finalPlayerScreenY)}) < deadZoneTop(${Math.round(deadZoneTop)}) = ${finalPlayerScreenY < deadZoneTop}`;
-          debugText += `\n  Down: playerScreenY(${Math.round(finalPlayerScreenY)}) > deadZoneBottom(${Math.round(deadZoneBottom)}) = ${finalPlayerScreenY > deadZoneBottom}`;
+          debugText += `\n  Scroll Delta X: ${Math.round(finalScrollX - currentScrollX)}`;
+          debugText += `\n  Scroll Delta Y: ${Math.round(finalScrollY - currentScrollY)}`;
           debugEl.textContent = debugText;
         }
       }
