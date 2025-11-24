@@ -601,48 +601,33 @@ class DOMRenderer extends RendererInterface {
       return;
     }
     
-    // Get the tile's position relative to the board container
-    // getBoundingClientRect() gives viewport-relative positions
-    const tileRect = centralChamberTile.getBoundingClientRect();
-    const containerRect = boardEl.getBoundingClientRect();
-    
-    // Calculate the tile's position relative to the container's scrollable content
-    // Need to account for current scroll position
-    const tileCenterX = (tileRect.left - containerRect.left) + (tileRect.width / 2) + boardEl.scrollLeft;
-    const tileCenterY = (tileRect.top - containerRect.top) + (tileRect.height / 2) + boardEl.scrollTop;
-    
-    // Calculate the center of the container viewport
-    const containerCenterX = boardEl.clientWidth / 2;
-    const containerCenterY = boardEl.clientHeight / 2;
-    
-    // Calculate scroll offset needed to center the tile
-    // Subtract container center to get the scroll position that centers the tile
-    const scrollLeft = tileCenterX - containerCenterX;
-    const scrollTop = tileCenterY - containerCenterY;
+    // Use scrollIntoView for reliable centering - simpler and more reliable
+    // This centers the element both horizontally and vertically within its scrollable container
+    centralChamberTile.scrollIntoView({
+      behavior: 'auto', // Instant scroll
+      block: 'center',  // Center vertically
+      inline: 'center'  // Center horizontally
+    });
     
     // Debug info
-    console.log('Center Board Debug:', {
-      tileRect: { left: tileRect.left, top: tileRect.top, width: tileRect.width, height: tileRect.height },
-      containerRect: { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height },
-      currentScroll: { left: boardEl.scrollLeft, top: boardEl.scrollTop },
-      containerSize: { width: boardEl.clientWidth, height: boardEl.clientHeight },
-      containerScrollSize: { width: boardEl.scrollWidth, height: boardEl.scrollHeight },
-      tileCenter: { x: tileCenterX, y: tileCenterY },
-      containerCenter: { x: containerCenterX, y: containerCenterY },
-      calculatedScroll: { left: scrollLeft, top: scrollTop },
-      finalScroll: { left: Math.max(0, scrollLeft), top: Math.max(0, scrollTop) }
-    });
-    
-    // Scroll to center the central chamber
-    boardEl.scrollTo({
-      left: Math.max(0, scrollLeft), // Ensure non-negative
-      top: Math.max(0, scrollTop),  // Ensure non-negative
-      behavior: 'auto' // Instant scroll, no animation
-    });
-    
-    // Verify scroll happened
     setTimeout(() => {
-      console.log('After scroll:', { left: boardEl.scrollLeft, top: boardEl.scrollTop });
+      const tileRect = centralChamberTile.getBoundingClientRect();
+      const containerRect = boardEl.getBoundingClientRect();
+      console.log('Center Board Debug:', {
+        tileRect: { left: tileRect.left, top: tileRect.top, width: tileRect.width, height: tileRect.height },
+        containerRect: { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height },
+        scrollPosition: { left: boardEl.scrollLeft, top: boardEl.scrollTop },
+        containerSize: { width: boardEl.clientWidth, height: boardEl.clientHeight },
+        containerScrollSize: { width: boardEl.scrollWidth, height: boardEl.scrollHeight },
+        tileCenterInViewport: {
+          x: tileRect.left + tileRect.width / 2,
+          y: tileRect.top + tileRect.height / 2
+        },
+        containerCenterInViewport: {
+          x: containerRect.left + containerRect.width / 2,
+          y: containerRect.top + containerRect.height / 2
+        }
+      });
     }, 10);
   }
   
