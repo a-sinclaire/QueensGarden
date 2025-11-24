@@ -24,8 +24,8 @@ class DOMRenderer extends RendererInterface {
     this.isFirstRender = true;
     // Track previous board bounds to detect bounds changes
     this.lastBoardBounds = null;
-    // Track if user has manually scrolled (if true, don't auto-center)
-    this.hasManuallyScrolled = false;
+    // Track spacer sizes (set once on first render, then stay fixed)
+    this._spacersInitialized = false;
     // Cache-bust color for debugging (changes with each deployment)
     this.cacheBustColor = this._getCacheBustColor();
   }
@@ -328,18 +328,7 @@ class DOMRenderer extends RendererInterface {
       const actualScrollX = preservedScroll ? preservedScroll.x : boardEl.scrollLeft;
       const actualScrollY = preservedScroll ? preservedScroll.y : boardEl.scrollTop;
       
-      // Detect manual scrolling: if scroll changed and we didn't cause it, user scrolled manually
-      if (this.lastScrollX !== null && this.lastScrollY !== null && !this.isFirstRender) {
-        const scrollThreshold = 5; // 5px threshold to detect manual scrolling
-        if (Math.abs(actualScrollX - this.lastScrollX) > scrollThreshold ||
-            Math.abs(actualScrollY - this.lastScrollY) > scrollThreshold) {
-          // Check if this change was from board expansion adjustment
-          // If preserved scroll exists, it was from board rebuild, not manual scroll
-          if (!preservedScroll) {
-            this.hasManuallyScrolled = true;
-          }
-        }
-      }
+      // After first render, we maintain relative offset - scroll is preserved and adjusted when board expands
       // Calculate tile size (including gap) - match CSS values
       // Store these for use in scroll calculation
       const tileWidth = window.innerWidth <= 480 ? 65 : 70;
@@ -863,10 +852,11 @@ class DOMRenderer extends RendererInterface {
     let savedScrollX = boardEl.scrollLeft;
     let savedScrollY = boardEl.scrollTop;
     
-    // Adjust scroll position when bounds change to maintain player's visual position
+    // Adjust scroll position when bounds change to maintain relative offset
     // When board expands, the player's pixel position relative to board changes
-    // We need to adjust scroll to compensate
-    if (boundsChanged && this.lastBoardBounds) {
+    // We need to adjust scroll to compensate and maintain the same visual position
+    // This maintains the relative offset from center (not auto-centering)
+    if (boundsChanged && this.lastBoardBounds && !this.isFirstRender) {
       // Calculate tile dimensions for scroll adjustment
       const tileWidth = window.innerWidth <= 480 ? 65 : 70;
       const tileHeight = window.innerWidth <= 480 ? 85 : 90;
@@ -1153,28 +1143,34 @@ class DOMRenderer extends RendererInterface {
       const playerPixelY = tileStartY + (tileHeight / 2);
       
       // Calculate spacer needs for centering
-      // Always add spacers on all sides (at least viewport/2) to allow scrolling to center
-      // This ensures we can always scroll in any direction to center the queen
-      const minSpacerWidth = viewportWidth / 2;
-      const minSpacerHeight = viewportHeight / 2;
-      
-      // Calculate how much we need to scroll to center
-      const centerScrollX = playerPixelX - (viewportWidth / 2);
-      const centerScrollY = playerPixelY - (viewportHeight / 2);
-      
-      // Add spacers: at least minSpacer on each side, plus any extra needed
-      const topSpacer = Math.max(minSpacerHeight, centerScrollY < 0 ? Math.abs(centerScrollY) : minSpacerHeight);
-      const bottomSpacer = Math.max(minSpacerHeight, centerScrollY > 0 ? centerScrollY : minSpacerHeight);
-      const leftSpacer = Math.max(minSpacerWidth, centerScrollX < 0 ? Math.abs(centerScrollX) : minSpacerWidth);
-      const rightSpacer = Math.max(minSpacerWidth, centerScrollX > 0 ? centerScrollX : minSpacerWidth);
-      
-      // Store for reference and scrolling
-      this._topSpacerNeeded = topSpacer;
-      this._leftSpacerNeeded = leftSpacer;
-      this._bottomSpacerNeeded = bottomSpacer;
-      this._rightSpacerNeeded = rightSpacer;
-      this._centerScrollX = centerScrollX;
-      this._centerScrollY = centerScrollY;
+      // Set spacers ONCE on first render, then keep them fixed
+      // After that, adjust scroll offset to maintain relative position
+      if (!this._spacersInitialized) {
+        // Always add spacers on all sides (at least viewport/2) to allow scrolling to center
+        // This ensures we can always scroll in any direction to center the queen
+        const minSpacerWidth = viewportWidth / 2;
+        const minSpacerHeight = viewportHeight / 2;
+        
+        // Calculate how much we need to scroll to center
+        const centerScrollX = playerPixelX - (viewportWidth / 2);
+        const centerScrollY = playerPixelY - (viewportHeight / 2);
+        
+        // Add spacers: at least minSpacer on each side, plus any extra needed
+        const topSpacer = Math.max(minSpacerHeight, centerScrollY < 0 ? Math.abs(centerScrollY) : minSpacerHeight);
+        const bottomSpacer = Math.max(minSpacerHeight, centerScrollY > 0 ? centerScrollY : minSpacerHeight);
+        const leftSpacer = Math.max(minSpacerWidth, centerScrollX < 0 ? Math.abs(centerScrollX) : minSpacerWidth);
+        const rightSpacer = Math.max(minSpacerWidth, centerScrollX > 0 ? centerScrollX : minSpacerWidth);
+        
+        // Store spacer sizes (fixed after first render)
+        this._topSpacerNeeded = topSpacer;
+        this._leftSpacerNeeded = leftSpacer;
+        this._bottomSpacerNeeded = bottomSpacer;
+        this._rightSpacerNeeded = rightSpacer;
+        this._centerScrollX = centerScrollX;
+        this._centerScrollY = centerScrollY;
+        this._spacersInitialized = true;
+      }
+      // After first render: use stored spacer values (don't recalculate)
       
       // Calculate minimum dimensions needed for centering in all directions
       const minBoardHeightForScroll = Math.max(
