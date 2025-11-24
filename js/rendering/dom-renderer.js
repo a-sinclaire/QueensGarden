@@ -335,7 +335,9 @@ class DOMRenderer extends RendererInterface {
     const totalTileHeight = tileHeight + gap;
     
     // Calculate row width based on render bounds
-    const rowWidth = (renderMaxX - renderMinX + 1) * totalTileWidth;
+    // CSS gap is only BETWEEN tiles, so: numTiles * tileWidth + (numTiles - 1) * gap
+    const numTilesPerRow = renderMaxX - renderMinX + 1;
+    const rowWidth = (numTilesPerRow * tileWidth) + ((numTilesPerRow - 1) * gap);
     
     // CRITICAL: Do NOT set minWidth or width here - it prevents scrolling!
     // Container must stay constrained to parent width for scrolling to work.
@@ -797,8 +799,14 @@ class DOMRenderer extends RendererInterface {
     }
     
     // Calculate board dimensions (21x21 tiles from -10 to +10)
-    const boardWidth = (maxX - minX + 1) * totalTileWidth;
-    const boardHeight = (maxY - minY + 1) * totalTileHeight;
+    // CSS gap is only BETWEEN tiles, not at edges
+    // So: numTiles * tileSize + (numTiles - 1) * gap
+    const numTilesX = maxX - minX + 1; // 21 tiles
+    const numTilesY = maxY - minY + 1; // 21 tiles
+    const numGapsX = numTilesX - 1; // 20 gaps
+    const numGapsY = numTilesY - 1; // 20 gaps
+    const boardWidth = (numTilesX * tileWidth) + (numGapsX * gap);
+    const boardHeight = (numTilesY * tileHeight) + (numGapsY * gap);
     
     // Calculate position - board starts at top-left of first row (no padding)
     // Rows are rendered from maxY down to minY, so top row is at y=maxY
