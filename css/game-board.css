@@ -189,10 +189,9 @@
 }
 
 .tile.card-flip-animate {
-  animation: card-flip 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-  perspective: 1000px;
+  animation: card-flip 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transform-style: preserve-3d !important;
+  backface-visibility: hidden !important;
 }
 
 /* Floating reset text animation */

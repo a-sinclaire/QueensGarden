@@ -1102,12 +1102,14 @@ class DOMRenderer extends RendererInterface {
           );
           
           if (!alreadyInQueue) {
-            // Mark as revealed IMMEDIATELY to prevent re-adding to queue
-            this.revealedTiles.add(tileKey);
-            
             // Calculate distance from player (closer tiles flip first)
             const distance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
-            this.flipQueue.push({ tileEl, distance, x, y });
+            // Add sequence number to ensure sequential flips even if same distance
+            const sequence = this.flipQueue.length;
+            this.flipQueue.push({ tileEl, distance, x, y, sequence });
+            
+            // Mark as revealed AFTER adding to queue (so it can be animated)
+            // We'll mark it as revealed when animation starts
           }
         }
       }
@@ -1134,15 +1136,13 @@ class DOMRenderer extends RendererInterface {
       return;
     }
     
-    // Sort queue by distance (closer tiles first), then by x, then y for consistent ordering
+    // Sort queue by distance (closer tiles first), then by sequence number to ensure sequential order
     this.flipQueue.sort((a, b) => {
       if (a.distance !== b.distance) {
         return a.distance - b.distance;
       }
-      if (a.x !== b.x) {
-        return a.x - b.x;
-      }
-      return a.y - b.y;
+      // If same distance, use sequence number to maintain order
+      return (a.sequence || 0) - (b.sequence || 0);
     });
     
     // Start processing
@@ -1161,7 +1161,11 @@ class DOMRenderer extends RendererInterface {
     }
     
     // Get next tile from queue
-    const { tileEl } = this.flipQueue.shift();
+    const { tileEl, x, y } = this.flipQueue.shift();
+    const tileKey = `${x},${y}`;
+    
+    // Mark as revealed NOW (when animation starts)
+    this.revealedTiles.add(tileKey);
     
     // Double-check tile hasn't already been animated (safety check)
     if (tileEl.classList.contains('card-flip-animate')) {
@@ -1181,7 +1185,7 @@ class DOMRenderer extends RendererInterface {
       // Small delay between flips for smooth sequential effect
       setTimeout(() => {
         this._animateNextFlip();
-      }, 50); // 50ms delay between flips
+      }, 100); // 100ms delay between flips for better visibility
     }, 600); // Animation duration (match CSS - 0.6s)
   }
   
