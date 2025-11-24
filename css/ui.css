@@ -27,8 +27,11 @@
   
   .game-area {
     order: 2; /* Show game area second */
-    width: 100vw;
-    /* Use flex: 1 like desktop - allows natural growth */
+    /* CRITICAL: Do NOT set fixed width (like width: 100vw) - it constrains board-container width!
+       Use min-width instead to allow board-container to grow wider than viewport for horizontal scrolling.
+       This is the same pattern as height: flex: 1 allows vertical growth, min-width allows horizontal growth. */
+    min-width: 100vw;
+    /* Use flex: 1 like desktop - allows natural growth vertically */
     flex: 1;
     display: flex;
     flex-direction: column;
