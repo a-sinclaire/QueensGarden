@@ -122,6 +122,9 @@ class GameEngine {
    * Move player to a specific position (handles both adjacent moves and teleports)
    */
   moveToPosition(x, y) {
+    // Debug: Log all moveToPosition calls
+    console.log('moveToPosition called:', { x, y, currentPos: this.player.position });
+    
     if (this.gameOver) {
       return { success: false, message: 'Game is over' };
     }
@@ -132,6 +135,7 @@ class GameEngine {
     // Validate move (this now handles both adjacent moves and teleports)
     const validation = this.rulesEngine.canMove(currentPos, newPos, this.board, this.player);
     if (!validation.valid) {
+      console.log('Move validation failed:', validation.reason);
       return { success: false, message: validation.reason };
     }
     

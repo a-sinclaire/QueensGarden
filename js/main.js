@@ -317,49 +317,16 @@ function handleTileClick(x, y) {
   // Check if clicked tile is adjacent to player (for movement)
   const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
   
-  // Handle teleportation (when on Ace and clicking teleport destination)
-  if (currentTile) {
-    const isOnAce = currentTile.card && currentTile.card.getType() === 'ace';
-    
-    if (isOnAce) {
-      const targetIsAce = targetTile.card && targetTile.card.getType() === 'ace';
-      const targetIsCentralChamber = targetTile.isCentralChamber;
-      
-      if (targetIsAce || targetIsCentralChamber) {
-        // Teleport!
-        const result = gameEngine.teleport({ x, y });
-        if (!result.success) {
-          alert(result.message);
-        }
-        return;
-      }
-    }
-  }
-  
-  // Handle tap-to-move (if tile is adjacent)
-  if (isAdjacent) {
-    // Determine direction
-    let direction = null;
-    if (x === playerPos.x) {
-      if (y > playerPos.y) {
-        direction = 'north';
-      } else if (y < playerPos.y) {
-        direction = 'south';
-      }
-    } else if (y === playerPos.y) {
-      if (x > playerPos.x) {
-        direction = 'east';
-      } else if (x < playerPos.x) {
-        direction = 'west';
-      }
-    }
-    
-    if (direction) {
-      const result = gameEngine.movePlayer(direction);
-      if (!result.success) {
-        // Visual feedback for invalid move (could show a brief message)
-        console.log('Cannot move:', result.message);
-      }
+  // Handle all moves (both adjacent and teleport) using moveToPosition
+  // This consolidates move and teleport logic into one place
+  console.log('handleTileClick called:', { x, y, playerPos });
+  const result = gameEngine.moveToPosition(x, y);
+  if (!result.success) {
+    // Visual feedback for invalid move
+    console.log('Cannot move:', result.message);
+    // Don't alert for same position - just silently ignore
+    if (result.message !== 'Cannot move to the same position') {
+      alert(result.message);
     }
   }
 }

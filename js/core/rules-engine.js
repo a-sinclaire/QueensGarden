@@ -14,6 +14,7 @@ class RulesEngine {
   canMove(from, to, board, player) {
     // Cannot move to the same position you're already on
     if (from.x === to.x && from.y === to.y) {
+      console.log('canMove: Rejecting same position', { from, to });
       return { valid: false, reason: 'Cannot move to the same position' };
     }
     
