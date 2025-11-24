@@ -565,10 +565,28 @@ class DOMRenderer extends RendererInterface {
       // Always show debug on mobile, not just when player moved
       const isMobile = window.innerWidth <= 768;
       if (isMobile) {
-        const debugEl = document.getElementById('debug-content');
+        // Force find debug element - try multiple times if needed
+        let debugEl = document.getElementById('debug-content');
         if (!debugEl) {
           console.error('Debug element not found! Looking for #debug-content');
+          // Try to find it again
+          debugEl = document.querySelector('#debug-content');
+          if (!debugEl) {
+            console.error('Still not found! Trying #mobile-debug .debug-content');
+            const debugPanel = document.getElementById('mobile-debug');
+            if (debugPanel) {
+              debugEl = debugPanel.querySelector('.debug-content');
+            }
+          }
         }
+        
+        // Always update debug panel if we're on mobile, even if element not found
+        console.log('Updating debug panel:', {
+          isMobile,
+          debugElFound: !!debugEl,
+          windowWidth: window.innerWidth
+        });
+        
         if (debugEl) {
           let debugText = `Viewport: ${viewportWidth}×${viewportHeight}\n`;
           debugText += `Board Bounds: X(${minX}-${maxX}) Y(${minY}-${maxY})\n`;
@@ -638,7 +656,12 @@ class DOMRenderer extends RendererInterface {
             debugText += `\n  Board can scroll Y: ${boardEl.scrollHeight > boardEl.clientHeight}`;
           }
           
-          debugEl.textContent = debugText;
+          try {
+            debugEl.textContent = debugText;
+            console.log('Debug Panel Updated Successfully');
+          } catch (e) {
+            console.error('Error updating debug panel:', e);
+          }
           
           // Also log to console for easier debugging
           console.log('Debug Panel Updated:', {
@@ -652,6 +675,17 @@ class DOMRenderer extends RendererInterface {
             boardScrollHeight: boardEl.scrollHeight,
             boardClientWidth: boardEl.clientWidth,
             boardClientHeight: boardEl.clientHeight,
+            isFirstRender: this.isFirstRender,
+            debugTextLength: debugText.length
+          });
+        } else {
+          // Element not found - log to console as fallback
+          console.log('DEBUG INFO (element not found):', {
+            viewport: `${viewportWidth}×${viewportHeight}`,
+            playerPixel: `X=${Math.round(playerPixelX)} Y=${Math.round(playerPixelY)}`,
+            currentScroll: `X=${Math.round(currentScrollX)} Y=${Math.round(currentScrollY)}`,
+            finalScroll: `X=${Math.round(finalScrollX)} Y=${Math.round(finalScrollY)}`,
+            needsScroll: `X=${needsScrollX} Y=${needsScrollY}`,
             isFirstRender: this.isFirstRender
           });
         }
