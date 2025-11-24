@@ -317,7 +317,8 @@ function handleTileClick(x, y) {
       // Exit destroy mode after successful destroy
       toggleDestroyMode();
     } else {
-      // Silently ignore errors - no popup needed
+      // Visual feedback for destroy errors
+      showErrorFeedback(x, y, result.message);
     }
     return;
   }
@@ -337,7 +338,8 @@ function handleTileClick(x, y) {
   // This consolidates move and teleport logic into one place
   const result = gameEngine.moveToPosition(x, y);
   if (!result.success) {
-    // Silently ignore invalid moves - no popup needed
+    // Visual feedback for move errors
+    showErrorFeedback(x, y, result.message);
   }
 }
 
@@ -368,6 +370,39 @@ function resetGame() {
 
 // Expose resetGame for quick restart
 window.resetGame = resetGame;
+
+/**
+ * Show visual error feedback (shake tile, highlight relevant UI)
+ */
+function showErrorFeedback(x, y, errorMessage) {
+  // Find the target tile element
+  const boardEl = document.getElementById('game-board');
+  if (!boardEl) return;
+  
+  const tileEl = boardEl.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+  if (tileEl) {
+    // Shake animation
+    tileEl.classList.add('error-shake');
+    setTimeout(() => {
+      tileEl.classList.remove('error-shake');
+    }, 500);
+  }
+  
+  // Highlight relevant UI based on error message
+  if (errorMessage.includes('King') || errorMessage.includes('ability')) {
+    // Highlight kings display
+    const kingsDisplay = document.getElementById('kings-display');
+    const mobileKings = document.getElementById('mobile-kings');
+    if (kingsDisplay) {
+      kingsDisplay.classList.add('error-glow');
+      setTimeout(() => kingsDisplay.classList.remove('error-glow'), 1000);
+    }
+    if (mobileKings) {
+      mobileKings.classList.add('error-glow');
+      setTimeout(() => mobileKings.classList.remove('error-glow'), 1000);
+    }
+  }
+}
 
 // Make handleTileClick available globally for renderer
 window.handleTileClick = handleTileClick;

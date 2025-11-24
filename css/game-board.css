@@ -197,6 +197,32 @@
   position: relative;
 }
 
+/* Error shake animation */
+@keyframes error-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+  20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
+
+.tile.error-shake {
+  animation: error-shake 0.5s ease-in-out;
+  border-color: #ff6b6b !important;
+}
+
+/* Error glow for UI elements */
+@keyframes error-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.8), 0 0 30px rgba(255, 107, 107, 0.6);
+  }
+}
+
+.error-glow {
+  animation: error-glow 1s ease-in-out;
+}
+
 /* Adjacent tiles for tap-to-move (mobile) */
 .tile.adjacent-moveable {
   border: 2px solid var(--party-color);

@@ -400,9 +400,9 @@ class DOMRenderer extends RendererInterface {
         }
       }
       
-      // Allow reset from anywhere - check if holding for 1000ms (longer than destroy)
-      // Only start if destroy timer didn't start
-      if (this.gameEngine && !destroyTimerStarted) {
+      // Allow reset only when holding central chamber tile (not any space)
+      // Only start if destroy timer didn't start and this is central chamber
+      if (this.gameEngine && !destroyTimerStarted && x === 0 && y === 0) {
         // Start restart timer (1000ms - longer than destroy to avoid conflicts)
         touchTimer = setTimeout(() => {
           isRestartHolding = true;
@@ -621,9 +621,9 @@ class DOMRenderer extends RendererInterface {
         }
       }
       
-      // Allow reset from anywhere - check if holding for 1000ms (longer than destroy)
-      // Only start if destroy timer didn't start
-      if (this.gameEngine && !mouseDestroyTimerStarted) {
+      // Allow reset only when holding central chamber tile (not any space)
+      // Only start if destroy timer didn't start and this is central chamber
+      if (this.gameEngine && !mouseDestroyTimerStarted && x === 0 && y === 0) {
         // Start restart timer (1000ms - longer than destroy to avoid conflicts)
         mouseTimer = setTimeout(() => {
           isMouseRestartHolding = true;
