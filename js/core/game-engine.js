@@ -138,6 +138,16 @@ class GameEngine {
     // Check for card collection
     if (targetTile.card) {
       this._handleCardCollection(targetTile);
+      
+      // Check for victory immediately after card collection
+      // This ensures the game ends before any Jack damage can kill the player
+      if (this.player.hasWon()) {
+        this.gameOver = true;
+        this.victory = true;
+        this.renderer.onGameOver(true);
+        this.renderer.render(this.getGameState());
+        return { success: true, damage: damage };
+      }
     }
     
     // Reveal adjacent tiles (this will check for newly revealed Jacks)
@@ -145,9 +155,12 @@ class GameEngine {
     
     // Check for Jack adjacent damage (for all adjacent Jacks, including newly revealed)
     // This ensures we catch Jacks that were already revealed before moving
-    this._checkJackAdjacentDamage(newPos);
+    // Skip if game is already over (victory condition)
+    if (!this.gameOver) {
+      this._checkJackAdjacentDamage(newPos);
+    }
     
-    // Check game over conditions
+    // Check game over conditions (death check)
     this._checkGameOver();
     
     // Render update

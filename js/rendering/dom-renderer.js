@@ -866,7 +866,7 @@ class DOMRenderer extends RendererInterface {
     const gameOverEl = document.getElementById('game-over');
     if (gameOverEl) {
       gameOverEl.style.display = 'flex';
-      const messageEl = document.getElementById('game-over-message');
+      const messageEl = document.getElementById('game-over-title');
       if (messageEl) {
         messageEl.textContent = victory ? 'Victory!' : 'Game Over';
       }
