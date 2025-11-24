@@ -363,35 +363,14 @@ class DOMRenderer extends RendererInterface {
       hasMoved = false;
       cleanupHold();
       
-      // Allow reset from anywhere - check if holding for 1000ms (longer than destroy)
-      if (this.gameEngine) {
-        // Start restart timer (1000ms - longer than destroy to avoid conflicts)
-        touchTimer = setTimeout(() => {
-          isRestartHolding = true;
-          tileEl.classList.add('destroy-holding');
-          showResetText();
-          
-          // Disable scrolling on board container
-          const boardEl = document.getElementById('game-board');
-          if (boardEl) {
-            boardEl.style.overflow = 'hidden';
-            boardEl.style.touchAction = 'none';
-          }
-          
-          // Provide haptic feedback if available
-          if (navigator.vibrate) {
-            navigator.vibrate(50);
-          }
-        }, 1000); // 1000ms hold time for reset
-      }
-      
-      // Check if this tile is destroyable (adjacent to player)
+      // Check if this tile is destroyable (adjacent to player) - priority over reset
+      let destroyTimerStarted = false;
       if (this.gameEngine && !this.destroyMode) {
         const playerPos = this.gameEngine.player.position;
         const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
         
         if (isAdjacent) {
-          // Start long press timer (500ms)
+          // Start long press timer (500ms) for destroy
           touchTimer = setTimeout(() => {
             isDestroyHolding = true;
             
@@ -417,7 +396,31 @@ class DOMRenderer extends RendererInterface {
               }
             }
           }, 500); // 500ms hold time
+          destroyTimerStarted = true;
         }
+      }
+      
+      // Allow reset from anywhere - check if holding for 1000ms (longer than destroy)
+      // Only start if destroy timer didn't start
+      if (this.gameEngine && !destroyTimerStarted) {
+        // Start restart timer (1000ms - longer than destroy to avoid conflicts)
+        touchTimer = setTimeout(() => {
+          isRestartHolding = true;
+          tileEl.classList.add('destroy-holding');
+          showResetText();
+          
+          // Disable scrolling on board container
+          const boardEl = document.getElementById('game-board');
+          if (boardEl) {
+            boardEl.style.overflow = 'hidden';
+            boardEl.style.touchAction = 'none';
+          }
+          
+          // Provide haptic feedback if available
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+        }, 1000); // 1000ms hold time for reset
       }
     }, { passive: true });
     
@@ -587,29 +590,14 @@ class DOMRenderer extends RendererInterface {
       hasMouseMoved = false;
       cleanupMouseHold();
       
-      // Allow reset from anywhere - check if holding for 1000ms (longer than destroy)
-      if (this.gameEngine) {
-        // Start restart timer (1000ms - longer than destroy to avoid conflicts)
-        mouseTimer = setTimeout(() => {
-          isMouseRestartHolding = true;
-          tileEl.classList.add('destroy-holding');
-          showMouseResetText();
-          
-          // Disable scrolling on board container
-          const boardEl = document.getElementById('game-board');
-          if (boardEl) {
-            boardEl.style.overflow = 'hidden';
-          }
-        }, 1000); // 1000ms hold time for reset
-      }
-      
-      // Check if this tile is destroyable (adjacent to player)
+      // Check if this tile is destroyable (adjacent to player) - priority over reset
+      let mouseDestroyTimerStarted = false;
       if (this.gameEngine && !this.destroyMode) {
         const playerPos = this.gameEngine.player.position;
         const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
         
         if (isAdjacent) {
-          // Start long press timer (500ms)
+          // Start long press timer (500ms) for destroy
           mouseTimer = setTimeout(() => {
             isMouseDestroyHolding = true;
             
@@ -629,7 +617,25 @@ class DOMRenderer extends RendererInterface {
               }
             }
           }, 500); // 500ms hold time
+          mouseDestroyTimerStarted = true;
         }
+      }
+      
+      // Allow reset from anywhere - check if holding for 1000ms (longer than destroy)
+      // Only start if destroy timer didn't start
+      if (this.gameEngine && !mouseDestroyTimerStarted) {
+        // Start restart timer (1000ms - longer than destroy to avoid conflicts)
+        mouseTimer = setTimeout(() => {
+          isMouseRestartHolding = true;
+          tileEl.classList.add('destroy-holding');
+          showMouseResetText();
+          
+          // Disable scrolling on board container
+          const boardEl = document.getElementById('game-board');
+          if (boardEl) {
+            boardEl.style.overflow = 'hidden';
+          }
+        }, 1000); // 1000ms hold time for reset
       }
     });
     
