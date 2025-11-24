@@ -159,9 +159,6 @@ header h1 {
   gap: 1rem;
   flex: 1;
   min-height: 0;
-  width: 100%;
-  margin: 0;
-  padding: 0;
 }
 
 @media (max-width: 768px) {
