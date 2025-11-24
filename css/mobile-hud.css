@@ -163,14 +163,8 @@
   overflow-y: auto;
   pointer-events: auto;
   z-index: 300;
-  /* Show on mobile, hide on desktop */
-  display: block;
-}
-
-@media (min-width: 769px) {
-  .hud-debug {
-    display: none !important; /* Hide on desktop */
-  }
+  /* Hide debug panel */
+  display: none !important;
 }
 
 .debug-content {
