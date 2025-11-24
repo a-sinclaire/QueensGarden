@@ -60,8 +60,9 @@
     /* Don't set fixed width - let it grow vertically naturally */
     min-width: 100%;
     min-height: 100%;
-    overflow-x: auto;
-    overflow-y: auto;
+    /* CRITICAL: Ensure container can scroll in both directions */
+    overflow-x: auto !important;
+    overflow-y: auto !important;
     padding: 0; /* No padding needed with 20x20 grid */
     margin: 0;
     /* Instant scrolling on mobile (smooth looks bad) */
@@ -77,7 +78,7 @@
     /* Ensure container can scroll */
     position: relative;
     /* Allow touch scrolling in both directions - critical for mobile */
-    touch-action: pan-x pan-y;
+    touch-action: pan-x pan-y !important;
     /* Force hardware acceleration for smooth scrolling */
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
@@ -86,6 +87,8 @@
     align-content: flex-start;
     /* Content inside can grow beyond container height - critical for scrolling */
     flex-shrink: 0;
+    /* Ensure container starts at left edge */
+    left: 0;
   }
 }
 
