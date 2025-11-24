@@ -28,8 +28,13 @@ if [ -n "$JS_FILES" ]; then
     if [ -f "$file" ]; then
       echo "  Checking $file..."
       # Use node to check syntax - capture output and exit code
-      if ! node -c "$file" 2>&1; then
+      # Note: node -c only checks syntax, not runtime errors like TDZ (Temporal Dead Zone) errors
+      # For full static analysis, consider using ESLint or similar linter
+      SYNTAX_OUTPUT=$(node -c "$file" 2>&1)
+      SYNTAX_EXIT=$?
+      if [ $SYNTAX_EXIT -ne 0 ]; then
         echo "Error: Syntax error in $file"
+        echo "$SYNTAX_OUTPUT"
         JS_ERRORS=$((JS_ERRORS + 1))
       fi
     fi
