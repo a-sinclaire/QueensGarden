@@ -18,6 +18,9 @@ class DOMRenderer extends RendererInterface {
     this.rowElements = new Map(); // key: y -> row element
     // Track tiles that have been revealed (for animation)
     this.revealedTiles = new Set(); // key: "x,y"
+    // Queue for sequential card flip animations
+    this.flipQueue = [];
+    this.isProcessingFlipQueue = false;
   }
   
   /**
@@ -1036,19 +1039,11 @@ class DOMRenderer extends RendererInterface {
         // Show tile and update visual state
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
         
-        // Add sequential flip animation for newly revealed tiles
+        // Add to flip queue for sequential animation
         if (isNewlyRevealed) {
-          // Calculate delay based on distance from player (closer tiles flip first)
+          // Calculate distance from player (closer tiles flip first)
           const distance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
-          const delay = distance * 50; // 50ms per tile distance
-          
-          setTimeout(() => {
-            tileEl.classList.add('card-flip-animate');
-            // Remove animation class after animation completes
-            setTimeout(() => {
-              tileEl.classList.remove('card-flip-animate');
-            }, 300);
-          }, delay);
+          this.flipQueue.push({ tileEl, distance, x, y });
         }
       }
     }
