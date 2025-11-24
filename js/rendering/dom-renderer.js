@@ -450,9 +450,15 @@ class DOMRenderer extends RendererInterface {
           });
         }
       } else if (playerMoved) {
+        // AUTO-SCROLL DISABLED: User requested manual scrolling only
+        // Keep scroll position unchanged when player moves (manual scrolling only)
+        scrollX = currentScrollX;
+        scrollY = currentScrollY;
+        
+        // OLD AUTO-SCROLL CODE (disabled):
         // After first render AND player moved - check deadzone and scroll if needed
         // If player is outside dead zone, scroll by exactly one tile spacing in that direction
-        
+        /*
         // Horizontal scroll: check if player is outside horizontal dead zone
         if (playerScreenX < deadZoneLeft) {
           // Player too far left - scroll LEFT (decrease scrollX) to move board right, bringing player right
@@ -472,6 +478,7 @@ class DOMRenderer extends RendererInterface {
           scrollY = currentScrollY + totalTileHeight;
         }
         // If player is within dead zone vertically, scrollY stays as currentScrollY
+        */
       }
       // If player didn't move, scrollX/Y stay as currentScrollX/Y (no change)
       
@@ -582,12 +589,10 @@ class DOMRenderer extends RendererInterface {
       const finalScrollY = Math.max(0, Math.min(adjustedScrollY, maxScrollY));
       
       // Determine if we need to scroll
-      // CRITICAL: Always scroll on first render (centering), otherwise only if position changed
+      // CRITICAL: Only scroll on first render (centering), disable auto-scroll on movement
       const scrollThreshold = 1;
-      const needsScrollX = this.isFirstRender ? Math.abs(finalScrollX - currentScrollX) > 0.1 : 
-        Math.abs(finalScrollX - currentScrollX) > scrollThreshold;
-      const needsScrollY = this.isFirstRender ? Math.abs(finalScrollY - currentScrollY) > 0.1 : 
-        Math.abs(finalScrollY - currentScrollY) > scrollThreshold;
+      const needsScrollX = this.isFirstRender ? Math.abs(finalScrollX - currentScrollX) > 0.1 : false;
+      const needsScrollY = this.isFirstRender ? Math.abs(finalScrollY - currentScrollY) > 0.1 : false;
       
       // Debug: Update debug panel with scroll decision
       // Always show debug on mobile, not just when player moved
