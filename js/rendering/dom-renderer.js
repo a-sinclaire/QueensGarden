@@ -882,12 +882,10 @@ class DOMRenderer extends RendererInterface {
     // Check if this tile exists in the board (all tiles in board are revealed)
     const isRevealed = tile !== undefined && tile !== null;
     const tileKey = `${x},${y}`;
-    const isNewlyRevealed = isRevealed && !this.revealedTiles.has(tileKey);
+    // Don't mark as revealed here - let the queue system handle it
+    // This allows newly revealed tiles to be added to the flip queue
     
     if (isRevealed) {
-      // Mark as revealed
-      this.revealedTiles.add(tileKey);
-      
       // This tile has been explored/revealed
       if (tile.isCentralChamber) {
         tileEl.classList.add('central-chamber');
