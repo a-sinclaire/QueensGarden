@@ -71,7 +71,6 @@ class DOMRenderer extends RendererInterface {
     this.rowElements.clear();
     // Clear revealed tiles tracking (for animations)
     this.revealedTiles.clear();
-    this.animatingTiles.clear();
     
     // Clear the board DOM completely for new game
     const boardEl = document.getElementById('game-board');
