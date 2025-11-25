@@ -213,6 +213,12 @@
   animation: card-back-flip-out 0.3s ease-in forwards;
 }
 
+/* Hide front face content during back flip-out */
+.tile.card-back-flip-out .tile-content {
+  opacity: 0 !important;
+  visibility: hidden;
+}
+
 .tile.card-front-flip-in {
   animation: card-front-flip-in 0.3s ease-out forwards;
 }
