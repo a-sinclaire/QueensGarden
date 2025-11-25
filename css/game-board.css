@@ -123,7 +123,7 @@
 
 /* Card back design for buffer zone - plain muted blue */
 .tile.card-back {
-  background-color: #1e2a3a;
+  background-color: #2e2e52;
   border: 2px solid rgba(40, 55, 70, 0.5);
   opacity: 1;
 }
