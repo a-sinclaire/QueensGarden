@@ -937,13 +937,16 @@ class DOMRenderer extends RendererInterface {
         if (!wasAlreadyRevealed) {
           console.log(`[FLIP DEBUG] ✓ Adding animation to ${tileKey}`);
           this.revealedTiles.add(tileKey);
+          // Ensure card-back class is present for the flip animation
+          tileEl.classList.add('card-back');
           tileEl.classList.add('card-flip-animate');
           console.log(`[FLIP DEBUG] ✓ Animation class added to ${tileKey}, className now:`, tileEl.className);
           setTimeout(() => {
             const stillHasClass = tileEl.classList.contains('card-flip-animate');
             console.log(`[FLIP DEBUG] Removing animation from ${tileKey}, still has class:`, stillHasClass);
             tileEl.classList.remove('card-flip-animate');
-          }, 500);
+            tileEl.classList.remove('card-back'); // Remove card-back after animation completes
+          }, 600); // Match animation duration (0.6s)
         } else {
           console.log(`[FLIP DEBUG] ✗ Skipping animation for ${tileKey} (already revealed)`);
         }
