@@ -17,11 +17,7 @@ class DOMRenderer extends RendererInterface {
     this.tileElements = new Map(); // key: "x,y" -> tile element
     this.rowElements = new Map(); // key: y -> row element
     // Track tiles that have been revealed (for animation)
-    this.revealedTiles = new Set(); // key: "x,y" - tiles that have finished animating
-    this.animatingTiles = new Set(); // key: "x,y" - tiles currently animating
-    // Queue for sequential card flip animations
-    this.flipQueue = [];
-    this.isProcessingFlipQueue = false;
+    this.revealedTiles = new Set(); // key: "x,y"
   }
   
   /**
@@ -1081,22 +1077,25 @@ class DOMRenderer extends RendererInterface {
         // Get or create tile element (will create if it doesn't exist)
         const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
         
-        // Track newly revealed tiles for sequential animation
+        // Track newly revealed tiles for animation
         const tileKey = `${x},${y}`;
-        const isNewlyRevealed = tile !== undefined && tile !== null && 
-                                 !this.revealedTiles.has(tileKey) && 
-                                 !this.animatingTiles.has(tileKey);
+        const isNewlyRevealed = tile !== undefined && tile !== null && !this.revealedTiles.has(tileKey);
         
         // Show tile and update visual state
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
         
-        // Add to flip queue ONLY if newly revealed and has a card
+        // Add flip animation if newly revealed and has a card
         if (isNewlyRevealed && tile && tile.card && !tile.isCentralChamber) {
-          // Calculate distance from player (closer tiles flip first)
-          const distance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
-          // Add sequence number to ensure sequential flips even if same distance
-          const sequence = this.flipQueue.length;
-          this.flipQueue.push({ tileEl, distance, x, y, sequence });
+          // Mark as revealed immediately
+          this.revealedTiles.add(tileKey);
+          
+          // Add flip animation - it will play once when the class is added
+          tileEl.classList.add('card-flip-animate');
+          
+          // Remove animation class after animation completes
+          setTimeout(() => {
+            tileEl.classList.remove('card-flip-animate');
+          }, 500); // Animation duration (match CSS - 0.5s)
         }
       }
     }
@@ -1104,70 +1103,7 @@ class DOMRenderer extends RendererInterface {
     // Debug rectangle disabled - uncomment to enable
     // this._addBoardBoundaryDebug(boardEl, renderMinX, renderMaxX, renderMinY, renderMaxY, tileWidth, tileHeight, gap, rowWidth);
     
-    // Process flip queue sequentially (one card at a time) - only if queue has items
-    if (this.flipQueue.length > 0) {
-      this._processFlipQueue();
-    }
-    
     // No need to restore scroll position - we never cleared the DOM!
-  }
-  
-  /**
-   * Process flip queue sequentially - one card at a time
-   * @private
-   */
-  _processFlipQueue() {
-    // If already processing or queue is empty, return
-    if (this.isProcessingFlipQueue || this.flipQueue.length === 0) {
-      return;
-    }
-    
-    // Sort queue by distance (closer tiles first), then by sequence number to ensure sequential order
-    this.flipQueue.sort((a, b) => {
-      if (a.distance !== b.distance) {
-        return a.distance - b.distance;
-      }
-      // If same distance, use sequence number to maintain order
-      return (a.sequence || 0) - (b.sequence || 0);
-    });
-    
-    // Start processing
-    this.isProcessingFlipQueue = true;
-    this._animateNextFlip();
-  }
-  
-  /**
-   * Animate the next card in the flip queue
-   * @private
-   */
-  _animateNextFlip() {
-    if (this.flipQueue.length === 0) {
-      this.isProcessingFlipQueue = false;
-      return;
-    }
-    
-    // Get next tile from queue
-    const { tileEl, x, y } = this.flipQueue.shift();
-    const tileKey = `${x},${y}`;
-    
-    // Mark as animating NOW (when animation starts)
-    this.animatingTiles.add(tileKey);
-    
-    // Add flip animation
-    tileEl.classList.add('card-flip-animate');
-    
-    // After animation completes, mark as revealed and process next
-    setTimeout(() => {
-      tileEl.classList.remove('card-flip-animate');
-      // Mark as revealed (animation complete)
-      this.animatingTiles.delete(tileKey);
-      this.revealedTiles.add(tileKey);
-      
-      // Small delay between flips for smooth sequential effect
-      setTimeout(() => {
-        this._animateNextFlip();
-      }, 100); // 100ms delay between flips for better visibility
-    }, 500); // Animation duration (match CSS - 0.5s)
   }
   
   /**
