@@ -981,8 +981,37 @@ class DOMRenderer extends RendererInterface {
       }
     } else {
       // Unexplored tile within render bounds (buffer zone)
-      // Show card back design
+      // Show card back design with fog of war effect based on proximity to revealed tiles
       tileEl.classList.add('card-back');
+      
+      // Calculate minimum distance to any revealed tile for fog of war
+      let minDistance = Infinity;
+      const bufferZoneSize = typeof GAME_RULES !== 'undefined' && GAME_RULES.board.bufferZoneSize !== undefined
+        ? GAME_RULES.board.bufferZoneSize
+        : 2;
+      
+      // Check distance to all revealed tiles
+      for (const [key, revealedTile] of board.entries()) {
+        if (revealedTile) {
+          const [revealedX, revealedY] = key.split(',').map(Number);
+          const distance = Math.abs(x - revealedX) + Math.abs(y - revealedY); // Manhattan distance
+          minDistance = Math.min(minDistance, distance);
+        }
+      }
+      
+      // If no revealed tiles, use distance to player
+      if (minDistance === Infinity) {
+        minDistance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
+      }
+      
+      // Calculate opacity: closer tiles are more visible (higher opacity)
+      // Buffer zone size is the max distance, so tiles at bufferZoneSize distance should be least visible
+      // Opacity ranges from 0.3 (furthest) to 0.8 (closest to revealed tiles)
+      const maxDistance = bufferZoneSize;
+      const normalizedDistance = Math.min(minDistance / maxDistance, 1);
+      const opacity = 0.8 - (normalizedDistance * 0.5); // 0.8 at distance 0, 0.3 at max distance
+      
+      tileEl.style.opacity = opacity.toString();
     }
   }
   
