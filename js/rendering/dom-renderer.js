@@ -17,7 +17,8 @@ class DOMRenderer extends RendererInterface {
     this.tileElements = new Map(); // key: "x,y" -> tile element
     this.rowElements = new Map(); // key: y -> row element
     // Track tiles that have been revealed (for animation)
-    this.revealedTiles = new Set(); // key: "x,y"
+    this.revealedTiles = new Set(); // key: "x,y" - tiles that have finished animating
+    this.animatingTiles = new Set(); // key: "x,y" - tiles currently animating
     // Queue for sequential card flip animations
     this.flipQueue = [];
     this.isProcessingFlipQueue = false;
@@ -1081,32 +1082,20 @@ class DOMRenderer extends RendererInterface {
         
         // Track newly revealed tiles for sequential animation
         const tileKey = `${x},${y}`;
-        const isNewlyRevealed = tile !== undefined && tile !== null && !this.revealedTiles.has(tileKey);
+        const isNewlyRevealed = tile !== undefined && tile !== null && 
+                                 !this.revealedTiles.has(tileKey) && 
+                                 !this.animatingTiles.has(tileKey);
         
         // Show tile and update visual state
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
         
-        // Add to flip queue for sequential animation ONLY if:
-        // 1. Newly revealed (not in revealedTiles set)
-        // 2. Has a card (not empty tile or central chamber)
-        // 3. Not already animating
-        // 4. Not in the queue already
-        if (isNewlyRevealed && tile && tile.card && !tile.isCentralChamber && !tileEl.classList.contains('card-flip-animate')) {
-          // Check if already in queue
-          const alreadyInQueue = this.flipQueue.some(item => 
-            item.x === x && item.y === y
-          );
-          
-          if (!alreadyInQueue) {
-            // Calculate distance from player (closer tiles flip first)
-            const distance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
-            // Add sequence number to ensure sequential flips even if same distance
-            const sequence = this.flipQueue.length;
-            this.flipQueue.push({ tileEl, distance, x, y, sequence });
-            
-            // Mark as revealed AFTER adding to queue (so it can be animated)
-            // We'll mark it as revealed when animation starts
-          }
+        // Add to flip queue ONLY if newly revealed and has a card
+        if (isNewlyRevealed && tile && tile.card && !tile.isCentralChamber) {
+          // Calculate distance from player (closer tiles flip first)
+          const distance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
+          // Add sequence number to ensure sequential flips even if same distance
+          const sequence = this.flipQueue.length;
+          this.flipQueue.push({ tileEl, distance, x, y, sequence });
         }
       }
     }
@@ -1160,24 +1149,19 @@ class DOMRenderer extends RendererInterface {
     const { tileEl, x, y } = this.flipQueue.shift();
     const tileKey = `${x},${y}`;
     
-    // Mark as revealed NOW (when animation starts)
-    this.revealedTiles.add(tileKey);
-    
-    // Double-check tile hasn't already been animated (safety check)
-    if (tileEl.classList.contains('card-flip-animate')) {
-      // Skip this tile and move to next
-      setTimeout(() => {
-        this._animateNextFlip();
-      }, 50);
-      return;
-    }
+    // Mark as animating NOW (when animation starts)
+    this.animatingTiles.add(tileKey);
     
     // Add flip animation
     tileEl.classList.add('card-flip-animate');
     
-    // Remove animation class after animation completes and process next
+    // After animation completes, mark as revealed and process next
     setTimeout(() => {
       tileEl.classList.remove('card-flip-animate');
+      // Mark as revealed (animation complete)
+      this.animatingTiles.delete(tileKey);
+      this.revealedTiles.add(tileKey);
+      
       // Small delay between flips for smooth sequential effect
       setTimeout(() => {
         this._animateNextFlip();
