@@ -827,15 +827,19 @@ class DOMRenderer extends RendererInterface {
    */
   _updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles) {
     const tileKey = `${x},${y}`;
-    // Preserve animation class if it exists (don't clear it during animation)
+    // Preserve animation classes if they exist (don't clear them during animation)
     const hadAnimationClass = tileEl.classList.contains('card-flip-animate');
+    const hadCardBackClass = tileEl.classList.contains('card-back');
     
     // Reset all state classes
     tileEl.className = 'tile';
     
-    // Restore animation class if it was present (preserve ongoing animation)
+    // Restore animation classes if they were present (preserve ongoing animation)
     if (hadAnimationClass) {
       tileEl.classList.add('card-flip-animate');
+    }
+    if (hadCardBackClass) {
+      tileEl.classList.add('card-back');
     }
     tileEl.style.opacity = '';
     tileEl.style.border = '';
@@ -945,7 +949,10 @@ class DOMRenderer extends RendererInterface {
             const stillHasClass = tileEl.classList.contains('card-flip-animate');
             console.log(`[FLIP DEBUG] Removing animation from ${tileKey}, still has class:`, stillHasClass);
             tileEl.classList.remove('card-flip-animate');
-            tileEl.classList.remove('card-back'); // Remove card-back after animation completes
+            // Remove card-back after animation completes, allowing content to fade in
+            setTimeout(() => {
+              tileEl.classList.remove('card-back');
+            }, 50); // Small delay to ensure content fade-in starts
           }, 600); // Match animation duration (0.6s)
         } else {
           console.log(`[FLIP DEBUG] ✗ Skipping animation for ${tileKey} (already revealed)`);

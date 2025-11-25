@@ -219,13 +219,14 @@
 
 /* Hide card content during flip animation (show back instead) */
 .tile.card-flip-animate .tile-content {
-  opacity: 0;
-  transition: opacity 0.1s ease;
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
-/* Show card content after flip completes */
+/* Show card content after flip completes with smooth fade-in */
 .tile.revealed:not(.card-flip-animate) .tile-content {
   opacity: 1;
+  transition: opacity 0.2s ease-in;
 }
 
 /* Floating reset text animation */
