@@ -942,27 +942,35 @@ class DOMRenderer extends RendererInterface {
           console.log(`[FLIP DEBUG] ✓ Adding animation to ${tileKey}`);
           this.revealedTiles.add(tileKey);
           
-          // Step 1: Show back and start back flip-out animation
+          // Ensure tile starts with card-back visible and content hidden
+          // This matches the initial state of the first 4 tiles
           tileEl.classList.add('card-back');
-          tileEl.classList.add('card-back-flip-out');
-          tileEl.classList.add('card-flip-animate');
-          
-          // Hide content during back animation
           content.style.opacity = '0';
+          content.style.visibility = 'hidden';
           
-          // Step 2: After back finishes, remove back and start front flip-in
-          setTimeout(() => {
-            tileEl.classList.remove('card-back');
-            tileEl.classList.remove('card-back-flip-out');
-            tileEl.classList.add('card-front-flip-in');
-            
-            // Step 3: After front finishes, clean up
-            setTimeout(() => {
-              tileEl.classList.remove('card-front-flip-in');
-              tileEl.classList.remove('card-flip-animate');
-              content.style.opacity = '1';
-            }, 300); // Front animation duration
-          }, 300); // Back animation duration
+          // Use requestAnimationFrame to ensure DOM is ready before starting animation
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              // Step 1: Start back flip-out animation
+              tileEl.classList.add('card-back-flip-out');
+              tileEl.classList.add('card-flip-animate');
+              
+              // Step 2: After back finishes, remove back and start front flip-in
+              setTimeout(() => {
+                tileEl.classList.remove('card-back');
+                tileEl.classList.remove('card-back-flip-out');
+                tileEl.classList.add('card-front-flip-in');
+                content.style.visibility = 'visible';
+                
+                // Step 3: After front finishes, clean up
+                setTimeout(() => {
+                  tileEl.classList.remove('card-front-flip-in');
+                  tileEl.classList.remove('card-flip-animate');
+                  content.style.opacity = '1';
+                }, 300); // Front animation duration
+              }, 300); // Back animation duration
+            });
+          });
         } else {
           console.log(`[FLIP DEBUG] ✗ Skipping animation for ${tileKey} (already revealed)`);
         }
