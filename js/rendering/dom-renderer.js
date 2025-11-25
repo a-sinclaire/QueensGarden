@@ -1004,12 +1004,22 @@ class DOMRenderer extends RendererInterface {
         minDistance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
       }
       
-      // Calculate opacity: closer tiles are more visible (higher opacity)
-      // Buffer zone size is the max distance, so tiles at bufferZoneSize distance should be least visible
-      // Opacity ranges from 0.3 (furthest) to 0.8 (closest to revealed tiles)
+      // Calculate opacity: linear falloff from almost fully visible (adjacent) to nearly invisible (edge)
+      // Distance 1 (adjacent) = ~0.9 opacity, Distance bufferZoneSize (edge) = ~0.1 opacity
       const maxDistance = bufferZoneSize;
       const normalizedDistance = Math.min(minDistance / maxDistance, 1);
-      const opacity = 0.8 - (normalizedDistance * 0.5); // 0.8 at distance 0, 0.3 at max distance
+      // Linear interpolation: 0.9 at distance 1, 0.1 at distance bufferZoneSize
+      // For distance 0 (on revealed tile), use 1.0, then linear from 0.9 to 0.1
+      let opacity;
+      if (minDistance === 0) {
+        opacity = 1.0;
+      } else if (minDistance === 1) {
+        opacity = 0.9;
+      } else {
+        // Linear interpolation from 0.9 (distance 1) to 0.1 (distance bufferZoneSize)
+        const t = (minDistance - 1) / (maxDistance - 1); // t goes from 0 (at distance 1) to 1 (at distance bufferZoneSize)
+        opacity = 0.9 - (t * 0.8); // 0.9 - 0.8*t gives us 0.9 at t=0, 0.1 at t=1
+      }
       
       tileEl.style.opacity = opacity.toString();
     }
