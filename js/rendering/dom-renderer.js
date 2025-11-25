@@ -1005,20 +1005,20 @@ class DOMRenderer extends RendererInterface {
       }
       
       // Calculate opacity: linear falloff from almost fully visible (adjacent) to nearly invisible (edge)
-      // Distance 1 (adjacent) = ~0.9 opacity, Distance bufferZoneSize (edge) = ~0.1 opacity
+      // Distance 1 (adjacent) = ~0.9 opacity, Distance bufferZoneSize (edge) = ~0.18 opacity
       const maxDistance = bufferZoneSize;
       const normalizedDistance = Math.min(minDistance / maxDistance, 1);
-      // Linear interpolation: 0.9 at distance 1, 0.1 at distance bufferZoneSize
-      // For distance 0 (on revealed tile), use 1.0, then linear from 0.9 to 0.1
+      // Linear interpolation: 0.9 at distance 1, 0.18 at distance bufferZoneSize
+      // For distance 0 (on revealed tile), use 1.0, then linear from 0.9 to 0.18
       let opacity;
       if (minDistance === 0) {
         opacity = 1.0;
       } else if (minDistance === 1) {
         opacity = 0.9;
       } else {
-        // Linear interpolation from 0.9 (distance 1) to 0.1 (distance bufferZoneSize)
+        // Linear interpolation from 0.9 (distance 1) to 0.18 (distance bufferZoneSize)
         const t = (minDistance - 1) / (maxDistance - 1); // t goes from 0 (at distance 1) to 1 (at distance bufferZoneSize)
-        opacity = 0.9 - (t * 0.8); // 0.9 - 0.8*t gives us 0.9 at t=0, 0.1 at t=1
+        opacity = 0.9 - (t * 0.72); // 0.9 - 0.72*t gives us 0.9 at t=0, 0.18 at t=1
       }
       
       tileEl.style.opacity = opacity.toString();
