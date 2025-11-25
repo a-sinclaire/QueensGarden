@@ -1073,24 +1073,27 @@ class DOMRenderer extends RendererInterface {
           existingSpacer.remove();
         }
         
-        // Check if tile element already exists (was created in a previous render)
-        const tileKey = `${x},${y}`;
-        const tileElAlreadyExisted = this.tileElements.has(tileKey);
-        
         // Get or create tile element (will create if it doesn't exist)
+        const tileKey = `${x},${y}`;
         const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
         
         // Track newly revealed tiles for animation
-        // Only animate tiles that are being shown for the first time (not in revealedTiles AND tile element is new)
-        const isNewlyRevealed = tile !== undefined && tile !== null && !this.revealedTiles.has(tileKey) && !tileElAlreadyExisted;
+        // A tile is newly revealed if:
+        // 1. It exists in the board (has tile data)
+        // 2. It's not already in our revealedTiles tracking set
+        // 3. It has a card (not empty, not central chamber)
+        const isNewlyRevealed = tile !== undefined && tile !== null && 
+                                 !this.revealedTiles.has(tileKey) && 
+                                 tile.card && 
+                                 !tile.isCentralChamber;
         
         // Show tile and update visual state
         tileEl.style.visibility = 'visible';
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
         
-        // Add flip animation if newly revealed and has a card
-        if (isNewlyRevealed && tile && tile.card && !tile.isCentralChamber) {
-          // Mark as revealed immediately
+        // Add flip animation if newly revealed
+        if (isNewlyRevealed) {
+          // Mark as revealed immediately (before animation starts)
           this.revealedTiles.add(tileKey);
           
           // Add flip animation - it will play once when the class is added
