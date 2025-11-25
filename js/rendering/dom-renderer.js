@@ -878,23 +878,18 @@ class DOMRenderer extends RendererInterface {
     
     // Check if this tile exists in the board (all tiles in board are revealed)
     const isRevealed = tile !== undefined && tile !== null;
-    const tileKey = `${x},${y}`;
-    // Don't mark as revealed here - let the queue system handle it
-    // This allows newly revealed tiles to be added to the flip queue
     
     if (isRevealed) {
       // This tile has been explored/revealed
       if (tile.isCentralChamber) {
         tileEl.classList.add('central-chamber');
         tileEl.classList.add('revealed');
-        // Flip animation is handled in _updateBoard with sequential delays
         const content = document.createElement('div');
         content.className = 'tile-content';
         content.textContent = 'C';
         tileEl.appendChild(content);
       } else if (tile.card) {
         tileEl.classList.add('revealed');
-        // Flip animation is handled by the queue system in _updateBoard
         const card = tile.card;
         const cardType = card.getType();
         tileEl.classList.add(`card-type-${cardType}`);
@@ -914,11 +909,20 @@ class DOMRenderer extends RendererInterface {
         content.appendChild(rankEl);
         content.appendChild(suitEl);
         tileEl.appendChild(content);
+        
+        // Simple flip animation: if this tile hasn't been revealed before, animate it
+        const tileKey = `${x},${y}`;
+        if (!this.revealedTiles.has(tileKey)) {
+          this.revealedTiles.add(tileKey);
+          tileEl.classList.add('card-flip-animate');
+          setTimeout(() => {
+            tileEl.classList.remove('card-flip-animate');
+          }, 500);
+        }
       } else {
         // Empty revealed tile
         tileEl.classList.add('empty');
         tileEl.classList.add('revealed');
-        // Flip animation is handled in _updateBoard with sequential delays
       }
     } else {
       // Unexplored tile within render bounds (buffer zone)
@@ -1074,39 +1078,11 @@ class DOMRenderer extends RendererInterface {
         }
         
         // Get or create tile element (will create if it doesn't exist)
-        const tileKey = `${x},${y}`;
         const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
         
-        // Track newly revealed tiles for animation
-        // A tile is newly revealed if:
-        // 1. It exists in the board (has tile data)
-        // 2. It's not already in our revealedTiles tracking set
-        // 3. It has a card (not empty, not central chamber)
-        const isNewlyRevealed = tile !== undefined && tile !== null && 
-                                 !this.revealedTiles.has(tileKey) && 
-                                 tile.card && 
-                                 !tile.isCentralChamber;
-        
-        // Show tile and update visual state
+        // Show tile and update visual state (animation handled inside _updateTileElement)
         tileEl.style.visibility = 'visible';
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
-        
-        // Add flip animation if newly revealed
-        if (isNewlyRevealed) {
-          // Mark as revealed immediately (before animation starts)
-          this.revealedTiles.add(tileKey);
-          
-          // Add flip animation - it will play once when the class is added
-          tileEl.classList.add('card-flip-animate');
-          
-          // Remove animation class after animation completes
-          setTimeout(() => {
-            tileEl.classList.remove('card-flip-animate');
-          }, 500); // Animation duration (match CSS - 0.5s)
-        } else if (tile && tile.card && !tile.isCentralChamber) {
-          // Tile already revealed, just mark it (don't animate again)
-          this.revealedTiles.add(tileKey);
-        }
       }
     }
     
