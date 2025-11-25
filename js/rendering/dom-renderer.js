@@ -954,9 +954,8 @@ class DOMRenderer extends RendererInterface {
       }
     } else {
       // Unexplored tile within render bounds (buffer zone)
-      // Show subtle border so grid is visible but clearly unexplored
-      tileEl.style.opacity = '0.3';
-      tileEl.style.border = '1px solid rgba(83, 52, 131, 0.3)';
+      // Show card back design
+      tileEl.classList.add('card-back');
     }
   }
   
