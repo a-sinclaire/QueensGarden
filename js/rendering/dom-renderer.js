@@ -1073,14 +1073,19 @@ class DOMRenderer extends RendererInterface {
           existingSpacer.remove();
         }
         
+        // Check if tile element already exists (was created in a previous render)
+        const tileKey = `${x},${y}`;
+        const tileElAlreadyExisted = this.tileElements.has(tileKey);
+        
         // Get or create tile element (will create if it doesn't exist)
         const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
         
         // Track newly revealed tiles for animation
-        const tileKey = `${x},${y}`;
-        const isNewlyRevealed = tile !== undefined && tile !== null && !this.revealedTiles.has(tileKey);
+        // Only animate tiles that are being shown for the first time (not in revealedTiles AND tile element is new)
+        const isNewlyRevealed = tile !== undefined && tile !== null && !this.revealedTiles.has(tileKey) && !tileElAlreadyExisted;
         
         // Show tile and update visual state
+        tileEl.style.visibility = 'visible';
         this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
         
         // Add flip animation if newly revealed and has a card
@@ -1095,6 +1100,9 @@ class DOMRenderer extends RendererInterface {
           setTimeout(() => {
             tileEl.classList.remove('card-flip-animate');
           }, 500); // Animation duration (match CSS - 0.5s)
+        } else if (tile && tile.card && !tile.isCentralChamber) {
+          // Tile already revealed, just mark it (don't animate again)
+          this.revealedTiles.add(tileKey);
         }
       }
     }
