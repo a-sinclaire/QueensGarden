@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-11-24
+
+### Added
+- **Card flip animation**: Sequential flip animation when cards are revealed
+  - Back face rotates out (0.3s), then front face rotates in (0.3s)
+  - Smooth 3D rotation effect with proper front/back visibility
+  - Each card only animates once when first revealed
+- **Press-and-hold to destroy**: Release to confirm destruction
+  - Hold mouse/touch on adjacent tile for 500ms to activate destroy mode
+  - Tile shakes while holding to indicate pending destruction
+  - Release to confirm, move away to cancel
+  - Scrolling disabled during hold to prevent accidental cancellation
+- **Quick restart**: Hold central chamber to reset game
+  - Hold mouse/touch on central chamber for 1000ms
+  - Central chamber shakes and "Reset?" text appears
+  - Release to confirm reset
+  - Works from anywhere (doesn't require standing on central chamber)
+- **Visual error feedback**: Replaced alert popups with visual animations
+  - Invalid moves: Target tile shakes
+  - Missing queen for king collection: Missing queen glows in party display
+  - No kings available for destroy: Kings panel glows
+- **Damage feedback**: Visual indicators when taking damage
+  - Floating damage popup shows damage amount
+  - Screen shake effect on damage (scales with damage amount)
+- **Fog of war effect**: Buffer zone tiles fade based on proximity to revealed tiles
+  - Linear opacity falloff: adjacent tiles ~0.9 opacity, edge tiles ~0.18 opacity
+  - Creates smooth gradient from explored to unexplored areas
+  - Buffer zone increased from 2 to 3 tiles for better visibility
+
+### Changed
+- Increased buffer zone size from 2 to 3 tiles (configurable via `GAME_RULES.board.bufferZoneSize`)
+- Card back styling: Plain muted blue color (#2e2e52) with subtle border matching master branch
+- Improved card flip animation timing with `requestAnimationFrame` for smoother transitions
+- All visual feedback now uses CSS animations instead of browser alerts
+
+### Fixed
+- Card flip animation now works correctly for all revealed tiles (not just initial 4)
+- Fixed animation class preservation during DOM updates
+- Fixed tile content centering (symbols now properly centered)
+
 ## [1.4.0] - 2025-11-24
 
 ### Changed

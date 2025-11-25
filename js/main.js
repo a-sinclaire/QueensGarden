@@ -246,7 +246,7 @@ function toggleDestroyMode() {
   );
   
   if (availableKings.length === 0 && !destroyMode) {
-    alert('No Kings with unused destroy abilities available!');
+    // Silently ignore - no popup needed
     return;
   }
   
@@ -317,8 +317,8 @@ function handleTileClick(x, y) {
       // Exit destroy mode after successful destroy
       toggleDestroyMode();
     } else {
-      // Show error
-      alert(result.message);
+      // Visual feedback for destroy errors
+      showErrorFeedback(x, y, result.message);
     }
     return;
   }
@@ -338,12 +338,13 @@ function handleTileClick(x, y) {
   // This consolidates move and teleport logic into one place
   const result = gameEngine.moveToPosition(x, y);
   if (!result.success) {
-    // Visual feedback for invalid move
-    // Don't alert for same position - just silently ignore
-    if (result.message !== 'Cannot move to the same position') {
-      alert(result.message);
-    }
+    // Visual feedback for move errors
+    showErrorFeedback(x, y, result.message);
+    // Don't render on failed moves - prevents cards from flipping
+    return;
   }
+  // Only render if move was successful (tiles will be revealed)
+  renderer.render(gameEngine.getGameState());
 }
 
 /**
@@ -369,6 +370,97 @@ function resetGame() {
   renderer = null;
   destroyMode = false;
   selectedKing = null;
+}
+
+// Expose resetGame for quick restart
+window.resetGame = resetGame;
+
+/**
+ * Show visual error feedback (shake tile, highlight relevant UI)
+ */
+function showErrorFeedback(x, y, errorMessage) {
+  // Find the target tile element
+  const boardEl = document.getElementById('game-board');
+  if (!boardEl) return;
+  
+  const tileEl = boardEl.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+  if (tileEl) {
+    // Shake animation
+    tileEl.classList.add('error-shake');
+    setTimeout(() => {
+      tileEl.classList.remove('error-shake');
+    }, 500);
+  }
+  
+  // Check if this is a king collection error
+  if (errorMessage && (errorMessage.includes('Queen') || errorMessage.includes('Need Queen'))) {
+    // Try to extract the missing suit from the error or target tile
+    let missingSuit = null;
+    
+    // Get the target tile to see what king we're trying to collect
+    if (gameEngine) {
+      const targetTile = gameEngine.board.get(`${x},${y}`);
+      if (targetTile && targetTile.card && targetTile.card.getType() === 'king') {
+        const kingCard = targetTile.card;
+        const kingColor = kingCard.getColor();
+        const kingSuit = kingCard.suit;
+        
+        // Find which queen is missing (same color, different suit)
+        const allSuits = ['hearts', 'diamonds', 'clubs', 'spades'];
+        const sameColorSuits = allSuits.filter(suit => {
+          const suitColor = GAME_RULES.suitColors[suit];
+          return suitColor === kingColor && suit !== kingSuit;
+        });
+        
+        // Check which one is missing from party
+        if (gameEngine.player.party) {
+          const ownedSuits = new Set(gameEngine.player.party.map(q => q.suit));
+          missingSuit = sameColorSuits.find(suit => !ownedSuits.has(suit));
+        }
+      }
+    }
+    
+    // Update party display with highlight
+    if (renderer && missingSuit) {
+      console.log('Highlighting missing queen suit:', missingSuit);
+      renderer._updateParty(gameEngine.player.party, missingSuit);
+      // Remove highlight after animation
+      setTimeout(() => {
+        if (renderer) {
+          renderer._updateParty(gameEngine.player.party, null);
+        }
+      }, 2000);
+    } else {
+      console.log('Could not find missing suit. missingSuit:', missingSuit, 'renderer:', renderer);
+      // Just highlight party display
+      const partyDisplay = document.getElementById('party-display');
+      const mobileParty = document.getElementById('mobile-party');
+      if (partyDisplay) {
+        partyDisplay.classList.add('error-glow');
+        setTimeout(() => partyDisplay.classList.remove('error-glow'), 1000);
+      }
+      if (mobileParty) {
+        mobileParty.classList.add('error-glow');
+        setTimeout(() => mobileParty.classList.remove('error-glow'), 1000);
+      }
+    }
+  }
+  
+  // Don't highlight king box for king collection errors - only highlight missing queen
+  // (King-related errors like "no available kings" still highlight king box)
+  if (errorMessage && errorMessage.includes('ability') && !errorMessage.includes('Queen')) {
+    // Highlight kings display for ability-related errors (not collection errors)
+    const kingsDisplay = document.getElementById('kings-display');
+    const mobileKings = document.getElementById('mobile-kings');
+    if (kingsDisplay) {
+      kingsDisplay.classList.add('error-glow');
+      setTimeout(() => kingsDisplay.classList.remove('error-glow'), 1000);
+    }
+    if (mobileKings) {
+      mobileKings.classList.add('error-glow');
+      setTimeout(() => mobileKings.classList.remove('error-glow'), 1000);
+    }
+  }
 }
 
 // Make handleTileClick available globally for renderer

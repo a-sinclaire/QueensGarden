@@ -12,19 +12,9 @@ This file tracks current bugs, issues, and ideas for future improvements.
 
 ### High Priority
 
-1. **Press and hold to destroy - release to confirm**
-   - **Description**: Press and hold to destroy should only destroy when the hold is released, not when the timer expires
-   - **Benefit**: Allows player to change their mind and move their finger away before releasing
-   - **Status**: Planned
-
-2. **Ace counter**
+1. **Ace counter**
    - **Description**: Add a counter showing number of aces revealed
    - **Benefit**: Helps players track progress and plan teleportation
-   - **Status**: Planned
-
-3. **Card flip animation**
-   - **Description**: Add animation when a card is revealed (maybe change to different animation later)
-   - **Benefit**: Better visual feedback, more polished feel
    - **Status**: Planned
 
 4. **Improved visual clarity for safe/dangerous tiles**
@@ -32,10 +22,6 @@ This file tracks current bugs, issues, and ideas for future improvements.
    - **Benefit**: Better gameplay experience, reduces frustration
    - **Status**: Planned
 
-5. **Quick restart on central chamber**
-   - **Description**: Hold down on central chamber to quick restart game
-   - **Benefit**: Faster iteration for testing and replaying
-   - **Status**: Planned
 
 6. **Game simulator**
    - **Description**: Make a simulator to play games automatically to estimate which percentage of them are possible/winnable
@@ -43,6 +29,8 @@ This file tracks current bugs, issues, and ideas for future improvements.
    - **Status**: Planned
 
 8. tutorial?
+
+- game skins?
 
 ## AI Ideas
 

@@ -16,6 +16,8 @@ class DOMRenderer extends RendererInterface {
     // Track existing tile elements by coordinate for in-place updates
     this.tileElements = new Map(); // key: "x,y" -> tile element
     this.rowElements = new Map(); // key: y -> row element
+    // Track tiles that have been revealed (for animation)
+    this.revealedTiles = new Set(); // key: "x,y"
   }
   
   /**
@@ -67,6 +69,8 @@ class DOMRenderer extends RendererInterface {
     // Clear tile/row element tracking
     this.tileElements.clear();
     this.rowElements.clear();
+    // Clear revealed tiles tracking (for animations)
+    this.revealedTiles.clear();
     
     // Clear the board DOM completely for new game
     const boardEl = document.getElementById('game-board');
@@ -81,6 +85,8 @@ class DOMRenderer extends RendererInterface {
     // Track if this is the first render (for centering on central chamber)
     const isFirstRender = !this._hasRendered;
     this._hasRendered = true;
+    
+    console.log('[FLIP DEBUG] render() called', { isFirstRender, revealedTilesCount: this.revealedTiles.size });
     
     // Sync destroy mode state from global variables (if available)
     if (typeof window !== 'undefined' && window.destroyMode !== undefined) {
@@ -156,27 +162,69 @@ class DOMRenderer extends RendererInterface {
     }
   }
   
-  _updateParty(party) {
+  _updateParty(party, highlightMissingSuit = null) {
+    // Get player's starting suit (own suit) if available
+    const ownSuit = this.gameEngine && this.gameEngine.player.startingQueen 
+      ? this.gameEngine.player.startingQueen.suit 
+      : null;
+    
+    // Get all suits in order: own suit first, then others
+    const allSuits = ['hearts', 'diamonds', 'clubs', 'spades'];
+    const orderedSuits = ownSuit 
+      ? [ownSuit, ...allSuits.filter(s => s !== ownSuit)]
+      : allSuits;
+    
+    // Create a set of owned suits for quick lookup
+    const ownedSuits = new Set();
+    if (party && party.length > 0) {
+      party.forEach(queen => {
+        ownedSuits.add(queen.suit);
+      });
+    }
+    
+    // Helper function to create suit element
+    const createSuitElement = (suit) => {
+      const suitEl = document.createElement('span');
+      suitEl.className = 'party-suit';
+      suitEl.dataset.suit = suit;
+      
+      if (ownedSuits.has(suit)) {
+        suitEl.classList.add('owned');
+        if (ownSuit && suit === ownSuit) {
+          suitEl.classList.add('own-suit');
+        }
+      } else {
+        suitEl.classList.add('not-owned');
+        suitEl.style.opacity = '0.3';
+      }
+      
+      if (highlightMissingSuit && suit === highlightMissingSuit) {
+        suitEl.classList.add('error-glow');
+      }
+      
+      suitEl.textContent = this._getSuitSymbol(suit);
+      suitEl.title = ownedSuits.has(suit) 
+        ? `Queen of ${suit} (owned)`
+        : `Queen of ${suit} (not owned)`;
+      return suitEl;
+    };
+    
+    // Update desktop party display
     const partyEl = document.getElementById('party-display');
     if (partyEl) {
       partyEl.innerHTML = '';
-      if (party && party.length > 0) {
-        // Get player's starting suit (own suit) if available
-        const ownSuit = this.gameEngine && this.gameEngine.player.startingQueen 
-          ? this.gameEngine.player.startingQueen.suit 
-          : null;
-        
-        party.forEach(queen => {
-          const suitEl = document.createElement('span');
-          suitEl.className = 'party-suit';
-          if (ownSuit && queen.suit === ownSuit) {
-            suitEl.classList.add('own-suit');
-          }
-          suitEl.textContent = this._getSuitSymbol(queen.suit);
-          suitEl.title = `${queen.rank} of ${queen.suit}`;
-          partyEl.appendChild(suitEl);
-        });
-      }
+      orderedSuits.forEach(suit => {
+        partyEl.appendChild(createSuitElement(suit));
+      });
+    }
+    
+    // Update mobile party display
+    const mobilePartySuitsEl = document.getElementById('mobile-party-suits');
+    if (mobilePartySuitsEl) {
+      mobilePartySuitsEl.innerHTML = '';
+      orderedSuits.forEach(suit => {
+        mobilePartySuitsEl.appendChild(createSuitElement(suit));
+      });
     }
   }
   
@@ -293,6 +341,8 @@ class DOMRenderer extends RendererInterface {
     let isLongPress = false;
     let touchStartPos = null;
     let hasMoved = false;
+    let isDestroyHolding = false;
+    let isRestartHolding = false;
     
     const handleTileAction = (e) => {
       // Don't handle if it was a long press
@@ -308,6 +358,46 @@ class DOMRenderer extends RendererInterface {
       }
     };
     
+    let resetTextEl = null;
+    
+    const cleanupHold = () => {
+      if (isDestroyHolding) {
+        tileEl.classList.remove('destroy-holding');
+        isDestroyHolding = false;
+      }
+      if (isRestartHolding) {
+        tileEl.classList.remove('destroy-holding'); // Reuse same visual
+        isRestartHolding = false;
+        // Remove floating reset text
+        if (resetTextEl) {
+          resetTextEl.remove();
+          resetTextEl = null;
+        }
+      }
+    };
+    
+    const showResetText = () => {
+      if (resetTextEl) return; // Already showing
+      
+      resetTextEl = document.createElement('div');
+      resetTextEl.className = 'reset-text-float';
+      resetTextEl.textContent = 'Reset?';
+      resetTextEl.style.cssText = `
+        position: fixed;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ff6b6b;
+        text-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+        pointer-events: none;
+        z-index: 1000;
+        animation: float-reset 0.5s ease-in-out infinite;
+      `;
+      document.body.appendChild(resetTextEl);
+    };
+    
     // Touch start - begin long press timer
     tileEl.addEventListener('touchstart', (e) => {
       const touch = e.touches[0];
@@ -315,6 +405,32 @@ class DOMRenderer extends RendererInterface {
       touchStartTime = Date.now();
       isLongPress = false;
       hasMoved = false;
+      cleanupHold();
+      
+      // Check if this is central chamber - reset takes priority over destroy
+      const isCentralChamber = x === 0 && y === 0;
+      
+      if (isCentralChamber && this.gameEngine) {
+        // Start restart timer (1000ms) for central chamber
+        touchTimer = setTimeout(() => {
+          isRestartHolding = true;
+          tileEl.classList.add('destroy-holding');
+          showResetText();
+          
+          // Disable scrolling on board container
+          const boardEl = document.getElementById('game-board');
+          if (boardEl) {
+            boardEl.style.overflow = 'hidden';
+            boardEl.style.touchAction = 'none';
+          }
+          
+          // Provide haptic feedback if available
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+        }, 1000); // 1000ms hold time for reset
+        return; // Don't start destroy timer for central chamber
+      }
       
       // Check if this tile is destroyable (adjacent to player)
       if (this.gameEngine && !this.destroyMode) {
@@ -322,9 +438,9 @@ class DOMRenderer extends RendererInterface {
         const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
         
         if (isAdjacent) {
-          // Start long press timer (500ms)
+          // Start long press timer (500ms) for destroy
           touchTimer = setTimeout(() => {
-            isLongPress = true;
+            isDestroyHolding = true;
             
             // Check if player has available Kings
             const availableKings = this.gameEngine.player.collectedKings.filter(king => 
@@ -332,26 +448,20 @@ class DOMRenderer extends RendererInterface {
             );
             
             if (availableKings.length > 0) {
-              // Activate destroy mode
-              if (window.toggleDestroyMode) {
-                window.toggleDestroyMode();
+              // Start shaking animation (release to confirm)
+              tileEl.classList.add('destroy-holding');
+              
+              // Disable scrolling on board container during hold
+              const boardEl = document.getElementById('game-board');
+              if (boardEl) {
+                boardEl.style.overflow = 'hidden';
+                boardEl.style.touchAction = 'none';
               }
               
               // Provide haptic feedback if available
               if (navigator.vibrate) {
                 navigator.vibrate(50);
               }
-              
-              // Visual feedback
-              tileEl.style.transform = 'scale(1.1)';
-              tileEl.style.transition = 'transform 0.1s';
-              
-              // After activating, handle the tile click for destroy
-              setTimeout(() => {
-                if (window.handleTileClick) {
-                  window.handleTileClick(x, y);
-                }
-              }, 100);
             }
           }, 500); // 500ms hold time
         }
@@ -372,11 +482,15 @@ class DOMRenderer extends RendererInterface {
             clearTimeout(touchTimer);
             touchTimer = null;
           }
+          // Stop reset text and shaking if moved away
+          if (isRestartHolding) {
+            cleanupHold();
+          }
         }
       }
     }, { passive: true });
     
-    // Touch end - cancel timer if released early
+    // Touch end - release to confirm destroy or restart
     tileEl.addEventListener('touchend', (e) => {
       if (touchTimer) {
         clearTimeout(touchTimer);
@@ -391,6 +505,48 @@ class DOMRenderer extends RendererInterface {
         const moveY = Math.abs(touch.clientY - touchStartPos.y);
         // Only treat as tap if moved less than 10px (allows for small finger movement)
         wasTap = moveX < 10 && moveY < 10;
+      }
+      
+      // Re-enable scrolling
+      const boardEl = document.getElementById('game-board');
+      if (boardEl) {
+        boardEl.style.overflow = '';
+        boardEl.style.touchAction = '';
+      }
+      
+      // Release to confirm destroy
+      if (isDestroyHolding && wasTap && !hasMoved) {
+        cleanupHold();
+        // Activate destroy mode and destroy
+        if (window.toggleDestroyMode) {
+          window.toggleDestroyMode();
+        }
+        setTimeout(() => {
+          if (window.handleTileClick) {
+            window.handleTileClick(x, y);
+          }
+        }, 100);
+        touchStartTime = null;
+        touchStartPos = null;
+        hasMoved = false;
+        return;
+      }
+      
+      // Release to confirm restart
+      if (isRestartHolding && wasTap && !hasMoved) {
+        cleanupHold();
+        if (window.resetGame) {
+          window.resetGame();
+        }
+        touchStartTime = null;
+        touchStartPos = null;
+        hasMoved = false;
+        return;
+      }
+      
+      // Cancel hold if moved away
+      if (hasMoved || (isDestroyHolding || isRestartHolding)) {
+        cleanupHold();
       }
       
       // Only handle as normal tap if not a long press, not scrolling, and it was actually a tap
@@ -409,6 +565,13 @@ class DOMRenderer extends RendererInterface {
         clearTimeout(touchTimer);
         touchTimer = null;
       }
+      // Re-enable scrolling
+      const boardEl = document.getElementById('game-board');
+      if (boardEl) {
+        boardEl.style.overflow = '';
+        boardEl.style.touchAction = '';
+      }
+      cleanupHold();
       touchStartTime = null;
       touchStartPos = null;
       hasMoved = false;
@@ -421,7 +584,49 @@ class DOMRenderer extends RendererInterface {
     let isMouseLongPress = false;
     let mouseStartPos = null;
     let hasMouseMoved = false;
+    let isMouseDestroyHolding = false;
+    let isMouseRestartHolding = false;
     let lastClickTime = 0; // Cooldown to prevent double-firing
+    
+    let mouseResetTextEl = null;
+    
+    const cleanupMouseHold = () => {
+      if (isMouseDestroyHolding) {
+        tileEl.classList.remove('destroy-holding');
+        isMouseDestroyHolding = false;
+      }
+      if (isMouseRestartHolding) {
+        tileEl.classList.remove('destroy-holding'); // Reuse same visual
+        isMouseRestartHolding = false;
+        // Remove floating reset text
+        if (mouseResetTextEl) {
+          mouseResetTextEl.remove();
+          mouseResetTextEl = null;
+        }
+      }
+    };
+    
+    const showMouseResetText = () => {
+      if (mouseResetTextEl) return; // Already showing
+      
+      mouseResetTextEl = document.createElement('div');
+      mouseResetTextEl.className = 'reset-text-float';
+      mouseResetTextEl.textContent = 'Reset?';
+      mouseResetTextEl.style.cssText = `
+        position: fixed;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ff6b6b;
+        text-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+        pointer-events: none;
+        z-index: 1000;
+        animation: float-reset 0.5s ease-in-out infinite;
+      `;
+      document.body.appendChild(mouseResetTextEl);
+    };
     
     tileEl.addEventListener('mousedown', (e) => {
       // Only handle left mouse button
@@ -431,6 +636,26 @@ class DOMRenderer extends RendererInterface {
       mouseStartTime = Date.now();
       isMouseLongPress = false;
       hasMouseMoved = false;
+      cleanupMouseHold();
+      
+      // Check if this is central chamber - reset takes priority over destroy
+      const isCentralChamber = x === 0 && y === 0;
+      
+      if (isCentralChamber && this.gameEngine) {
+        // Start restart timer (1000ms) for central chamber
+        mouseTimer = setTimeout(() => {
+          isMouseRestartHolding = true;
+          tileEl.classList.add('destroy-holding');
+          showMouseResetText();
+          
+          // Disable scrolling on board container
+          const boardEl = document.getElementById('game-board');
+          if (boardEl) {
+            boardEl.style.overflow = 'hidden';
+          }
+        }, 1000); // 1000ms hold time for reset
+        return; // Don't start destroy timer for central chamber
+      }
       
       // Check if this tile is destroyable (adjacent to player)
       if (this.gameEngine && !this.destroyMode) {
@@ -438,9 +663,9 @@ class DOMRenderer extends RendererInterface {
         const isAdjacent = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y) === 1;
         
         if (isAdjacent) {
-          // Start long press timer (500ms)
+          // Start long press timer (500ms) for destroy
           mouseTimer = setTimeout(() => {
-            isMouseLongPress = true;
+            isMouseDestroyHolding = true;
             
             // Check if player has available Kings
             const availableKings = this.gameEngine.player.collectedKings.filter(king => 
@@ -448,21 +673,14 @@ class DOMRenderer extends RendererInterface {
             );
             
             if (availableKings.length > 0) {
-              // Activate destroy mode
-              if (window.toggleDestroyMode) {
-                window.toggleDestroyMode();
+              // Start shaking animation (release to confirm)
+              tileEl.classList.add('destroy-holding');
+              
+              // Disable scrolling on board container during hold
+              const boardEl = document.getElementById('game-board');
+              if (boardEl) {
+                boardEl.style.overflow = 'hidden';
               }
-              
-              // Visual feedback
-              tileEl.style.transform = 'scale(1.1)';
-              tileEl.style.transition = 'transform 0.1s';
-              
-              // After activating, handle the tile click for destroy
-              setTimeout(() => {
-                if (window.handleTileClick) {
-                  window.handleTileClick(x, y);
-                }
-              }, 100);
             }
           }, 500); // 500ms hold time
         }
@@ -481,6 +699,12 @@ class DOMRenderer extends RendererInterface {
             clearTimeout(mouseTimer);
             mouseTimer = null;
           }
+          // Stop reset text and shaking if moved away
+          if (isMouseRestartHolding) {
+            cleanupMouseHold();
+          } else {
+            cleanupMouseHold(); // Clean up visual feedback if moved away
+          }
         }
       }
     });
@@ -494,6 +718,12 @@ class DOMRenderer extends RendererInterface {
         mouseTimer = null;
       }
       
+      // Re-enable scrolling
+      const boardEl = document.getElementById('game-board');
+      if (boardEl) {
+        boardEl.style.overflow = '';
+      }
+      
       // Check if this was a click by comparing start/end positions
       let wasClick = false;
       if (mouseStartPos) {
@@ -501,6 +731,41 @@ class DOMRenderer extends RendererInterface {
         const moveY = Math.abs(e.clientY - mouseStartPos.y);
         // Only treat as click if moved less than 10px
         wasClick = moveX < 10 && moveY < 10;
+      }
+      
+      // Release to confirm destroy
+      if (isMouseDestroyHolding && wasClick && !hasMouseMoved) {
+        cleanupMouseHold();
+        // Activate destroy mode and destroy
+        if (window.toggleDestroyMode) {
+          window.toggleDestroyMode();
+        }
+        setTimeout(() => {
+          if (window.handleTileClick) {
+            window.handleTileClick(x, y);
+          }
+        }, 100);
+        mouseStartTime = null;
+        mouseStartPos = null;
+        hasMouseMoved = false;
+        return;
+      }
+      
+      // Release to confirm restart
+      if (isMouseRestartHolding && wasClick && !hasMouseMoved) {
+        cleanupMouseHold();
+        if (window.resetGame) {
+          window.resetGame();
+        }
+        mouseStartTime = null;
+        mouseStartPos = null;
+        hasMouseMoved = false;
+        return;
+      }
+      
+      // Cancel hold if moved away
+      if (hasMouseMoved || (isMouseDestroyHolding || isMouseRestartHolding)) {
+        cleanupMouseHold();
       }
       
       // Only handle as normal click if not a long press, not dragging, and it was actually a click
@@ -527,6 +792,12 @@ class DOMRenderer extends RendererInterface {
         clearTimeout(mouseTimer);
         mouseTimer = null;
       }
+      // Re-enable scrolling
+      const boardEl = document.getElementById('game-board');
+      if (boardEl) {
+        boardEl.style.overflow = '';
+      }
+      cleanupMouseHold();
       mouseStartTime = null;
       mouseStartPos = null;
       hasMouseMoved = false;
@@ -554,9 +825,22 @@ class DOMRenderer extends RendererInterface {
    * Update a tile element's visual state (classes, content, etc.)
    * @private
    */
-  _updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles) {
+  _updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles, board) {
+    const tileKey = `${x},${y}`;
+    // Preserve animation classes if they exist (don't clear them during animation)
+    const hadAnimationClass = tileEl.classList.contains('card-flip-animate');
+    const hadCardBackClass = tileEl.classList.contains('card-back');
+    
     // Reset all state classes
     tileEl.className = 'tile';
+    
+    // Restore animation classes if they were present (preserve ongoing animation)
+    if (hadAnimationClass) {
+      tileEl.classList.add('card-flip-animate');
+    }
+    if (hadCardBackClass) {
+      tileEl.classList.add('card-back');
+    }
     tileEl.style.opacity = '';
     tileEl.style.border = '';
     tileEl.style.cursor = '';
@@ -640,6 +924,56 @@ class DOMRenderer extends RendererInterface {
         content.appendChild(rankEl);
         content.appendChild(suitEl);
         tileEl.appendChild(content);
+        
+        // Simple flip animation: if this tile hasn't been revealed before, animate it
+        const tileKey = `${x},${y}`;
+        const wasAlreadyRevealed = this.revealedTiles.has(tileKey);
+        const hasAnimationClass = tileEl.classList.contains('card-flip-animate');
+        
+        console.log(`[FLIP DEBUG] Tile ${tileKey}:`, {
+          wasAlreadyRevealed,
+          hasAnimationClass,
+          tileExists: !!tile,
+          hasCard: !!tile.card,
+          classNameBefore: tileEl.className
+        });
+        
+        if (!wasAlreadyRevealed) {
+          console.log(`[FLIP DEBUG] ✓ Adding animation to ${tileKey}`);
+          this.revealedTiles.add(tileKey);
+          
+          // Ensure tile starts with card-back visible and content hidden
+          // This matches the initial state of the first 4 tiles
+          tileEl.classList.add('card-back');
+          content.style.opacity = '0';
+          content.style.visibility = 'hidden';
+          
+          // Use requestAnimationFrame to ensure DOM is ready before starting animation
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              // Step 1: Start back flip-out animation
+              tileEl.classList.add('card-back-flip-out');
+              tileEl.classList.add('card-flip-animate');
+              
+              // Step 2: After back finishes, remove back and start front flip-in
+              setTimeout(() => {
+                tileEl.classList.remove('card-back');
+                tileEl.classList.remove('card-back-flip-out');
+                tileEl.classList.add('card-front-flip-in');
+                content.style.visibility = 'visible';
+                
+                // Step 3: After front finishes, clean up
+                setTimeout(() => {
+                  tileEl.classList.remove('card-front-flip-in');
+                  tileEl.classList.remove('card-flip-animate');
+                  content.style.opacity = '1';
+                }, 300); // Front animation duration
+              }, 300); // Back animation duration
+            });
+          });
+        } else {
+          console.log(`[FLIP DEBUG] ✗ Skipping animation for ${tileKey} (already revealed)`);
+        }
       } else {
         // Empty revealed tile
         tileEl.classList.add('empty');
@@ -647,9 +981,47 @@ class DOMRenderer extends RendererInterface {
       }
     } else {
       // Unexplored tile within render bounds (buffer zone)
-      // Show subtle border so grid is visible but clearly unexplored
-      tileEl.style.opacity = '0.3';
-      tileEl.style.border = '1px solid rgba(83, 52, 131, 0.3)';
+      // Show card back design with fog of war effect based on proximity to revealed tiles
+      tileEl.classList.add('card-back');
+      
+      // Calculate minimum distance to any revealed tile for fog of war
+      let minDistance = Infinity;
+      const bufferZoneSize = typeof GAME_RULES !== 'undefined' && GAME_RULES.board.bufferZoneSize !== undefined
+        ? GAME_RULES.board.bufferZoneSize
+        : 2;
+      
+      // Check distance to all revealed tiles
+      for (const [key, revealedTile] of board.entries()) {
+        if (revealedTile) {
+          const [revealedX, revealedY] = key.split(',').map(Number);
+          const distance = Math.abs(x - revealedX) + Math.abs(y - revealedY); // Manhattan distance
+          minDistance = Math.min(minDistance, distance);
+        }
+      }
+      
+      // If no revealed tiles, use distance to player
+      if (minDistance === Infinity) {
+        minDistance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
+      }
+      
+      // Calculate opacity: linear falloff from almost fully visible (adjacent) to nearly invisible (edge)
+      // Distance 1 (adjacent) = ~0.9 opacity, Distance bufferZoneSize (edge) = ~0.18 opacity
+      const maxDistance = bufferZoneSize;
+      const normalizedDistance = Math.min(minDistance / maxDistance, 1);
+      // Linear interpolation: 0.9 at distance 1, 0.18 at distance bufferZoneSize
+      // For distance 0 (on revealed tile), use 1.0, then linear from 0.9 to 0.18
+      let opacity;
+      if (minDistance === 0) {
+        opacity = 1.0;
+      } else if (minDistance === 1) {
+        opacity = 0.9;
+      } else {
+        // Linear interpolation from 0.9 (distance 1) to 0.18 (distance bufferZoneSize)
+        const t = (minDistance - 1) / (maxDistance - 1); // t goes from 0 (at distance 1) to 1 (at distance bufferZoneSize)
+        opacity = 0.9 - (t * 0.72); // 0.9 - 0.72*t gives us 0.9 at t=0, 0.18 at t=1
+      }
+      
+      tileEl.style.opacity = opacity.toString();
     }
   }
   
@@ -799,10 +1171,23 @@ class DOMRenderer extends RendererInterface {
         }
         
         // Get or create tile element (will create if it doesn't exist)
+        const tileKey = `${x},${y}`;
+        const tileElAlreadyExisted = this.tileElements.has(tileKey);
         const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
         
-        // Show tile and update visual state
-        this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
+        if (tile && tile.card && !tile.isCentralChamber) {
+          console.log(`[FLIP DEBUG] Processing tile ${tileKey}:`, {
+            tileExists: !!tile,
+            hasCard: !!tile.card,
+            tileElAlreadyExisted,
+            inRevealedTiles: this.revealedTiles.has(tileKey),
+            shouldPopulate: true
+          });
+        }
+        
+        // Show tile and update visual state (animation handled inside _updateTileElement)
+        tileEl.style.visibility = 'visible';
+        this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles, board);
       }
     }
     
@@ -929,26 +1314,8 @@ class DOMRenderer extends RendererInterface {
       mobileHealthValueEl.textContent = `${player.health}`;
     }
     
-    // Update mobile party suits display
-    const mobilePartySuitsEl = document.getElementById('mobile-party-suits');
-    if (mobilePartySuitsEl) {
-      mobilePartySuitsEl.innerHTML = '';
-      if (player.party && player.party.length > 0) {
-        // Get player's starting suit (own suit) if available
-        const ownSuit = player.startingQueen ? player.startingQueen.suit : null;
-        
-        player.party.forEach(queen => {
-          const suitEl = document.createElement('span');
-          suitEl.className = 'party-suit';
-          if (ownSuit && queen.suit === ownSuit) {
-            suitEl.classList.add('own-suit');
-          }
-          suitEl.textContent = this._getSuitSymbol(queen.suit);
-          suitEl.title = `${queen.rank} of ${queen.suit}`;
-          mobilePartySuitsEl.appendChild(suitEl);
-        });
-      }
-    }
+    // Mobile party display is now handled by _updateParty method
+    // (kept for backwards compatibility, but _updateParty handles both)
     
     // Update mobile Kings suits display
     const mobileKingsSuitsEl = document.getElementById('mobile-kings-suits');
@@ -1002,26 +1369,26 @@ class DOMRenderer extends RendererInterface {
       inline: 'center'  // Center horizontally
     });
     
-    // Debug info
-    setTimeout(() => {
-      const tileRect = centralChamberTile.getBoundingClientRect();
-      const containerRect = boardEl.getBoundingClientRect();
-      console.log('Center Board Debug:', {
-        tileRect: { left: tileRect.left, top: tileRect.top, width: tileRect.width, height: tileRect.height },
-        containerRect: { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height },
-        scrollPosition: { left: boardEl.scrollLeft, top: boardEl.scrollTop },
-        containerSize: { width: boardEl.clientWidth, height: boardEl.clientHeight },
-        containerScrollSize: { width: boardEl.scrollWidth, height: boardEl.scrollHeight },
-        tileCenterInViewport: {
-          x: tileRect.left + tileRect.width / 2,
-          y: tileRect.top + tileRect.height / 2
-        },
-        containerCenterInViewport: {
-          x: containerRect.left + containerRect.width / 2,
-          y: containerRect.top + containerRect.height / 2
-        }
-      });
-    }, 10);
+    // Debug info (commented out to reduce noise)
+    // setTimeout(() => {
+    //   const tileRect = centralChamberTile.getBoundingClientRect();
+    //   const containerRect = boardEl.getBoundingClientRect();
+    //   console.log('Center Board Debug:', {
+    //     tileRect: { left: tileRect.left, top: tileRect.top, width: tileRect.width, height: tileRect.height },
+    //     containerRect: { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height },
+    //     scrollPosition: { left: boardEl.scrollLeft, top: boardEl.scrollTop },
+    //     containerSize: { width: boardEl.clientWidth, height: boardEl.clientHeight },
+    //     containerScrollSize: { width: boardEl.scrollWidth, height: boardEl.scrollHeight },
+    //     tileCenterInViewport: {
+    //       x: tileRect.left + tileRect.width / 2,
+    //       y: tileRect.top + tileRect.height / 2
+    //     },
+    //     containerCenterInViewport: {
+    //       x: containerRect.left + containerRect.width / 2,
+    //       y: containerRect.top + containerRect.height / 2
+    //     }
+    //   });
+    // }, 10);
   }
   
   /**
@@ -1041,6 +1408,78 @@ class DOMRenderer extends RendererInterface {
   
   onGameOver(victory) {
     this._showGameOver(victory);
+  }
+  
+  /**
+   * Show damage popup
+   * @private
+   */
+  _showDamagePopup(amount, source = null) {
+    // Create or get damage popup container
+    let popupContainer = document.getElementById('damage-popup-container');
+    if (!popupContainer) {
+      popupContainer = document.createElement('div');
+      popupContainer.id = 'damage-popup-container';
+      popupContainer.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 2000;
+      `;
+      document.body.appendChild(popupContainer);
+    }
+    
+    // Create damage popup element
+    const popup = document.createElement('div');
+    popup.className = 'damage-popup';
+    popup.textContent = `-${amount}`;
+    popup.style.cssText = `
+      font-size: 3rem;
+      font-weight: bold;
+      color: #ff4444;
+      text-shadow: 0 0 10px rgba(255, 68, 68, 0.8), 0 0 20px rgba(255, 68, 68, 0.6);
+      animation: damage-popup 1s ease-out forwards;
+    `;
+    
+    popupContainer.appendChild(popup);
+    
+    // Remove after animation
+    setTimeout(() => {
+      popup.remove();
+    }, 1000);
+  }
+  
+  /**
+   * Screen shake effect
+   * @private
+   */
+  _screenShake(damageAmount = 1) {
+    const gameContainer = document.getElementById('game-container');
+    if (!gameContainer) return;
+    
+    // Remove any existing shake classes first
+    gameContainer.classList.remove('screen-shake');
+    
+    // Force reflow to ensure class removal is processed
+    void gameContainer.offsetWidth;
+    
+    // Apply shake class
+    gameContainer.classList.add('screen-shake');
+    
+    // Remove after animation completes
+    setTimeout(() => {
+      gameContainer.classList.remove('screen-shake');
+    }, 500);
+  }
+  
+  onDamage(amount, newHealth, source = null) {
+    // Show damage popup
+    this._showDamagePopup(amount, source);
+    
+    // Screen shake effect with damage-based intensity
+    this._screenShake(amount);
   }
   
   clearHighlights() {
@@ -1098,20 +1537,20 @@ class DOMRenderer extends RendererInterface {
     `;
     
     // Debug info: log container and board dimensions
-    const computedStyle = window.getComputedStyle(boardEl);
-    console.log('Board Debug:', {
-      containerWidth: boardEl.offsetWidth,
-      containerScrollWidth: boardEl.scrollWidth,
-      rowWidth: rowWidth,
-      boardWidth: boardWidth,
-      viewportWidth: window.innerWidth,
-      scrollLeft: boardEl.scrollLeft,
-      scrollTop: boardEl.scrollTop,
-      containerLeft: containerRect.left,
-      containerRight: containerRect.right,
-      firstRowLeft: firstRowRect ? firstRowRect.left : null,
-      firstRowWidth: firstRowRect ? firstRowRect.width : null
-    });
+    // const computedStyle = window.getComputedStyle(boardEl);
+    // console.log('Board Debug:', {
+    //   containerWidth: boardEl.offsetWidth,
+    //   containerScrollWidth: boardEl.scrollWidth,
+    //   rowWidth: rowWidth,
+    //   boardWidth: boardWidth,
+    //   viewportWidth: window.innerWidth,
+    //   scrollLeft: boardEl.scrollLeft,
+    //   scrollTop: boardEl.scrollTop,
+    //   containerLeft: containerRect.left,
+    //   containerRight: containerRect.right,
+    //   firstRowLeft: firstRowRect ? firstRowRect.left : null,
+    //   firstRowWidth: firstRowRect ? firstRowRect.width : null
+    // });
     
     // Add corner markers for easier visualization
     const corners = [
