@@ -54,23 +54,24 @@
   width: max-content;
 }
 
-/* W3Schools flip card - container */
 .tile {
-  background-color: transparent;
   width: 60px;
   height: 80px;
-  border: none;
+  background-color: var(--surface-color);
+  border: 2px solid var(--border-color);
   border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
   cursor: pointer;
+  transition: all 0.2s ease;
   /* Don't interfere with container scrolling - let touch events bubble up */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   /* Ensure tiles are always visible */
   min-width: 60px;
   min-height: 80px;
-  /* W3Schools: perspective on container */
-  perspective: 1000px;
 }
 
 /* Larger tiles on mobile */
@@ -120,11 +121,11 @@
   opacity: 0.5;
 }
 
-/* Card back design for buffer zone */
+/* Card back design for buffer zone - opaque, darker, less saturated */
 .tile.card-back {
-  background: linear-gradient(135deg, #1a2a4a 0%, #0f1a2e 100%);
-  border: 2px solid rgba(52, 100, 150, 0.5);
-  opacity: 0.6;
+  background: linear-gradient(135deg, #0d1520 0%, #050810 100%);
+  border: 2px solid rgba(30, 50, 70, 0.8);
+  opacity: 1;
   position: relative;
   overflow: hidden;
 }
@@ -137,9 +138,9 @@
   right: 0;
   bottom: 0;
   background-image: 
-    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(52, 100, 150, 0.15) 10px, rgba(52, 100, 150, 0.15) 20px),
-    repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(52, 100, 150, 0.15) 10px, rgba(52, 100, 150, 0.15) 20px);
-  opacity: 0.6;
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(30, 50, 70, 0.3) 10px, rgba(30, 50, 70, 0.3) 20px),
+    repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(30, 50, 70, 0.3) 10px, rgba(30, 50, 70, 0.3) 20px);
+  opacity: 1;
 }
 
 .tile.destroyable {
