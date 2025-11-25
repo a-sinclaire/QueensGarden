@@ -86,6 +86,8 @@ class DOMRenderer extends RendererInterface {
     const isFirstRender = !this._hasRendered;
     this._hasRendered = true;
     
+    console.log('[FLIP DEBUG] render() called', { isFirstRender, revealedTilesCount: this.revealedTiles.size });
+    
     // Sync destroy mode state from global variables (if available)
     if (typeof window !== 'undefined' && window.destroyMode !== undefined) {
       this.destroyMode = window.destroyMode;
@@ -824,8 +826,21 @@ class DOMRenderer extends RendererInterface {
    * @private
    */
   _updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles) {
+    const tileKey = `${x},${y}`;
+    const hadAnimationClass = tileEl.classList.contains('card-flip-animate');
+    const classNameBefore = tileEl.className;
+    
     // Reset all state classes
     tileEl.className = 'tile';
+    
+    if (hadAnimationClass && tile && tile.card) {
+      console.log(`[FLIP DEBUG] ⚠️ _updateTileElement CLEARED animation class from ${tileKey}!`, {
+        classNameBefore,
+        classNameAfter: tileEl.className,
+        tileExists: !!tile,
+        hasCard: !!tile.card
+      });
+    }
     tileEl.style.opacity = '';
     tileEl.style.border = '';
     tileEl.style.cursor = '';
@@ -912,12 +927,29 @@ class DOMRenderer extends RendererInterface {
         
         // Simple flip animation: if this tile hasn't been revealed before, animate it
         const tileKey = `${x},${y}`;
-        if (!this.revealedTiles.has(tileKey)) {
+        const wasAlreadyRevealed = this.revealedTiles.has(tileKey);
+        const hasAnimationClass = tileEl.classList.contains('card-flip-animate');
+        
+        console.log(`[FLIP DEBUG] Tile ${tileKey}:`, {
+          wasAlreadyRevealed,
+          hasAnimationClass,
+          tileExists: !!tile,
+          hasCard: !!tile.card,
+          classNameBefore: tileEl.className
+        });
+        
+        if (!wasAlreadyRevealed) {
+          console.log(`[FLIP DEBUG] ✓ Adding animation to ${tileKey}`);
           this.revealedTiles.add(tileKey);
           tileEl.classList.add('card-flip-animate');
+          console.log(`[FLIP DEBUG] ✓ Animation class added to ${tileKey}, className now:`, tileEl.className);
           setTimeout(() => {
+            const stillHasClass = tileEl.classList.contains('card-flip-animate');
+            console.log(`[FLIP DEBUG] Removing animation from ${tileKey}, still has class:`, stillHasClass);
             tileEl.classList.remove('card-flip-animate');
           }, 500);
+        } else {
+          console.log(`[FLIP DEBUG] ✗ Skipping animation for ${tileKey} (already revealed)`);
         }
       } else {
         // Empty revealed tile
@@ -1078,7 +1110,19 @@ class DOMRenderer extends RendererInterface {
         }
         
         // Get or create tile element (will create if it doesn't exist)
+        const tileKey = `${x},${y}`;
+        const tileElAlreadyExisted = this.tileElements.has(tileKey);
         const tileEl = this._getOrCreateTile(row, x, y, tileWidth, tileHeight);
+        
+        if (tile && tile.card && !tile.isCentralChamber) {
+          console.log(`[FLIP DEBUG] Processing tile ${tileKey}:`, {
+            tileExists: !!tile,
+            hasCard: !!tile.card,
+            tileElAlreadyExisted,
+            inRevealedTiles: this.revealedTiles.has(tileKey),
+            shouldPopulate: true
+          });
+        }
         
         // Show tile and update visual state (animation handled inside _updateTileElement)
         tileEl.style.visibility = 'visible';
@@ -1264,26 +1308,26 @@ class DOMRenderer extends RendererInterface {
       inline: 'center'  // Center horizontally
     });
     
-    // Debug info
-    setTimeout(() => {
-      const tileRect = centralChamberTile.getBoundingClientRect();
-      const containerRect = boardEl.getBoundingClientRect();
-      console.log('Center Board Debug:', {
-        tileRect: { left: tileRect.left, top: tileRect.top, width: tileRect.width, height: tileRect.height },
-        containerRect: { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height },
-        scrollPosition: { left: boardEl.scrollLeft, top: boardEl.scrollTop },
-        containerSize: { width: boardEl.clientWidth, height: boardEl.clientHeight },
-        containerScrollSize: { width: boardEl.scrollWidth, height: boardEl.scrollHeight },
-        tileCenterInViewport: {
-          x: tileRect.left + tileRect.width / 2,
-          y: tileRect.top + tileRect.height / 2
-        },
-        containerCenterInViewport: {
-          x: containerRect.left + containerRect.width / 2,
-          y: containerRect.top + containerRect.height / 2
-        }
-      });
-    }, 10);
+    // Debug info (commented out to reduce noise)
+    // setTimeout(() => {
+    //   const tileRect = centralChamberTile.getBoundingClientRect();
+    //   const containerRect = boardEl.getBoundingClientRect();
+    //   console.log('Center Board Debug:', {
+    //     tileRect: { left: tileRect.left, top: tileRect.top, width: tileRect.width, height: tileRect.height },
+    //     containerRect: { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height },
+    //     scrollPosition: { left: boardEl.scrollLeft, top: boardEl.scrollTop },
+    //     containerSize: { width: boardEl.clientWidth, height: boardEl.clientHeight },
+    //     containerScrollSize: { width: boardEl.scrollWidth, height: boardEl.scrollHeight },
+    //     tileCenterInViewport: {
+    //       x: tileRect.left + tileRect.width / 2,
+    //       y: tileRect.top + tileRect.height / 2
+    //     },
+    //     containerCenterInViewport: {
+    //       x: containerRect.left + containerRect.width / 2,
+    //       y: containerRect.top + containerRect.height / 2
+    //     }
+    //   });
+    // }, 10);
   }
   
   /**
@@ -1432,20 +1476,20 @@ class DOMRenderer extends RendererInterface {
     `;
     
     // Debug info: log container and board dimensions
-    const computedStyle = window.getComputedStyle(boardEl);
-    console.log('Board Debug:', {
-      containerWidth: boardEl.offsetWidth,
-      containerScrollWidth: boardEl.scrollWidth,
-      rowWidth: rowWidth,
-      boardWidth: boardWidth,
-      viewportWidth: window.innerWidth,
-      scrollLeft: boardEl.scrollLeft,
-      scrollTop: boardEl.scrollTop,
-      containerLeft: containerRect.left,
-      containerRight: containerRect.right,
-      firstRowLeft: firstRowRect ? firstRowRect.left : null,
-      firstRowWidth: firstRowRect ? firstRowRect.width : null
-    });
+    // const computedStyle = window.getComputedStyle(boardEl);
+    // console.log('Board Debug:', {
+    //   containerWidth: boardEl.offsetWidth,
+    //   containerScrollWidth: boardEl.scrollWidth,
+    //   rowWidth: rowWidth,
+    //   boardWidth: boardWidth,
+    //   viewportWidth: window.innerWidth,
+    //   scrollLeft: boardEl.scrollLeft,
+    //   scrollTop: boardEl.scrollTop,
+    //   containerLeft: containerRect.left,
+    //   containerRight: containerRect.right,
+    //   firstRowLeft: firstRowRect ? firstRowRect.left : null,
+    //   firstRowWidth: firstRowRect ? firstRowRect.width : null
+    // });
     
     // Add corner markers for easier visualization
     const corners = [
