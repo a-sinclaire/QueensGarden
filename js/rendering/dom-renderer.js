@@ -827,19 +827,15 @@ class DOMRenderer extends RendererInterface {
    */
   _updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles) {
     const tileKey = `${x},${y}`;
+    // Preserve animation class if it exists (don't clear it during animation)
     const hadAnimationClass = tileEl.classList.contains('card-flip-animate');
-    const classNameBefore = tileEl.className;
     
     // Reset all state classes
     tileEl.className = 'tile';
     
-    if (hadAnimationClass && tile && tile.card) {
-      console.log(`[FLIP DEBUG] ⚠️ _updateTileElement CLEARED animation class from ${tileKey}!`, {
-        classNameBefore,
-        classNameAfter: tileEl.className,
-        tileExists: !!tile,
-        hasCard: !!tile.card
-      });
+    // Restore animation class if it was present (preserve ongoing animation)
+    if (hadAnimationClass) {
+      tileEl.classList.add('card-flip-animate');
     }
     tileEl.style.opacity = '';
     tileEl.style.border = '';
