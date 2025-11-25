@@ -825,7 +825,7 @@ class DOMRenderer extends RendererInterface {
    * Update a tile element's visual state (classes, content, etc.)
    * @private
    */
-  _updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles) {
+  _updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles, board) {
     const tileKey = `${x},${y}`;
     // Preserve animation classes if they exist (don't clear them during animation)
     const hadAnimationClass = tileEl.classList.contains('card-flip-animate');
@@ -1177,7 +1177,7 @@ class DOMRenderer extends RendererInterface {
         
         // Show tile and update visual state (animation handled inside _updateTileElement)
         tileEl.style.visibility = 'visible';
-        this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles);
+        this._updateTileElement(tileEl, tile, x, y, playerPos, destroyableTiles, teleportDestinations, adjacentTiles, board);
       }
     }
     

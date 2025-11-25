@@ -121,11 +121,10 @@
   opacity: 0.5;
 }
 
-/* Card back design for buffer zone - plain muted blue */
+/* Card back design for buffer zone - matches master branch styling */
 .tile.card-back {
-  background-color: #2e2e52;
-  border: 2px solid rgba(40, 55, 70, 0.5);
-  opacity: 1;
+  border: 1px solid rgba(83, 52, 131, 0.3);
+  /* opacity controlled by fog of war effect */
 }
 
 .tile.destroyable {
