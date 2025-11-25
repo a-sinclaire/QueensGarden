@@ -1088,9 +1088,10 @@ class DOMRenderer extends RendererInterface {
         
         // Add to flip queue for sequential animation ONLY if:
         // 1. Newly revealed (not in revealedTiles set)
-        // 2. Not already animating
-        // 3. Not in the queue already
-        if (isNewlyRevealed && !tileEl.classList.contains('card-flip-animate')) {
+        // 2. Has a card (not empty tile or central chamber)
+        // 3. Not already animating
+        // 4. Not in the queue already
+        if (isNewlyRevealed && tile && tile.card && !tile.isCentralChamber && !tileEl.classList.contains('card-flip-animate')) {
           // Check if already in queue
           const alreadyInQueue = this.flipQueue.some(item => 
             item.x === x && item.y === y
@@ -1181,7 +1182,7 @@ class DOMRenderer extends RendererInterface {
       setTimeout(() => {
         this._animateNextFlip();
       }, 100); // 100ms delay between flips for better visibility
-    }, 600); // Animation duration (match CSS - 0.6s)
+    }, 500); // Animation duration (match CSS - 0.5s)
   }
   
   /**
