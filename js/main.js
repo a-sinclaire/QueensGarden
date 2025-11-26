@@ -46,9 +46,15 @@ if (typeof window !== 'undefined') {
 }
 
 // Initialize game when page loads
-document.addEventListener('DOMContentLoaded', () => {
-  setupQueenSelection();
-  setupVersion();
+document.addEventListener('DOMContentLoaded', function () {
+  var title = document.getElementById('site-title');
+  if (title) {
+    title.style.cursor = 'pointer';
+    title.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.location.reload();
+    });
+  }
 });
 
 /**
